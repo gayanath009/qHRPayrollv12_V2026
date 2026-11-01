@@ -1,0 +1,732 @@
+@using Syncfusion.EJ2
+@using Microsoft.AspNetCore.Http;
+@model qHRM.Models.RptParam
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .org-page-container {
+        padding: 0.75rem 0.5rem 1.5rem 0.5rem;
+    }
+
+    /* Compact Header Card */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: var(--clr-muted);
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+    .org-breadcrumb a {
+        color: var(--clr-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .org-breadcrumb a:hover {
+        color: var(--org-primary);
+    }
+
+    /* Action Buttons in Grid */
+    .org-actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .org-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        font-size: 0.75rem;
+        padding: 0;
+        outline: none;
+    }
+
+    .org-action-edit {
+        background: #fdf2f8;
+        color: var(--org-primary);
+        border-color: #fbcfe8;
+    }
+
+    .org-action-edit:hover {
+        background: var(--org-primary);
+        color: #ffffff !important;
+        border-color: var(--org-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);
+    }
+
+    .org-action-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .org-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+    }
+
+    /* Filter Controls Modern styling */
+    .attendance-filter-card {
+        background: #fdfdfe;
+        border: 1px solid #edf2f7;
+        border-radius: 10px;
+        padding: 1rem 1.25rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Modern Modals */
+    .org-modal .modal-content {
+        border: 1px solid var(--clr-border) !important;
+        border-radius: var(--radius) !important;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2) !important;
+        overflow: hidden;
+    }
+
+    .org-modal .modal-header {
+        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
+        color: #ffffff !important;
+        padding: 1rem 1.25rem !important;
+        border-bottom: none !important;
+    }
+
+    .org-modal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-modal .modal-header .close {
+        color: #ffffff !important;
+        opacity: 0.8 !important;
+        text-shadow: none !important;
+        transition: opacity 0.15s !important;
+        outline: none !important;
+    }
+
+    .org-modal .modal-header .close:hover {
+        opacity: 1 !important;
+    }
+
+    .org-modal-delete .modal-header {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+    }
+</style>
+
+<div class="org-page-container">
+    <main>
+        <div class="container-fluid px-0">
+
+            <!-- COMPACT HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                                <h1 class="org-title">Employee Shift Attendance</h1>
+                                <span class="badge org-category-pill">ATTENDANCE</span>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#">Human Resource</a> / <span class="text-dark font-weight-medium">Attendance</span>
+                                <span class="text-muted mx-1">&bull;</span>
+                                <span class="text-muted">Monitor daily attendance logs, shift punches, overtime, and late arrivals</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter and Actions Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+
+                    <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                        <e-toast-position X="Center"></e-toast-position>
+                    </ejs-toast>
+
+                    <div class="attendance-filter-card">
+                        @using (Html.BeginForm("PrintAtndcSht", "HrEmpAtndcSft", FormMethod.Post, new { target = "_blank", onsubmit = "validateAttdReportForm()" }))
+                        {
+                            <div class="form-row">
+                                <div class="form-group col-md-6 mb-0">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <div class="form-row">
+                                                <div class="form-group col-md-12">
+                                                    <div class="form-check mb-1">
+                                                        <input type="checkbox" class="form-check-input" id="chkEmpFltr" onclick="enblEmpFltr();">
+                                                        <label class="form-check-label font-weight-bold" for="chkEmpFltr">Employee</label>
+                                                    </div>
+                                                    <select placeholer="Select Employee" id="drpEmp" asp-for="prm3"
+                                                            asp-items="@(new SelectList(ViewBag.lstEmployee, "EmpSysId", "FullName"))" disabled onchange="loadAttdData(); loadAttdSummary();" class="form-control form-control-sm">
+                                                        <option value="0">All Employee</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group col-md-12">
+                                                    <div class="form-check mb-1">
+                                                        <input type="checkbox" class="form-check-input" id="chkDeptFltr" onclick="enblDeptFltr();">
+                                                        <label class="form-check-label font-weight-bold" for="chkDeptFltr">Department</label>
+                                                    </div>
+                                                    <select placeholer="Select Employee" id="drpDept" asp-for="prm4"
+                                                            asp-items="@(new SelectList(ViewBag.lstDept, "DeptId", "DeptName"))" disabled onchange="loadAttdData(); loadAttdSummary();" class="form-control form-control-sm">
+                                                        <option value="0">All Departments</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <div class="form-row">
+                                                <div class="form-group col-md-12">
+                                                    <div class="form-check mb-1">
+                                                        <input type="radio" name="dateRange" class="form-check-input" id="chkFxRngFltr" checked onclick="enblFxRngFltr();loadAttdData();loadAttdSummary();">
+                                                        <label class="form-check-label font-weight-bold" for="chkFxRngFltr">Pre Defined Period</label>
+                                                    </div>
+                                                    <select placeholer="Select Date Range" id="drpRngs"
+                                                            asp-items="@(new  SelectList(ViewBag.lstFilter, "Prop", "Val"))" onchange="loadAttdData();loadAttdSummary();" class="form-control form-control-sm">
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="form-row">
+                                                <div class="form-group col-md-6">
+                                                    <div class="form-check mb-1">
+                                                        <input type="radio" name="dateRange" class="form-check-input" id="chkDateRange" onclick="enblFxRngFltr();">
+                                                        <label class="form-check-label font-weight-bold" for="chkDateRange">Date Range</label>
+                                                    </div>
+                                                    <label class="small text-muted mb-0">From</label>
+                                                    <input id="dtFrom" type="date" asp-for="prm1" disabled class="form-control form-control-sm" value="@ViewBag.FromDate" />
+                                                </div>
+                                                <div class="form-group col-md-6">
+                                                    <label class="small text-muted mb-0">&nbsp;</label>
+                                                    <div>
+                                                        <label class="small text-muted mb-0">To</label>
+                                                        <input id="dtTo" type="date" asp-for="prm2" disabled class="form-control form-control-sm" value="@ViewBag.ToDate" />
+                                                        <input id="valFxRngFilter" type="number" asp-for="prm5" class="form-control form-control-sm" hidden />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row mt-2">
+                                        <div class="form-group col-md-6">
+                                            <input type="button" value="Search" class="btn btn-sm btn-outline-primary btn-block font-weight-bold" onclick="loadAttdData(); loadAttdSummary();" />
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <input type="button" value="Print Grid" class="btn btn-sm btn-outline-secondary btn-block font-weight-bold" onclick="prntGrid();">
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group col-md-3">
+                                    <div class="form-group mb-2">
+                                        @if (ViewBag.RecEdit == true)
+                                        {
+                                            <input type="button" value="Mark Absent" class="btn btn-sm btn-outline-danger btn-block" onclick="markAbsentFunc();" />
+                                        }
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        @if (ViewBag.RecEdit == true)
+                                        {
+                                            <input type="button" value="Reset Absent" class="btn btn-sm btn-outline-warning btn-block" onclick="markResetAbsentFunc();" />
+                                        }
+                                    </div>
+                                    <div class="form-group mb-2">
+                                        @if (ViewBag.RecEdit == true)
+                                        {
+                                            <input type="button" value="Load Attendance" class="btn btn-sm btn-outline-info btn-block" onclick="reloadAtndcFunc();" id="btnReloadAtndc" disabled="disabled" />
+                                        }
+                                    </div>
+                                    <div class="form-group mb-0">
+                                        <input type="submit" value="Print Attendance Report" class="btn btn-sm btn-outline-success btn-block" id="btnRpt" disabled="disabled" />
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.AtndcDtl" allowPaging="true" allowGrouping="true" allowFiltering="true" queryCellInfo="mrkLteCmrs"
+                                  allowExcelExport="true" allowPdfExport="true" allowResizing="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )" excelQueryCellInfo="excelQueryCellInfo">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="AtndcDate" headerText="Date" width="95"></e-grid-column>
+                                <e-grid-column field="EmpId" headerText="Id" width="70"></e-grid-column>
+                                <e-grid-column field="FullName" headerText="Name" width="160"></e-grid-column>
+                                <e-grid-column field="DeptName" headerText="Department" width="130"></e-grid-column>
+                                <e-grid-column field="InTime" headerText="In Time" width="90"></e-grid-column>
+                                <e-grid-column field="OutTime" headerText="Out Time" width="90"></e-grid-column>
+                                <e-grid-column field="Status" headerText="Status" width="110"></e-grid-column>
+                                <e-grid-column field="WrkMnt" headerText="Work (Mins)" width="100"></e-grid-column>
+                                <e-grid-column field="LateInMnt" headerText="Late (Mins)" width="95"></e-grid-column>
+                                <e-grid-column field="ErlyLvMnt" headerText="Early Lv (Mins)" width="110"></e-grid-column>
+                                <e-grid-column field="OtMnt" headerText="OT (Mins)" width="90"></e-grid-column>
+                                <e-grid-column field="ExtOtMnt" headerText="Ext OT" width="90"></e-grid-column>
+                                <e-grid-column field="" headerText="Actions" template="#_actions" width="120" textAlign="Center"></e-grid-column>
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+
+                    <!-- MODALS -->
+                    <!--Edit Punch-->
+                    <div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalEditTitle">
+                                        <i class="fas fa-edit mr-2"></i> Edit Attendance Timings
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Edit Shift-->
+                    <div class="modal fade org-modal" id="modalShift" tabindex="-1" role="dialog" aria-labelledby="modalShiftTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalShiftTitle">
+                                        <i class="fas fa-calendar-alt mr-2"></i> Edit Shift
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="shiftModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Mark as Absent-->
+                    <div class="modal fade org-modal org-modal-delete" id="modalMarkAbsent" tabindex="-1" role="dialog" aria-labelledby="modalMarkAbsentTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalMarkAbsentTitle">
+                                        <i class="fas fa-user-times mr-2"></i> Mark as Absent
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="markabsentModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Reset Mark as Absent-->
+                    <div class="modal fade org-modal" id="modalResetMarkAbsent" tabindex="-1" role="dialog" aria-labelledby="modalResetMarkAbsentTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalResetMarkAbsentTitle">
+                                        <i class="fas fa-undo mr-2"></i> Reset Mark as Absent
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="markResetAbsentModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Reload Attendance-->
+                    <div class="modal fade org-modal" id="modalReloadAtndc" tabindex="-1" role="dialog" aria-labelledby="modalReloadAtndcTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalReloadAtndcTitle">
+                                        <i class="fas fa-sync-alt mr-2"></i> Reload Attendance
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="reloadAtndcModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Reset-->
+                    <div class="modal fade org-modal" id="modalReset" tabindex="-1" role="dialog" aria-labelledby="modalResetTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalResetTitle">
+                                        <i class="fas fa-history mr-2"></i> Reset Attendance Timings
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" id="resetModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <ejs-button id="hideToast" style="display:none;"></ejs-button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- JSRENDER ACTION TEMPLATES -->
+<script type="text/x-jsrender" id="_actions">
+    <div class="org-actions-wrapper">
+        <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${AtndcSftId})" title="Edit Attendance Timings">
+            <i class="fas fa-pen"></i>
+        </button>
+        <button type="button" class="org-action-btn org-action-edit" style="background:#ecfdf5;color:#059669;border-color:#a7f3d0;" onclick="shiftFunc(${AtndcSftId})" title="Edit Shift">
+            <i class="fas fa-wrench"></i>
+        </button>
+        <button type="button" class="org-action-btn org-action-delete" style="background:#fffbeb;color:#d97706;border-color:#fde68a;" onclick="resetFunc(${RecId})" title="Reset Attendance Timings">
+            <i class="fas fa-undo"></i>
+        </button>
+    </div>
+</script>
+
+<!-- Backward Compatibility Templates -->
+<script type="text/x-jsrender" id="_edit">
+    <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${AtndcSftId})" title="Edit">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_shift">
+    <button type="button" class="org-action-btn org-action-edit" style="background:#ecfdf5;color:#059669;border-color:#a7f3d0;" onclick="shiftFunc(${AtndcSftId})" title="Edit Shift">
+        <i class="fas fa-wrench"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_reset">
+    <button type="button" class="org-action-btn org-action-delete" style="background:#fffbeb;color:#d97706;border-color:#fde68a;" onclick="resetFunc(${RecId})" title="Reset">
+        <i class="fas fa-undo"></i>
+    </button>
+</script>
+
+<!-- Scripts -->
+<script>
+    var editFunc = function (atndcSftId) {
+        var url = "/Attendance/HrEmpAtndcSft/EditGet?atndcSftId=" + atndcSftId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    };
+
+    var shiftFunc = function (atndcSftId) {
+        var url = "/Attendance/HrEmpAtndcSft/ShiftGet?atndcSftId=" + atndcSftId;
+        $("#shiftModalBody").load(url, function () {
+            $("#modalShift").modal("show");
+        });
+    };
+
+    var markAbsentFunc = function () {
+        var url = "/Attendance/HrEmpAtndcSft/GetMarkAbsent";
+        $("#markabsentModalBody").load(url, function () {
+            $("#modalMarkAbsent").modal("show");
+        });
+    };
+
+    var markResetAbsentFunc = function () {
+        var url = "/Attendance/HrEmpAtndcSft/GetResetMarkAbsent";
+        $("#markResetAbsentModalBody").load(url, function () {
+            $("#modalResetMarkAbsent").modal("show");
+        });
+    };
+
+    var reloadAtndcFunc = function () {
+        drpEmp = $("#drpEmp").val();
+        dtFrom = $("#dtFrom").val();
+        dtTo = $("#dtTo").val();
+        var url = "/Attendance/HrEmpAtndcSft/GetReloadAtndc?frmDate=" + dtFrom + '&toDate=' + dtTo + '&empSysId=' + drpEmp;
+        $("#reloadAtndcModalBody").load(url, function () {
+            $("#modalReloadAtndc").modal("show");
+        });
+    };
+
+    var resetFunc = function (recId) {
+        var url = "/Attendance/HrEmpAtndcSft/GetResetMarkAbsent?recId=" + recId;
+        $("#resetModalBody").load(url, function () {
+            $("#modalReset").modal("show");
+        });
+    };
+
+    function enblEmpFltr() {
+        var chkEmpFltr = document.getElementById("chkEmpFltr");
+        var drpEmp = document.getElementById("drpEmp");
+        if (chkEmpFltr.checked == true) {
+            drpEmp.disabled = false;
+        }
+        else {
+            drpEmp.disabled = true;
+        }
+    }
+
+    function enblDeptFltr() {
+        var chkDeptFltr = document.getElementById("chkDeptFltr");
+        var drpDept = document.getElementById("drpDept");
+        if (chkDeptFltr.checked == true) {
+            drpDept.disabled = false;
+        }
+        else {
+            drpDept.disabled = true;
+        }
+    }
+
+    function enblFxRngFltr() {
+        var chkFxRngFltr = document.getElementById("chkFxRngFltr");
+        var drpRngs = document.getElementById("drpRngs");
+        var chkDateRange = document.getElementById("chkDateRange");
+        var dtFrom = document.getElementById("dtFrom");
+        var dtTo = document.getElementById("dtTo");
+        var valdrpRngs = $("#drpRngs").val();
+
+        if (chkFxRngFltr.checked == true) {
+            drpRngs.disabled = false;
+            dtFrom.disabled = true;
+            dtTo.disabled = true;
+            btnReloadAtndc.disabled = true;
+            btnRpt.disabled = true;
+            $("#valFxRngFilter").val(valdrpRngs);
+        }
+        else if (chkDateRange.checked == true) {
+            drpRngs.disabled = true;
+            dtFrom.disabled = false;
+            dtTo.disabled = false;
+            btnReloadAtndc.disabled = false;
+            btnRpt.disabled = false;
+            $("#valFxRngFilter").val(0);
+        }
+    }
+
+    // Attendance Logs
+    function loadAttdData() {
+        if (chkFxRngFltr.checked == true) {
+            var valdrpRngs = $("#drpRngs").val();
+            $("#valFxRngFilter").val(valdrpRngs);
+        }
+        else if (chkDateRange.checked == true) {
+            $("#valFxRngFilter").val(0);
+        }
+
+        var drpEmp = $("#drpEmp").val();
+        var drpRngs = "";
+        var dtFrom = "";
+        var dtTo = "";
+
+        if ($('#chkDateRange').is(":checked")) {
+            drpRngs = 0;
+            dtFrom = $("#dtFrom").val();
+            dtTo = $("#dtTo").val();
+        }
+        else {
+            drpRngs = $("#drpRngs").val();
+            dtFrom = "";
+            dtTo = "";
+        }
+
+        if ($('#chkEmpFltr').is(":checked")) {
+            drpEmp = $("#drpEmp").val();
+        }
+        else {
+            drpEmp = 0;
+        }
+
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: "@(Url.Action("GetAtndcLogs", "HrEmpAtndcSft"))",
+            dataType: "json",
+            data: { refId: drpEmp, dateFilter: drpRngs, sDate: dtFrom, eDate: dtTo },
+            success: function (data) {
+                grid.dataSource = data.data;
+                grid.hideSpinner();
+            },
+            error: function (xhr, err) {
+                alert("Grid Error");
+            }
+        });
+    }
+
+    function loadAttdSummary() {
+    }
+
+    function validateAttdReportForm(event) {
+        var fromDate = $("#dtFrom").val();
+        var toDate = $("#dtTo").val();
+
+        if (fromDate.length == 0 || toDate.length == 0) {
+            toastObj.show(toasts[0]);
+            if (event) event.preventDefault();
+        }
+        else if (fromDate > toDate) {
+            toastObj.show(toasts[3]);
+            if (event) event.preventDefault();
+        }
+    }
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport' || args.item.id === 'Grid_print') {
+            gridObj.excelExport();
+        }
+    }
+
+    function excelQueryCellInfo(args) {
+        if (args.column.headerText === 'Status' && (args.value === "Late IN" || args.value === "Late IN/Early Leave")) {
+            args.style = { fontColor: '#ff4d4d' };
+        }
+    }
+
+    function prntGrid() {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        gridObj.print();
+    }
+
+    var toastObj;
+    var toasts = [
+        { title: 'Warning!', content: 'Please choose the Date Range.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Error!', content: 'Application Error', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Salary Sheet Generated', cssClass: 'e-toast-warning', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'Please specify the date range', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' }
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    setTimeout(() => {
+        if (toastObj) {
+            toastObj.show({ target: document.body });
+        }
+    }, 500);
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (e.toastContainer && e.toastContainer.childElementCount === 0 && btnEleHide) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+
+    function onBeforeOpen() {
+        if (btnEleHide) btnEleHide.style.display = 'inline-block';
+    }
+
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[0].format = { type: 'date', format: 'yyyy-MM-dd' };
+    }
+
+    function mrkLteCmrs(args) {
+        if (args.column.field === 'Status') {
+            if (args.data.Status && args.data.Status.includes("Late IN")) {
+                args.cell.setAttribute('style', 'background-color:#fee2e2;color:#991b1b;font-weight:600;');
+            }
+        }
+    }
+</script>

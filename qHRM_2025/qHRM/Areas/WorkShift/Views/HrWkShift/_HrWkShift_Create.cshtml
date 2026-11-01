@@ -1,0 +1,151 @@
+﻿@model qHRM.Areas.WorkShift.Models.HrWkShift
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrWkShift"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.SftId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="SftCode" class="control-label"></label>
+                <input asp-for="SftCode" class="form-control form-control-sm" />
+                <span asp-validation-for="SftCode" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="NameEng" class="control-label"></label>
+                <input asp-for="NameEng" class="form-control form-control-sm" />
+                <span asp-validation-for="NameEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Desc" class="control-label"></label>
+                <input asp-for="Desc" class="form-control form-control-sm" />
+                <span asp-validation-for="Desc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="StTime" class="control-label"></label>
+                <input asp-for="StTime" class="form-control form-control-sm" />
+                <span asp-validation-for="StTime" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EndTime" class="control-label"></label>
+                <input asp-for="EndTime" class="form-control form-control-sm" />
+                <span asp-validation-for="EndTime" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="BrkMnt" class="control-label"></label>
+                <input asp-for="BrkMnt" class="form-control form-control-sm" />
+                <span asp-validation-for="BrkMnt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="GrcPrd" class="control-label"></label>
+                <input asp-for="GrcPrd" class="form-control form-control-sm" />
+                <span asp-validation-for="GrcPrd" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="CutOffTimeStart" class="control-label"></label>
+                <input asp-for="CutOffTimeStart" class="form-control form-control-sm" />
+                <span asp-validation-for="CutOffTimeStart" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="CutOffTimeEnd" class="control-label"></label>
+                <input asp-for="CutOffTimeEnd" class="form-control form-control-sm" />
+                <span asp-validation-for="CutOffTimeEnd" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <div class="form-check">
+                    <input type="checkbox" asp-for="NOtIncld" class="form-check-input" id="chkNOtIncld">Normal OT Include
+                    <span asp-validation-for="NOtIncld" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="NOtMinMnt" class="control-label"></label>
+                <input asp-for="NOtMinMnt" class="form-control form-control-sm" />
+                <span asp-validation-for="NOtMinMnt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="NOtStTime" class="control-label"></label>
+                <input asp-for="NOtStTime" class="form-control form-control-sm" />
+                <span asp-validation-for="NOtStTime" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="NOtEndTime" class="control-label"></label>
+                <input asp-for="NOtEndTime" class="form-control form-control-sm" />
+                <span asp-validation-for="NOtEndTime" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <div class="form-check">
+                    <input type="checkbox" asp-for="EOtIncld" class="form-check-input" id="chkEOtIncld">Extended OT Include
+                    <span asp-validation-for="EOtIncld" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="EOtMinMnt" class="control-label"></label>
+                <input asp-for="EOtMinMnt" class="form-control form-control-sm" />
+                <span asp-validation-for="EOtMinMnt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="EOtStTime" class="control-label"></label>
+                <input asp-for="EOtStTime" class="form-control form-control-sm" />
+                <span asp-validation-for="EOtStTime" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="EOtEndTime" class="control-label"></label>
+                <input asp-for="EOtEndTime" class="form-control form-control-sm" />
+                <span asp-validation-for="EOtEndTime" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <div class="form-check">
+                    <input type="checkbox" asp-for="OvrNghtSft" class="form-check-input" id="chkOvrNghtSft">Over Night Shift
+                    <span asp-validation-for="OvrNghtSft" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        @*<div class="form-row">
+            <div class="form-group col-md-1"></div>
+            <div class="form-group col-md-3">
+                <input id="rdoNoOT" type="radio" class="form-check-input" asp-for="OtTyp" value="NoOT" name="optradio" checked>No OT
+            </div>
+            <div class="form-group col-md-3">
+                <input id="rdoNmlOT" type="radio" class="form-check-input" asp-for="OtTyp" value="NmlOT" name="optradio">Normal OT
+            </div>
+            <div class="form-group col-md-3">
+                <input id="rdoExtOT" type="radio" class="form-check-input" asp-for="OtTyp" value="ExtOT" name="optradio">Extended OT
+            </div>
+            <div class="form-group col-md-2"></div>
+        </div>*@
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<ejs-scripts></ejs-scripts>

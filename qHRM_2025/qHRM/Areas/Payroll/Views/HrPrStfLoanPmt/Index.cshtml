@@ -1,0 +1,739 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrStfLoanPmt>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+
+<style>
+    /* ============================================================
+       LOAN PAYMENTS & EXEMPTIONS - ORGINFO STYLE (#540033)
+       ============================================================ */
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --org-slate-900: #0f172a;
+        --org-slate-800: #1e293b;
+        --org-slate-600: #475569;
+        --org-slate-500: #64748b;
+        --org-slate-200: #e2e8f0;
+        --org-slate-100: #f1f5f9;
+        --org-slate-50: #f8fafc;
+        --org-radius-lg: 16px;
+        --org-radius-md: 10px;
+        --org-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    .org-page-container {
+        padding: 1.25rem 0.5rem 2rem 0.5rem;
+    }
+
+    /* Hero Banner */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--org-slate-200);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--org-slate-900);
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    /* Buttons */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: var(--org-radius-md) !important;
+        padding: 0.5rem 1.15rem !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+        box-shadow: 0 3px 10px rgba(84, 0, 51, 0.25) !important;
+        text-decoration: none !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .org-btn-secondary {
+        background: #ffffff !important;
+        color: var(--org-slate-700) !important;
+        border: 1px solid var(--org-slate-200) !important;
+        border-radius: var(--org-radius-md) !important;
+        padding: 0.65rem 1.25rem !important;
+        font-size: 0.85rem !important;
+        font-weight: 600 !important;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none !important;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .org-btn-secondary:hover {
+        background: var(--org-slate-50) !important;
+        color: var(--org-primary) !important;
+        border-color: var(--org-primary-border) !important;
+        transform: translateY(-1px);
+    }
+
+    /* Stat Cards Ribbon */
+    .org-stat-card {
+        background: #ffffff;
+        border: 1px solid var(--org-slate-200);
+        border-radius: var(--org-radius-md);
+        padding: 0.85rem 1.15rem;
+        display: flex;
+        align-items: center;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+    }
+
+    .org-stat-card:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
+
+    .org-stat-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        margin-right: 0.85rem;
+        flex-shrink: 0;
+    }
+
+    /* Dual Grid Layout */
+    .dual-grid-container {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+    }
+    @@media (max-width: 1200px) {
+        .dual-grid-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Main Card */
+    .org-main-card {
+        background: #ffffff;
+        border: 1px solid var(--org-slate-200);
+        border-radius: var(--org-radius-lg);
+        box-shadow: var(--org-shadow);
+        overflow: hidden;
+    }
+
+    .org-card-header {
+        padding: 1.15rem 1.5rem;
+        background: #ffffff;
+        border-bottom: 1px solid var(--org-slate-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .org-card-header-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--org-slate-800);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-card-header-title i {
+        color: var(--org-primary);
+        margin-right: 0.6rem;
+    }
+
+    /* Action Buttons in Grid */
+    .org-actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .org-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        padding: 0;
+        outline: none;
+        font-size: 0.8rem;
+    }
+
+    .org-action-edit {
+        background: #fdf2f8;
+        color: var(--org-primary);
+        border-color: #fbcfe8;
+    }
+
+    .org-action-edit:hover {
+        background: var(--org-primary);
+        color: #ffffff !important;
+        border-color: var(--org-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(84, 0, 51, 0.25);
+    }
+
+    .org-action-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .org-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    }
+
+    .org-action-tag {
+        background: #fffbeb;
+        color: #b45309;
+        border-color: #fde68a;
+    }
+
+    .org-action-tag:hover {
+        background: #b45309;
+        color: #ffffff !important;
+        border-color: #b45309;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(180, 83, 9, 0.25);
+    }
+
+    /* Modal Overrides */
+    .org-modal .modal-content {
+        border: none !important;
+        border-radius: var(--org-radius-lg) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        overflow: hidden;
+    }
+
+    .org-modal .modal-header {
+        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
+        color: #ffffff !important;
+        padding: 1.15rem 1.5rem !important;
+        border-bottom: none !important;
+    }
+
+    .org-modal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-modal .modal-header .close {
+        color: #ffffff !important;
+        opacity: 0.8 !important;
+        text-shadow: none !important;
+    }
+
+    .org-modal .modal-header .close:hover {
+        opacity: 1 !important;
+    }
+</style>
+
+<div class="org-page-container">
+    <main>
+        <div class="container-fluid px-0">
+
+            <!-- HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="org-category-pill mr-2">PAYROLL</span>
+                                <h1 class="org-title">Loan Payments & Exemptions</h1>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="/Payroll/HrPrStfLoan" class="text-secondary font-weight-bold">Staff Loans</a> &bull;
+                                <span>Installment payments, receipts, and exemption schedules for the selected loan</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mt-2 mt-md-0">
+                        <a href="/Payroll/HrPrStfLoan" class="btn btn-sm btn-outline-secondary" style="border-radius: 8px; font-weight: 600; font-size: 0.8rem; padding: 0.4rem 0.9rem;">
+                            <i class="fas fa-arrow-left mr-1"></i> Back to Staff Loans
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- STATS QUICK RIBBON -->
+            <div class="row mb-4">
+                <div class="col-12 col-md-4 col-xl-2 mb-3 mb-xl-0">
+                    <div class="org-stat-card">
+                        <div class="org-stat-icon" style="background: #fdf2f8; color: #540033;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div style="overflow:hidden;">
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.04em;">Employee</div>
+                            <div class="font-weight-bold text-truncate" style="font-size: 0.95rem; color: #0f172a;" title="@ViewBag.EmpDtl">@ViewBag.EmpDtl</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 col-xl-3 mb-3 mb-xl-0">
+                    <div class="org-stat-card">
+                        <div class="org-stat-icon" style="background: #eff6ff; color: #1d4ed8;">
+                            <i class="fas fa-money-check-alt"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.04em;">Loan Scheme</div>
+                            <div class="font-weight-bold" style="font-size: 0.95rem; color: #1e293b;">@ViewBag.LnTypDesc</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-4 col-xl-2 mb-3 mb-xl-0">
+                    <div class="org-stat-card">
+                        <div class="org-stat-icon" style="background: #ecfdf5; color: #047857;">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.04em;">Total Loan</div>
+                            <div class="font-weight-bold text-success" style="font-size: 1.15rem;">@ViewBag.FlAmt</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-2 mb-3 mb-xl-0">
+                    <div class="org-stat-card">
+                        <div class="org-stat-icon" style="background: #fef2f2; color: #dc2626;">
+                            <i class="fas fa-balance-scale"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.04em;">Remaining</div>
+                            <div class="font-weight-bold text-danger" style="font-size: 1.15rem;">@ViewBag.RmAmt</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-md-6 col-xl-3">
+                    <div class="org-stat-card">
+                        <div class="org-stat-icon" style="background: #fffbeb; color: #b45309;">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div>
+                            <div class="text-muted small font-weight-bold text-uppercase" style="letter-spacing: 0.04em;">Scheduled Installments</div>
+                            <div class="font-weight-bold" style="font-size: 1.15rem; color: #1e293b;">@ViewBag.Instl</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DUAL GRID SECTION -->
+            <div class="dual-grid-container mb-4">
+
+                <!-- GRID 1: PAYMENTS -->
+                <div class="org-main-card">
+                    <div class="org-card-header">
+                        <div class="org-card-header-title">
+                            <i class="fas fa-receipt"></i>
+                            <span>Payments History</span>
+                        </div>
+                        @if (ViewBag.RecAdd == true)
+                        {
+                            <button type="button" class="btn org-btn-create" id="btnPayment" onclick="addPaymentFunc(@ViewBag.StfLnId);">
+                                <i class="fas fa-plus-circle mr-1"></i> Add Payment
+                            </button>
+                        }
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="control-section">
+                            <ejs-grid id="Grid" width="auto" dataSource="@ViewBag.DsPmt" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick" 
+                                      load="loadFormattings" allowResizing="true">
+                                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="" headerText="Tag" template="#_tag" width="45" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="PmtDate" headerText="Date" width="85" format='yMd' textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="PmtAmt" headerText="Payment" width="90" format='0.00' textAlign="Right"></e-grid-column>
+                                    <e-grid-column field="RecStatTxt" headerText="Status" width="80" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="PmtModTxt" headerText="Mode" width="70" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="Instl" headerText="Instl." width="60" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="CrtName" headerText="Created By" width="110"></e-grid-column>
+                                    <e-grid-column field="CrtDateTime" headerText="Created On" width="90" format='yMd' textAlign="Center"></e-grid-column>
+                                    @if (ViewBag.RecEdit == true)
+                                    {
+                                        <e-grid-column field="" headerText="Edit" template="#_edit" width="50" textAlign="Center"></e-grid-column>
+                                    }
+                                    @if (ViewBag.RecDelete == true)
+                                    {
+                                        <e-grid-column field="" headerText="Cancel" template="#_cancel" width="50" textAlign="Center"></e-grid-column>
+                                    }
+                                </e-grid-columns>
+                            </ejs-grid>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- GRID 2: EXEMPTIONS -->
+                <div class="org-main-card">
+                    <div class="org-card-header">
+                        <div class="org-card-header-title">
+                            <i class="fas fa-calendar-times"></i>
+                            <span>Exemptions Schedule</span>
+                        </div>
+                        @if (ViewBag.RecAdd == true)
+                        {
+                            <button type="button" class="btn org-btn-create" id="btnExp" onclick="addExpFunc(@ViewBag.StfLnId);">
+                                <i class="fas fa-plus-circle mr-1"></i> Add Exemption
+                            </button>
+                        }
+                    </div>
+
+                    <div class="card-body p-0">
+                        <div class="control-section">
+                            <ejs-grid id="GridExp" width="auto" dataSource="@ViewBag.DsExp" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick" load="loadFormattingsExp" allowResizing="true">
+                                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="" headerText="Tag" template="#_tagExp" width="45" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="EntryDate" headerText="Date" width="85" format='yMd' textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="ExpPmtAmt" headerText="Payment" width="85" format='0.00' textAlign="Right"></e-grid-column>
+                                    <e-grid-column field="RecStatTxt" headerText="Status" width="75" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="EftYear" headerText="Year" width="60" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="EftMonth" headerText="Month" width="60" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="ExpInstl" headerText="Instl." width="60" textAlign="Center"></e-grid-column>
+                                    <e-grid-column field="CrtName" headerText="Created By" width="100"></e-grid-column>
+                                    <e-grid-column field="CrtDateTime" headerText="Created On" width="85" format='yMd' textAlign="Center"></e-grid-column>
+                                    @if (ViewBag.RecEdit == true)
+                                    {
+                                        <e-grid-column field="" headerText="Edit" template="#_editExp" width="50" textAlign="Center"></e-grid-column>
+                                    }
+                                    @if (ViewBag.RecDelete == true)
+                                    {
+                                        <e-grid-column field="" headerText="Cancel" template="#_cancelExp" width="50" textAlign="Center"></e-grid-column>
+                                    }
+                                </e-grid-columns>
+                            </ejs-grid>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- MODALS FOR PAYMENTS -->
+            <div class="modal fade org-modal" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalCreateTitle">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Payment
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="createModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalTag" tabindex="-1" role="dialog" aria-labelledby="modalTagTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalTagTitle">
+                                <i class="fas fa-tag mr-2"></i> Tag Payment
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="tagModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditTitle">
+                                <i class="fas fa-pen mr-2"></i> Edit Payment
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="editModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalCancel" tabindex="-1" role="dialog" aria-labelledby="modalCancelTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;">
+                            <h5 class="modal-title" id="modalCancelTitle">
+                                <i class="fas fa-trash-alt mr-2"></i> Cancel Payment
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="cancelModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODALS FOR EXEMPTIONS -->
+            <div class="modal fade org-modal" id="modalCreateExp" tabindex="-1" role="dialog" aria-labelledby="modalCreateExpTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalCreateExpTitle">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Exemption
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="createModalBodyExp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalTagExp" tabindex="-1" role="dialog" aria-labelledby="modalTagExpTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalTagExpTitle">
+                                <i class="fas fa-tag mr-2"></i> Tag Exemption
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="tagModalBodyExp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalEditExp" tabindex="-1" role="dialog" aria-labelledby="modalEditExpTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditExpTitle">
+                                <i class="fas fa-pen mr-2"></i> Edit Exemption
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="editModalBodyExp"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal fade org-modal" id="modalCancelExp" tabindex="-1" role="dialog" aria-labelledby="modalCancelExpTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;">
+                            <h5 class="modal-title" id="modalCancelExpTitle">
+                                <i class="fas fa-trash-alt mr-2"></i> Cancel Exemption
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="cancelModalBodyExp"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Command Button Templates -->
+<script type="text/x-jsrender" id="_tag">
+    <button type="button" class="org-action-btn org-action-tag" title="Tag" onclick="tagFunc(${LnPmtId})">
+        <i class="fas fa-tag"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_edit">
+    <button type="button" class="org-action-btn org-action-edit" title="Edit" onclick="editFunc(${LnPmtId})">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_cancel">
+    <button type="button" class="org-action-btn org-action-delete" title="Cancel" onclick="cancelFunc(${LnPmtId})">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+</script>
+
+<script type="text/x-jsrender" id="_tagExp">
+    <button type="button" class="org-action-btn org-action-tag" title="Tag" onclick="tagExpFunc(${LnPmtExpId})">
+        <i class="fas fa-tag"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_editExp">
+    <button type="button" class="org-action-btn org-action-edit" title="Edit" onclick="editExpFunc(${LnPmtExpId})">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_cancelExp">
+    <button type="button" class="org-action-btn org-action-delete" title="Cancel" onclick="cancelExpFunc(${LnPmtExpId})">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+</script>
+
+<!-- Scripts -->
+<script>
+    var addPaymentFunc = function (stfLnId) {
+        var url = "/Payroll/HrPrStfLoanPmt/CreateNew?stfLnId=" + stfLnId;
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        });
+    };
+
+    var tagFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/TagGet?id=" + id;
+        $("#tagModalBody").load(url, function () {
+            $("#modalTag").modal("show");
+        });
+    };
+
+    var editFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    };
+
+    var cancelFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/CancelGet?id=" + id;
+        $("#cancelModalBody").load(url, function () {
+            $("#modalCancel").modal("show");
+        });
+    };
+
+    var addExpFunc = function (stfLnId) {
+        var url = "/Payroll/HrPrStfLoanPmt/CreateNewExp?stfLnId=" + stfLnId;
+        $("#createModalBodyExp").load(url, function () {
+            $("#modalCreateExp").modal("show");
+        });
+    };
+
+    var tagExpFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/TagGetExp?id=" + id;
+        $("#tagModalBodyExp").load(url, function () {
+            $("#modalTagExp").modal("show");
+        });
+    };
+
+    var editExpFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/EditGetExp?id=" + id;
+        $("#editModalBodyExp").load(url, function () {
+            $("#modalEditExp").modal("show");
+        });
+    };
+
+    var cancelExpFunc = function (id) {
+        var url = "/Payroll/HrPrStfLoanPmt/CancelGetExp?id=" + id;
+        $("#cancelModalBodyExp").load(url, function () {
+            $("#modalCancelExp").modal("show");
+        });
+    };
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[7].format = { type: 'datetime', format: 'dd/MM/yyyy HH:mm:ss' };
+    }
+
+    function loadFormattingsExp() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[8].format = { type: 'datetime', format: 'dd/MM/yyyy HH:mm:ss' };
+    }
+</script>

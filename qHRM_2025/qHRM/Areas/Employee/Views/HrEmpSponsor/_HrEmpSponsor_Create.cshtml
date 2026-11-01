@@ -1,0 +1,91 @@
+@model qHRM.Areas.Employee.Models.HrEmpSponsor
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrEmpSponsor"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.SpnsrId)
+        <div class="form-group">
+            <label asp-for="SpnsrType" class="control-label"></label>
+            <select asp-for="SpnsrType" id="drpSpnsrType" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstSpnsrType, "ElmntTxt", "ElmntTxt"))">
+                <option value="">-- Select Sponsorship Type --</option>
+            </select>
+            <span asp-validation-for="SpnsrType" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="RltnType" class="control-label"></label>
+            <select asp-for="RltnType" id="drpRltnType" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstRltnType, "ElmntTxt", "ElmntTxt"))">
+                <option value="">-- Select Relationship Type --</option>
+            </select>
+            <span asp-validation-for="RltnType" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="LbrCard" class="control-label"></label>
+            <input asp-for="LbrCard" class="form-control" />
+            <span asp-validation-for="LbrCard" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="CmpDtl" class="control-label"></label>
+            <input asp-for="CmpDtl" class="form-control" />
+            <span asp-validation-for="CmpDtl" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="EraNo" class="control-label"></label>
+            <input asp-for="EraNo" class="form-control" />
+            <span asp-validation-for="EraNo" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="StDate" class="control-label"></label>
+            <input asp-for="StDate" class="form-control" />
+            <span asp-validation-for="StDate" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="EndDate" class="control-label"></label>
+            <input asp-for="EndDate" class="form-control" />
+            <span asp-validation-for="EndDate" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Note" class="control-label"></label>
+            <input asp-for="Note" class="form-control" />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            @if (ViewBag.RecAdd == true)
+            {
+                <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#drpSpnsrType').on('change', function () {
+            var val = $(this).val();
+            if (val === 'Relation') {
+                $('#drpRltnType').prop('disabled', false).val('').trigger('change');
+            } else {
+                $('#drpRltnType').val('None').trigger('change');
+            }
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

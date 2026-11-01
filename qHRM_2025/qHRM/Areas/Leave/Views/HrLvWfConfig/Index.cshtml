@@ -1,0 +1,143 @@
+﻿@model IEnumerable<qHRM.Areas.Leave.Models.HrLvWfConfig>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Leave Workflow Configuration";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Leave Workflow Configuration</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Leave</a></li>
+                <li class="breadcrumb-item">Workflow Configuration</li>
+            </ol>
+
+            @* Alert Banner *@
+            <div class="alert" style="background:rgba(153,0,73,0.08);border-left:4px solid #540033;border-radius:6px;padding:14px 18px;margin-bottom:20px;">
+                <i class="fas fa-info-circle" style="color:#540033;"></i>
+                <strong style="color:#540033;"> Configuration Guide:</strong>
+                Map each Leave Type to its Dynamic Workflow Code. Set approvers (HR Manager, Finance, CEO, BU Head)
+                by selecting from the Employee Master. Policy rules (e.g. medical cert, payroll cutoff) are configured per leave type.
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        @if (ViewBag.RecAdd == true)
+                        {
+                            <a href="#" class="btn btn-sm btn-primary" id="btnAddNew" onclick="createFunc();">
+                                <i class="fas fa-plus-circle"></i> Add Workflow Config
+                            </a>
+                        }
+                    </p>
+
+                    <!-- Syncfusion Grid -->
+                    <div class="control-section">
+                        <ejs-grid id="GridWfCfg" width="auto" dataSource="ViewBag.DataSource"
+                                  allowPaging="true" allowFiltering="true" allowSorting="true"
+                                  allowExcelExport="true" toolbarClick="toolbarClick"
+                                  toolbar="@(new List<string>() {"ExcelExport"})"
+                                  load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount="5"></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="LvTypName"   headerText="Leave Type"      width="180"></e-grid-column>
+                                <e-grid-column field="WfCode"      headerText="Workflow Code"   width="150"></e-grid-column>
+                                <e-grid-column field="EffDate"     headerText="Eff. Date"       width="100" type="date" format="dd-MMM-yyyy"></e-grid-column>
+                                <e-grid-column field="ExpDate"     headerText="Exp. Date"       width="100" type="date" format="dd-MMM-yyyy"></e-grid-column>
+                                <e-grid-column field="IsEnabled"   headerText="Status"          width="100" template="#_status"></e-grid-column>
+                                <e-grid-column field="CrtDateTime" headerText="Created"         width="120" type="date" format="dd-MMM-yyyy"></e-grid-column>
+                                @if (ViewBag.RecEdit == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+
+                    <!-- CREATE Modal -->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content" style="border-top:4px solid #540033;">
+                                <div class="modal-header" style="background:rgba(153,0,73,0.06);">
+                                    <h5 class="modal-title" style="color:#540033;font-weight:700;">
+                                        <i class="fas fa-cogs"></i> New Leave Workflow Configuration
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                </div>
+                                <div class="modal-body" id="createForm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- EDIT Modal -->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content" style="border-top:4px solid #540033;">
+                                <div class="modal-header" style="background:rgba(153,0,73,0.06);">
+                                    <h5 class="modal-title" style="color:#540033;font-weight:700;">
+                                        <i class="fas fa-edit"></i> Edit Leave Workflow Configuration
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                </div>
+                                <div class="modal-body" id="editForm"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Grid Column Templates -->
+<script id="_status" type="text/x-template">
+    <span class='badge ${IsEnabled ? "badge-success" : "badge-secondary"}'>
+        ${IsEnabled ? "Active" : "Inactive"}
+    </span>
+</script>
+
+<script id="_edit" type="text/x-template">
+    <a href="#" class="btn btn-sm btn-outline-primary" onclick="editFunc(${WfCfgId})" title="Edit">
+        <i class="fas fa-pencil-alt"></i>
+    </a>
+</script>
+
+<script>
+    function createFunc() {
+        $.ajax({
+            url: '/Leave/HrLvWfConfig/CreateNew',
+            type: 'GET',
+            success: function (data) {
+                $('#createForm').html(data);
+                $('#modalCreate').modal('show');
+            }
+        });
+    }
+
+    function editFunc(wfCfgId) {
+        $.ajax({
+            url: '/Leave/HrLvWfConfig/EditGet?wfCfgId=' + wfCfgId,
+            type: 'GET',
+            success: function (data) {
+                $('#editForm').html(data);
+                $('#modalEdit').modal('show');
+            }
+        });
+    }
+
+    function toolbarClick(args) {
+        if (args.item.id === 'GridWfCfg_excelexport') {
+            var gridObj = document.getElementById('GridWfCfg').ej2_instances[0];
+            gridObj.excelExport();
+        }
+    }
+
+    function loadFormattings() {
+        this.element.style.fontFamily = 'Nunito, Segoe UI, sans-serif';
+        this.element.style.fontSize = '13px';
+    }
+</script>

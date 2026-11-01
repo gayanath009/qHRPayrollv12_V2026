@@ -1,0 +1,53 @@
+@model qHRM.Areas.Employee.Models.HrEmpDpndDoc
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<form asp-action="Create" asp-controller="HrEmpDpndDoc" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <input asp-for="DpndId" hidden />
+            <label asp-for="DocTypId" class="control-label"></label>
+            <select asp-for="DocTypId" id="drpDocTypId" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstDpdDocTyp, "Indx", "ElmntTxt"))">
+                <option value="">-- Select Document Type --</option>
+            </select>
+            <span asp-validation-for="DocTypId" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label asp-for="Desc" class="control-label"></label>
+            <input asp-for="Desc" class="form-control form-control-sm" />
+            <span asp-validation-for="Desc" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label for="formControl">Attach Documents</label>
+            <ejs-uploader id="fileUpload" autoUpload="false" multiple="false" maxFileSize="1000000"></ejs-uploader>
+            <span asp-validation-for="DocName" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        @if (ViewBag.RecAdd == true)
+        {
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+        }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</form>
+<ejs-scripts></ejs-scripts>
+
+<script>
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

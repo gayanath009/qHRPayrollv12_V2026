@@ -1,0 +1,99 @@
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+
+    string EM_GEN_INF = @HttpContextAccessor.HttpContext.Session.GetString("EM_GEN_INF");
+    string EM_JB_ASG = @HttpContextAccessor.HttpContext.Session.GetString("EM_JB_ASG");
+    string EM_PRB_PRD = @HttpContextAccessor.HttpContext.Session.GetString("EM_PRB_PRD");
+    string EM_PRV_EXP = @HttpContextAccessor.HttpContext.Session.GetString("EM_PRV_EXP");
+    string EM_EDU_CLF = @HttpContextAccessor.HttpContext.Session.GetString("EM_EDU_CLF");
+    string EM_BNK_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_BNK_DTL");
+    string EM_RES_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_RES_DTL");
+    string EM_SPR_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_SPR_DTL");
+    string EM_DOC_SMR = @HttpContextAccessor.HttpContext.Session.GetString("EM_DOC_SMR");
+    string EM_PHT_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_PHT_DTL");
+    string EM_DEP_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_DEP_DTL");
+
+    string link1 = string.Empty; string link2 = string.Empty; string link3 = string.Empty;
+    string link4 = string.Empty; string link5 = string.Empty; string link6 = string.Empty;
+    string link7 = string.Empty; string link8 = string.Empty; string link9 = string.Empty;
+    string link10 = string.Empty; string link11 = string.Empty;
+
+    var controllerName = this.ViewContext.RouteData.Values["controller"].ToString();
+
+    if (controllerName == "HrEmpGenInfo") { link1 = "active"; }
+    if (controllerName == "HrEmpJobAssign") { link2 = "active"; }
+    if (controllerName == "HrEmpProbation") { link3 = "active"; }
+    if (controllerName == "HrEmpPreExp") { link4 = "active"; }
+    if (controllerName == "HrEmpEduQualif") { link5 = "active"; }
+    if (controllerName == "HrEmpBankAcct") { link6 = "active"; }
+    if (controllerName == "HrEmpResidInfo") { link7 = "active"; }
+    if (controllerName == "HrEmpSponsor") { link8 = "active"; }
+    if (controllerName == "HrEmpDocument") { link9 = "active"; }
+    if (controllerName == "HrEmpPhoto") { link10 = "active"; }
+    if (controllerName == "HrEmpDependent") { link11 = "active"; }
+
+}
+
+<style>
+    .nav-tabs .nav-item .nav-link.active,
+    .nav-tabs .nav-item .nav-link.active span,
+    .nav-tabs .nav-item .nav-link.active:hover,
+    .nav-tabs .nav-item .nav-link.active:hover span,
+    .nav-tabs .nav-item .nav-link.active:focus,
+    .nav-tabs .nav-item .nav-link.active:focus span {
+        color: #ffffff !important;
+        background-color: #540033 !important;
+        border-color: #540033 !important;
+        font-weight: 700 !important;
+    }
+</style>
+
+<ul class="nav nav-tabs nav-justified row">
+
+    @if (EM_GEN_INF != null)
+    {
+        <li class="nav-item"><a class="nav-link @link1" href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span> Employee Information</span></a></li>
+    }
+    @if (EM_JB_ASG != null)
+    {
+        <li class="nav-item"><a class="nav-link @link2" href="/Employee/HrEmpJobAssign/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Job  <br /> Assignments</span></a></li>
+    }
+    @if (EM_PRB_PRD != null)
+    {
+        <li class="nav-item"><a class="nav-link @link3" href="/Employee/HrEmpProbation/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Probation Periods</span></a></li>
+    }
+    @if (EM_PRV_EXP != null)
+    {
+        <li class="nav-item"><a class="nav-link @link4" href="/Employee/HrEmpPreExp/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Previous Experiences</span></a></li>
+    }
+    @if (EM_EDU_CLF != null)
+    {
+        <li class="nav-item"><a class="nav-link @link5" href="/Employee/HrEmpEduQualif/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Education Qualification</span></a></li>
+    }
+    @if (EM_BNK_DTL != null)
+    {
+        <li class="nav-item"><a class="nav-link @link6" href="/Employee/HrEmpBankAcct/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Bank Account Details</span></a></li>
+    }
+    @if (EM_RES_DTL != null)
+    {
+        <li class="nav-item"><a class="nav-link @link7" href="/Employee/HrEmpResidInfo/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Residential Detail</span></a></li>
+    }
+    @if (EM_SPR_DTL != null)
+    {
+        <li class="nav-item"><a class="nav-link @link8" href="/Employee/HrEmpSponsor/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Sponsorship Detail</span></a></li>
+    }
+    @if (EM_DOC_SMR != null)
+    {
+        <li class="nav-item"><a class="nav-link @link9" href="/Employee/HrEmpDocument/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Document Summary</span></a></li>
+    }
+    @if (EM_PHT_DTL != null)
+    {
+        <li class="nav-item"><a class="nav-link @link10" href="/Employee/HrEmpPhoto/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Photo <br /> Upload</span></a></li>
+    }
+    @if (EM_DEP_DTL != null)
+    {
+        <li class="nav-item"><a class="nav-link @link11" href="/Employee/HrEmpDependent/Index?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")"><span>Dependant Details</span></a></li>
+    }
+</ul>

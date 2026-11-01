@@ -1,0 +1,181 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpConfig
+    <script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@{
+    ViewData["Title"] = "Settings";
+}
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Configuration</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item">Settings</li>
+                <li class="breadcrumb-item active">Configuration</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    @using (Html.BeginForm("CreateEmpConfig", "HrEmpConfig"))
+                    {
+                        <span class="alert-success ">
+                            @Html.ValidationSummary(true)
+                        </span>
+                        <div class="dl-horizontal">
+                            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                            @Html.HiddenFor(model => model.EmpCnfId)
+                            <div class="form-row">
+                                <div class="form-group col-md-5">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-10">
+                                            <label asp-for="DftPrbNtf" class="control-label"></label>
+                                        </div>
+                                        <div class="form-group col-md-2">
+                                            <input asp-for="DftPrbNtf" class="form-control form-control-sm" />
+                                            <span asp-validation-for="DftPrbNtf" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-12">
+                                            <label asp-for="Notes" class="control-label"></label>
+                                            <input asp-for="Notes" class="form-control form-control-sm" />
+                                            <span asp-validation-for="Notes" class="text-danger"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="form-group col-md-1"></div>
+                                <div class="form-group col-md-6">
+                                    <div class="form-row">
+                                        @if (@ViewBag.EmpCnfId > 0)
+                                        {
+                                            <a href="#" class="btn btn-sm btn-primary" id="btnCreateNtfLvl" onclick="createNtfLvlFunc(@ViewBag.EmpCnfId);">
+                                                Add New Notification Level
+                                            </a>
+                                        }
+                                    </div>
+                                    <div class="form-row">
+                                        
+                                        <!--Grid-->
+                                        <div class="control-section">
+                                            <ejs-grid id="Grid" width="auto" dataSource="@ViewBag.DsHrEmpCnfNtfLvl" allowResizing="true">
+                                                <e-grid-columns>
+                                                    <e-grid-column field="LwrBndryYrs" headerText="From (Yrs)" width="60"></e-grid-column>
+                                                    <e-grid-column field="UprBndryYrs" headerText="To (Yrs)" width="60"></e-grid-column>
+                                                    <e-grid-column field="EftDays" headerText="Days" width="60"></e-grid-column>
+                                                    <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                                    <e-grid-column field="" headerText="" template="#_cancel" width="60"></e-grid-column>
+
+                                                    @if (ViewBag.Rec_Edit == true)
+                                                    {
+
+                                                    }
+                                                    @if (ViewBag.Rec_Remove == true)
+                                                    {
+
+                                                    }
+                                                </e-grid-columns>
+                                            </ejs-grid>
+                                        </div>
+                                        <!--Grid-->
+                                        <!--Create-->
+                                        <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">New Notification Level</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body" id="createModalBody">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Create-->
+                                        <!--Edit-->
+                                        <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLongTitle">Update Notification Level</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body" id="editModalBody">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Edit-->
+                                        <!--Cancel-->
+                                        <div class="modal" id="modalCancel" tabindex="-1" role="dialog">
+                                            <div class="modal-dialog modal-lg" role="document">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title">Cancel Notification Level</h5>
+                                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                            <span aria-hidden="true">&times;</span>
+                                                        </button>
+                                                    </div>
+                                                    <div class="modal-body" id="cancelModalBody">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <!--Cancel-->
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-5"></div>
+                                <div class="form-group col-md-2">
+                                    <input type="submit" value="Save" class="btn btn-primary btn-block" />
+                                </div>
+                                <div class="form-group col-md-5"></div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${NtfLvlId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_cancel">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="cancelFunc(${NtfLvlId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Open Gratuity Partial Views-->
+<script>
+    var createNtfLvlFunc = function (empCnfId) {
+        var url = "/Employee/HrEmpConfig/CreateNtfGet?empCnfId=" + empCnfId;
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (ntfLvlId) {
+        var url = "/Employee/HrEmpConfig/EditNtfGet?ntfLvlId=" + ntfLvlId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var cancelFunc = function (ntfLvlId) {
+        var url = "/Employee/HrEmpConfig/CancelNtfGet?ntfLvlId=" + ntfLvlId;
+        $("#cancelModalBody").load(url, function () {
+            $("#modalCancel").modal("show");
+        })
+    }
+</script>
+<!--Open Gratuity Partial Views-->
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

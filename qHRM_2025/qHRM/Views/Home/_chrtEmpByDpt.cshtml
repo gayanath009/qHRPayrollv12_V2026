@@ -1,0 +1,131 @@
+﻿@using Syncfusion.EJ2
+<div class="form-row">
+    <div class="form-group col-md-3"></div>
+    <div class="form-group col-md-6">
+        <div id="divChtEmpByDpt">
+            <ejs-chart id="clmChtDeptEmpCnt" title="Employee Count By Department" height="100%" width="100%"  pointRender="window.pointRender" pointClick="GetEmpByDpt_PointClick">
+                
+                <e-chart-tooltipsettings enable="true">
+                </e-chart-tooltipsettings>
+                <e-chart-primaryxaxis valueType="Category" interval=1>
+                    <e-majorgridlines width="0"></e-majorgridlines>
+                </e-chart-primaryxaxis>
+                <e-chart-primaryyaxis title="Count" minimum="0" maximum="80" interval="10">
+                    <e-majorgridlines width="1"></e-majorgridlines>
+                    <e-majorticklines width="2"></e-majorticklines>
+                    <e-linestyle width="1"></e-linestyle>
+                    <e-labelstyle color="black"></e-labelstyle>
+                </e-chart-primaryyaxis>
+                <e-chart-chartarea>
+                    <e-chartarea-border width="0"></e-chartarea-border>
+                </e-chart-chartarea>
+                <e-series-collection>
+                    <e-series dataSource="ViewBag.dsDeptEmpSmry" xName='DeptCode' yName='EmpCnt' width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                        <e-series-marker>
+                            <e-series-datalabel visible="true" position="Top">
+                                <e-font color="#ffffff" fontWeight="600"></e-font>
+                            </e-series-datalabel>
+                        </e-series-marker>
+                    </e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+
+    </div>
+    <div class="form-group col-md-3"></div>
+</div>
+
+<div class="form-group col-md-12">
+    <div id="divChtEmpByDptDtl" style="display:none;">
+        <div>
+            <div class="form-row">
+                <div class="form-group col-md-2">
+                    <button type="button" class="btn btn-outline-primary" onclick="EmpByDpt_Hide()">Back</button>
+                </div>
+                <div class="form-group col-md-10">
+                    <label id="labelDptHeading" class="h4"></label>
+                </div>
+            </div>
+        </div>
+        <div>&nbsp;</div>
+        @*<ejs-grid id="GridEmp3"  dataSource="ViewBag.dsDeptEmpDtl" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true">
+            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+            <e-grid-columns>
+                <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                <e-grid-column field="EmpId" headerText="Employee ID" width="100"></e-grid-column>
+                <e-grid-column field="Title" headerText="Title" width="50"></e-grid-column>
+                <e-grid-column field="FullName" headerText="Full Name" width="150"></e-grid-column>
+                <e-grid-column field="DeptName" headerText="Department" width="175"></e-grid-column>
+                <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="125"></e-grid-column>
+            </e-grid-columns>
+        </ejs-grid>*@
+
+
+        <ejs-grid id="GridEmp3" width="auto" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowSorting="true"
+                  allowExcelExport="true" allowPdfExport="true">
+            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+            <e-grid-columns>
+                <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                <e-grid-column field="EmpId" headerText="Employee ID" width="100"></e-grid-column>
+                <e-grid-column field="Title" headerText="Title" width="50"></e-grid-column>
+                <e-grid-column field="FullName" headerText="Full Name" width="150"></e-grid-column>
+                <e-grid-column field="DeptName" headerText="Department" width="175"></e-grid-column>
+                <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="125"></e-grid-column>
+            </e-grid-columns>
+        </ejs-grid>
+    </div>
+</div>
+
+<script>
+
+      $(document).ready(function () {
+        EmpByDpt_Hide();
+    });
+
+    function GetEmpByDpt_PointClick(args) {
+        
+        var grid = document.getElementById('GridEmp3').ej2_instances[0];
+        var divChtEmpByDpt = document.getElementById("divChtEmpByDpt");
+        var divChtEmpByDptDtl = document.getElementById("divChtEmpByDptDtl");
+        divChtEmpByDpt.style.display = "none";
+        divChtEmpByDptDtl.style.display = "block";
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByDpt',
+            dataType: "json",
+            data: { Code: args.point.x },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;              
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+
+    function EmpByDpt_Hide() {
+        var divChtEmpByDpt = document.getElementById("divChtEmpByDpt");
+        var divChtEmpByDptDtl = document.getElementById("divChtEmpByDptDtl");
+        divChtEmpByDpt.style.display = "block";
+        divChtEmpByDptDtl.style.display = "none";       
+    }
+
+     function toolbarClick(args) {
+            var gridObj = document.getElementById("GridEmp3").ej2_instances[0];
+            if (args.item.id === 'Grid_excelexport') {
+                gridObj.excelExport();
+            }
+        }
+       
+    
+    window.pointRender = function (args) {        
+        var highContrastColors = ['#00bdae', '#404041', '#357cd2', '#e56590', '#f8b883', '#70ad47', '#dd8abd', '#7f84e8', '#7bb4eb',
+            '#ea7a57', '#404041', '#00bdae'];
+        args.fill = highContrastColors[args.point.index % 10];
+    }
+</script>
+<ejs-scripts></ejs-scripts>

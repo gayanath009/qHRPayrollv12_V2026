@@ -1,0 +1,62 @@
+﻿@model qHRM.Areas.WorkShift.Models.HrWkShift
+<h5>Are you sure you want to cancel this?</h5>
+@using (Html.BeginForm("Delete", "HrWkShift"))
+{<div>
+    @Html.HiddenFor(model => model.SftId)
+     <div class="card-body">
+         <div class="form-row">
+             @*<label id="errRstCnt" class="" style="display:none">Shift already allocated for the rosters</label>*@             
+             <p id="errRstCnt" class="text-danger" style="display:none">Shift already allocated for the rosters</p>
+
+         </div>
+
+             <div class="form-row">
+                 <div class="form-group col-md-12">
+                     <label asp-for="SftCode" class="control-label"></label>
+                     <p>@Html.DisplayFor(model => model.SftCode)</p>
+
+                 </div>
+             </div>
+             <div class="form-row">
+                 <div class="form-group col-md-12">
+                     <label asp-for="NameEng" class="control-label"></label>
+                     <p>@Html.DisplayFor(model => model.NameEng)</p>
+                 </div>
+             </div>
+             <div class="form-row">
+                 <div class="form-group col-md-6">
+                     <label asp-for="StTime" class="control-label"></label>
+                     <p>@Html.DisplayFor(model => model.StTime)</p>
+                 </div>
+                 <div class="form-group col-md-6">
+                     <label asp-for="EndTime" class="control-label"></label>
+                     <p>@Html.DisplayFor(model => model.EndTime)</p>
+                 </div>
+             </div>
+             <div class="form-row">
+                 <div class="form-group col-md-6">
+                     <label asp-for="OvrNghtSft" class="control-label"></label>
+                     <p>@Html.DisplayFor(model => model.OvrNghtSft_Txt)</p>
+                     <input id="txtRstrCnt" type="text" value="@ViewBag.RstrCnt" hidden/>
+                 </div>
+             </div>
+
+             <div class="form-group"></div>
+
+             <div class="form-group">
+                 <input type="submit" id="btnSbmt" value="Delete" class="btn btn-sm btn-primary btn-block" />
+                 <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+             </div>
+         </div>
+     </div>
+}
+<script>
+    $(document).ready(function () {
+        var rstCnt = $('#txtRstrCnt').val();
+        var errRstCnt = document.getElementById("errRstCnt");
+        if (rstCnt > 0) {
+            $('#btnSbmt').attr("disabled", true); 
+            errRstCnt.style.display = "block";
+        }
+    });
+</script>

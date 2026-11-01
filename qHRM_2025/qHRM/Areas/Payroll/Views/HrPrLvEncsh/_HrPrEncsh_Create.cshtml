@@ -1,0 +1,160 @@
+﻿@model qHRM.Areas.Payroll.Models.HrPrLvEncsh
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrPrLvEncsh"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.LvEncshId)
+        @*<div class="form-group">
+            <label asp-for="OtCode" class="control-label"></label>
+            <input asp-for="OtCode" class="form-control form-control-sm" />
+            <span asp-validation-for="OtCode" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DescEng" class="control-label"></label>
+            <input asp-for="DescEng" class="form-control form-control-sm" />
+            <span asp-validation-for="DescEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NmlRate" class="control-label"></label>
+            <input asp-for="NmlRate" class="form-control form-control-sm" />
+            <span asp-validation-for="NmlRate" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="ExtRate" class="control-label"></label>
+            <input asp-for="ExtRate" class="form-control form-control-sm" />
+            <span asp-validation-for="ExtRate" class="text-danger"></span>
+        </div>
+        <div class="form-check">
+            <input type="checkbox" asp-for="OnlyBasic" class="form-check-input" id="chkOnlyBasic">
+            <label class="form-check-label" for="chkOnlyBasic">Apply only for basic salary</label>
+            <span asp-validation-for="OnlyBasic" class="text-danger"></span>
+        </div>*@
+
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+@*<h4>HrPrLvEncsh</h4>
+    <hr />
+    <div class="row">
+        <div class="col-md-4">
+            <form asp-action="_HrPrEncsh_Create">
+                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                <div class="form-group">
+                    <label asp-for="EmpSysId" class="control-label"></label>
+                    <select asp-for="EmpSysId" class="form-control" asp-items="ViewBag.EmpSysId"></select>
+                </div>
+                <div class="form-group">
+                    <label asp-for="PlcyId" class="control-label"></label>
+                    <input asp-for="PlcyId" class="form-control" />
+                    <span asp-validation-for="PlcyId" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="RefTyp" class="control-label"></label>
+                    <input asp-for="RefTyp" class="form-control" />
+                    <span asp-validation-for="RefTyp" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="RefId" class="control-label"></label>
+                    <input asp-for="RefId" class="form-control" />
+                    <span asp-validation-for="RefId" class="text-danger"></span>
+                </div>
+                <div class="form-group form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="IncldLstMnthSlry" /> @Html.DisplayNameFor(model => model.IncldLstMnthSlry)
+                    </label>
+                </div>
+                <div class="form-group form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="IncldPrjAlwnc" /> @Html.DisplayNameFor(model => model.IncldPrjAlwnc)
+                    </label>
+                </div>
+                <div class="form-group form-check">
+                    <label class="form-check-label">
+                        <input class="form-check-input" asp-for="IncldTktFee" /> @Html.DisplayNameFor(model => model.IncldTktFee)
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label asp-for="FrmDtTyp" class="control-label"></label>
+                    <input asp-for="FrmDtTyp" class="form-control" />
+                    <span asp-validation-for="FrmDtTyp" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="FrmDt" class="control-label"></label>
+                    <input asp-for="FrmDt" class="form-control" />
+                    <span asp-validation-for="FrmDt" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="ToDt" class="control-label"></label>
+                    <input asp-for="ToDt" class="form-control" />
+                    <span asp-validation-for="ToDt" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="StatIndx" class="control-label"></label>
+                    <input asp-for="StatIndx" class="form-control" />
+                    <span asp-validation-for="StatIndx" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="Rmks" class="control-label"></label>
+                    <input asp-for="Rmks" class="form-control" />
+                    <span asp-validation-for="Rmks" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="EftWrkDys" class="control-label"></label>
+                    <input asp-for="EftWrkDys" class="form-control" />
+                    <span asp-validation-for="EftWrkDys" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="NpCnt" class="control-label"></label>
+                    <input asp-for="NpCnt" class="form-control" />
+                    <span asp-validation-for="NpCnt" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="ErndLvCnt" class="control-label"></label>
+                    <input asp-for="ErndLvCnt" class="form-control" />
+                    <span asp-validation-for="ErndLvCnt" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="GrsSlry" class="control-label"></label>
+                    <input asp-for="GrsSlry" class="form-control" />
+                    <span asp-validation-for="GrsSlry" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="LvSlry" class="control-label"></label>
+                    <input asp-for="LvSlry" class="form-control" />
+                    <span asp-validation-for="LvSlry" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="LstMntSlry" class="control-label"></label>
+                    <input asp-for="LstMntSlry" class="form-control" />
+                    <span asp-validation-for="LstMntSlry" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <label asp-for="CrtId" class="control-label"></label>
+                    <input asp-for="CrtId" class="form-control" />
+                    <span asp-validation-for="CrtId" class="text-danger"></span>
+                </div>
+                <div class="form-group">
+                    <input type="submit" value="Create" class="btn btn-primary" />
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div>
+        <a asp-action="Index">Back to List</a>
+    </div>
+
+    @section Scripts {
+        @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    }*@

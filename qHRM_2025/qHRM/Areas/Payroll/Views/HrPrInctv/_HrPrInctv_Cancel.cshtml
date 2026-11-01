@@ -1,0 +1,63 @@
+@model qHRM.Areas.Payroll.Models.HrPrInctv
+
+<div class="alert alert-warning py-2 mb-2">
+    <i class="fas fa-exclamation-triangle mr-1"></i> Are you sure you want to delete / cancel this incentive record?
+</div>
+
+@using (Html.BeginForm("Cancel", "HrPrInctv", new { area = "Payroll" }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <div>
+        @Html.HiddenFor(model => model.InctvId)
+
+        <div class="card-body p-2">
+            <div class="form-row">
+                <div class="form-group col-md-12 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Employee</label>
+                    <p class="form-control-plaintext py-0">@ViewBag.EmpName</p>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Incentive Type</label>
+                    <p class="form-control-plaintext py-0">@ViewBag.InctvTypTxt</p>
+                </div>
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Incentive Mode</label>
+                    <p class="form-control-plaintext py-0">@ViewBag.InctvModTxt</p>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Entry Date</label>
+                    <p class="form-control-plaintext py-0">@(Model?.InctvDate.ToString("yyyy-MM-dd") ?? "")</p>
+                </div>
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Effective Period</label>
+                    <p class="form-control-plaintext py-0">@ViewBag.EftMonth</p>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Amount</label>
+                    <p class="form-control-plaintext py-0 font-weight-bold text-primary">@Model?.InctvAmt.ToString("N2")</p>
+                </div>
+                <div class="form-group col-md-6 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Reference</label>
+                    <p class="form-control-plaintext py-0">@Model?.Ref</p>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12 mb-2">
+                    <label class="control-label font-weight-bold mb-0">Description / Note</label>
+                    <p class="form-control-plaintext py-0">@(!string.IsNullOrEmpty(Model?.Desc) ? Model.Desc : Model?.ShtRmk)</p>
+                </div>
+            </div>
+
+            <div class="form-group mt-3 mb-0">
+                <input type="submit" value="Delete Record" class="btn btn-sm btn-danger btn-block font-weight-bold" />
+                <button type="button" class="btn btn-sm btn-outline-secondary btn-block mt-2" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+}

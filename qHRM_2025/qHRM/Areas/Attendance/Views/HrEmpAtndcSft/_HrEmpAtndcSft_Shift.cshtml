@@ -1,0 +1,80 @@
+@model qHRM.Areas.Attendance.Models.HrEmpAttdView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<form asp-action="ShiftUpdate" asp-controller="HrEmpAtndcSft" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            Are you sure to change the shift?
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.HiddenFor(model => model.RecId)
+            @Html.HiddenFor(model => model.EmpSysId)
+            @Html.HiddenFor(model => model.EfctvDate)
+            @Html.DisplayNameFor(model => model.EfctvDate) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.EfctvDate)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.FullName) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.FullName)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.InTime) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.InTime)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.OutTime) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.OutTime)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.AtdRmks) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.AtdRmks)
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label asp-for="SftId" class="control-label"></label>
+        </div>
+        <div class="form-group col-md-6">
+            <select asp-for="SftId" id="drpShift" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstShift, "SftId", "ShtName", Model?.SftId))">
+                <option value="">-- Select Shift --</option>
+            </select>
+        </div>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Change Shift" class="btn btn-sm btn-primary btn-block" />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</form>
+
+<script>
+    $(function () {
+        $('#modalShift').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalShift')
+        });
+    });
+</script>

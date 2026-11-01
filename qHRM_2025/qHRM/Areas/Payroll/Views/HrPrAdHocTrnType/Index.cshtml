@@ -1,0 +1,151 @@
+﻿@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrAdHocTrnType>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Adjustment Types</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Adjustment Types</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        <div>
+                            <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                Add New
+                            </a>
+                            @if (ViewBag.Rec_Add == true)
+                            {
+
+                            }
+                        </div>
+                    </p>
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="Indx" headerText="Index" width="50"></e-grid-column>
+                                <e-grid-column field="TrnType" headerText="Type" width="80"></e-grid-column>
+                                <e-grid-column field="TrnTypTxt" headerText="Name" width="100"></e-grid-column>
+                                <e-grid-column field="Desc" headerText="Description" width="150"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_edit" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_delete" width="50"></e-grid-column>
+
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                                @if (ViewBag.Rec_Delete == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalLongTitle">Add Adjustment Type</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalLongTitle">Edit Adjustment Type</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Adjustment Type</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${TrnTypId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${TrnTypId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/Payroll/HrPrAdHocTrnType/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+
+    var editFunc = function (id) {
+        var url = "/Payroll/HrPrAdHocTrnType/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var deleteFunc = function (id) {
+        var url = "/Payroll/HrPrAdHocTrnType/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+</script>

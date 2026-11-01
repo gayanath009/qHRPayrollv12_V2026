@@ -1,0 +1,129 @@
+@model qHRM.Areas.SysAdmin.Models.AdmUserView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+<div class="p-2">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+        <span class="badge badge-success px-2 py-1" style="font-size: 0.75rem; background-color: #28a745;">
+            <i class="fas fa-shield-alt mr-1"></i> AES-256 Protected
+        </span>
+        <small class="text-muted"><i class="fas fa-lock mr-1"></i> Two-way AES Encryption Policy</small>
+    </div>
+
+    <form asp-action="ChangePassword" asp-controller="AdmUser" method="post" id="formModalChangePassword">
+        @Html.AntiForgeryToken()
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+        <!-- Hidden fields to preserve state -->
+        <input type="hidden" asp-for="Usr_Id" />
+        <input type="hidden" asp-for="Usr_Name" />
+        <input type="hidden" asp-for="Full_Name" />
+        <input type="hidden" asp-for="AspUser_Id" />
+        <input type="hidden" asp-for="AspUser_Name" />
+        <input type="hidden" asp-for="email" />
+        <input type="hidden" asp-for="Grp_Id" />
+        <input type="hidden" asp-for="Emp_Sys_Id" />
+        <input type="hidden" asp-for="EntityId" />
+
+        <div class="form-group mb-3">
+            <label class="control-label small font-weight-bold text-gray-700">User Name</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-user text-muted"></i></span>
+                </div>
+                <input value="@Model?.Usr_Name" class="form-control form-control-sm bg-light" disabled style="border-left: 0;" />
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model?.Full_Name))
+        {
+            <div class="form-group mb-3">
+                <label class="control-label small font-weight-bold text-gray-700">Employee</label>
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light border-right-0"><i class="fas fa-id-badge text-muted"></i></span>
+                    </div>
+                    <input value="@Model?.Full_Name" class="form-control form-control-sm bg-light" disabled style="border-left: 0;" />
+                </div>
+            </div>
+        }
+
+        <div class="form-group mb-3">
+            <label asp-for="Old_Password" class="control-label small font-weight-bold text-gray-700">Current (Old) Password</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-unlock text-muted"></i></span>
+                </div>
+                <input asp-for="Old_Password" type="password" id="modalOldPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Enter current password" required />
+                <div class="input-group-append">
+                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-modal-pwd-btn" type="button" data-target="#modalOldPassword" tabindex="-1">
+                        <i class="fas fa-eye text-muted"></i>
+                    </button>
+                </div>
+            </div>
+            <span asp-validation-for="Old_Password" class="text-danger small mt-1 d-block"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="Password" class="control-label small font-weight-bold text-gray-700">New Password</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-lock text-muted"></i></span>
+                </div>
+                <input asp-for="Password" type="password" id="modalNewPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Enter new password (min. 6 chars)" required />
+                <div class="input-group-append">
+                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-modal-pwd-btn" type="button" data-target="#modalNewPassword" tabindex="-1">
+                        <i class="fas fa-eye text-muted"></i>
+                    </button>
+                </div>
+            </div>
+            <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+        </div>
+
+        <div class="form-group mb-3">
+            <label asp-for="ConfirmPassword" class="control-label small font-weight-bold text-gray-700">Confirm New Password</label>
+            <div class="input-group">
+                <div class="input-group-prepend">
+                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-check-double text-muted"></i></span>
+                </div>
+                <input asp-for="ConfirmPassword" type="password" id="modalConfirmPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Confirm new password" required />
+                <div class="input-group-append">
+                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-modal-pwd-btn" type="button" data-target="#modalConfirmPassword" tabindex="-1">
+                        <i class="fas fa-eye text-muted"></i>
+                    </button>
+                </div>
+            </div>
+            <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-between pt-2">
+            <button type="submit" class="btn btn-sm px-4 text-white font-weight-medium" style="background-color: #5b0d32; border-color: #5b0d32; border-radius: 6px;">
+                <i class="fas fa-check mr-1"></i> Update Password
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-dismiss="modal" style="border-radius: 6px;">
+                Cancel
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('.toggle-modal-pwd-btn').on('click', function () {
+            var targetSelector = $(this).data('target');
+            var $input = $(targetSelector);
+            var $icon = $(this).find('i');
+
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                $input.attr('type', 'password');
+                $icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+    });
+</script>
+
+
+

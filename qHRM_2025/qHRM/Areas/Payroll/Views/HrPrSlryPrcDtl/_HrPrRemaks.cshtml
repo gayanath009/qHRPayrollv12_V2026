@@ -1,0 +1,38 @@
+﻿@using Syncfusion.EJ2;
+@model qHRM.Areas.Payroll.Models.PrSalarySheetView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("SetRemarks", "HrPrSlryPrcDtl"))
+{
+<div class="dl-horizontal">
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @Html.HiddenFor(model => model.PrcId)
+    @Html.HiddenFor(model => model.PrcPsvRecId)
+
+
+    <div class="form-group">
+        <label asp-for="Remarks" class="control-label"></label>
+        <input asp-for="Remarks" class="form-control form-control-sm" />
+        <span asp-validation-for="Remarks" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Save" class="btn btn-sm btn-dark btn-block" />
+        <input type="button" value="Close" class="btn btn-sm btn-primary btn-block" data-dismiss="modal" />
+    </div>
+</div>
+
+}
+
+
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalRmks').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    })
+</script>
+<ejs-scripts></ejs-scripts>

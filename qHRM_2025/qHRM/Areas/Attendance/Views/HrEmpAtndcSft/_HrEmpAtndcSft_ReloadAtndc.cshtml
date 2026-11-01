@@ -1,0 +1,56 @@
+﻿@model qHRM.Areas.Attendance.Models.HrEmpAttdView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+<form asp-action="ReloadAtndc" asp-controller="HrEmpAtndcSft">
+    <div>
+        @Html.HiddenFor(model => model.EmpSysId)
+        @Html.HiddenFor(model => model.FromDate)
+        @Html.HiddenFor(model => model.ToDate)
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                Are you sure to reload attendance?
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-3">
+                @Html.DisplayNameFor(model => model.FullName)
+            </div>
+            <div class="form-group col-9">
+                : @Html.DisplayFor(model => model.FullName)
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-3">
+                @Html.DisplayNameFor(model => model.FromDate)
+            </div>
+            <div class="form-group col-9">
+                : @Html.DisplayFor(model => model.FromDate)
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-3">
+                @Html.DisplayNameFor(model => model.ToDate)
+            </div>
+            <div class="form-group col-9">
+                : @Html.DisplayFor(model => model.ToDate)
+            </div>
+        </div>
+        <div class="form-group">
+            <input type="submit" value="Reload Attendance" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Cancel" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+</form>
+
+<script type="text/javascript">    
+
+    $(function () {
+        $('#modalReloadAtndc').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    }
+</script>
+<ejs-scripts></ejs-scripts>

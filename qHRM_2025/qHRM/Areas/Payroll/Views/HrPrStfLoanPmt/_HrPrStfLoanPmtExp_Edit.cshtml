@@ -1,0 +1,105 @@
+@model qHRM.Areas.Payroll.Models.HrPrStfLoanPmtExp
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("EditExp", "HrPrStfLoanPmt"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.StfLnId)
+        @Html.HiddenFor(model => model.LnPmtExpId)
+        @Html.HiddenFor(model => model.RecStat)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="control-label">Employee</label>
+                <input class="form-control form-control-sm" value=" @ViewBag.EmpDtl" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="control-label">Loan Code</label>
+                <input class="form-control form-control-sm" value=" @ViewBag.LnCode" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="EntryDate" class="control-label"></label>
+                <input asp-for="EntryDate" class="form-control form-control-sm" />
+                <span asp-validation-for="EntryDate" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <input type="checkbox" class="form-check-input" id="chkFullAmt" style="margin-top:5px; margin-left:3px">
+                <label class="form-check-label" style="margin-left:25px;">Release Full Amount</label>
+            </div>
+            <div class="form-group  col-md-6">
+                <label asp-for="ExpPmtAmt" class="control-label"></label>
+                <input asp-for="ExpPmtAmt" id="txtExpPmtAmt" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="ExpPmtAmt" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group  col-md-6">
+                <label asp-for="ExpInstl" class="control-label"></label>
+                <input asp-for="ExpInstl" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="ExpInstl" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="EftYear" class="control-label"></label>
+                <input asp-for="EftYear" class="form-control form-control-sm" />
+                <span asp-validation-for="EftYear" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EftMonth" class="control-label"></label>
+                <select asp-for="EftMonth" id="drpMonthsExpE" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstMonths, "Indx", "ElmntTxt", Model?.EftMonth))">
+                    <option value="">-- Select Month --</option>
+                </select>
+                <span asp-validation-for="EftMonth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<script>
+    $('#chkFullAmt').change(function (e) {
+        if (this.checked) {
+            document.getElementById("txtExpPmtAmt").value = "0.00";
+            $('#txtExpPmtAmt').attr("disabled", true);
+        }
+        else {
+            $('#txtExpPmtAmt').attr("disabled", false);
+        }
+    });
+
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

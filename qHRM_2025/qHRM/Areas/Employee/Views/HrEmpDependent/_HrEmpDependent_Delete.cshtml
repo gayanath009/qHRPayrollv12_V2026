@@ -1,0 +1,22 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpDependent
+@using (Html.BeginForm("Delete", "HrEmpDependent"))
+{<div>
+    @Html.HiddenFor(model => model.DpndId)
+    @Html.HiddenFor(model => model.PhotoName)
+
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.Title) : @Html.DisplayFor(model => model.Title)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.FirstName) : @Html.DisplayFor(model => model.FirstName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.LastName) : @Html.DisplayFor(model => model.LastName)
+    </div>
+    @if (ViewBag.RecDelete == true)
+    {
+        <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+    </div>
+}

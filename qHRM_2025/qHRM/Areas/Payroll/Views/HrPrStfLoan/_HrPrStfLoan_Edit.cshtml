@@ -1,0 +1,151 @@
+@model qHRM.Areas.Payroll.Models.HrPrStfLoan
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrPrStfLoan"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.StfLnId)
+        @Html.HiddenFor(model => model.LnTypId)
+        @Html.HiddenFor(model => model.EmpSysId)
+        @Html.HiddenFor(Model => Model.EftYear)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <input class="form-control form-control-sm" value="@ViewBag.EmpName" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="LnTypId" class="control-label"></label>
+                <input class="form-control form-control-sm" value="@ViewBag.LnTyp" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="LnCode" class="control-label"></label>
+                <input asp-for="LnCode" class="form-control form-control-sm" readonly />
+                <input asp-for="ex_LnCode" class="form-control form-control-sm" hidden />
+                <span asp-validation-for="LnCode" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="IssuDate" class="control-label"></label>
+                <input id="txtIssuDateE" asp-for="IssuDate" class="form-control form-control-sm" />
+                <span asp-validation-for="IssuDate" class="text-danger"></span>
+            </div>
+            <div class="form-group  col-md-3">
+                <label asp-for="EftYear" class="control-label"></label>
+                <input id="txtEftYearE" asp-for="EftYear" class="form-control form-control-sm" />
+                <span asp-validation-for="EftYear" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-3">
+                <label asp-for="EftMonth" class="control-label"></label>
+                <select asp-for="EftMonth" id="drpMonthsE" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstMonths, "Indx", "ElmntTxt", Model?.EftMonth))">
+                    <option value="">-- Select Month --</option>
+                </select>
+                <span asp-validation-for="EftMonth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="FlAmt" class="control-label"></label>
+                <input id="txtFlAmtE" asp-for="FlAmt" class="form-control form-control-sm" style="text-align:right" onchange="calLoanInst();" />
+                <span asp-validation-for="FlAmt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="Instl" class="control-label"></label>
+                <input id="txtInstlE" asp-for="Instl" class="form-control form-control-sm" style="text-align:right" onchange="calLoanInst();" />
+                <span asp-validation-for="Instl" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="InstlAmt" class="control-label"></label>
+                <input id="txtInstlEAmt" asp-for="InstlAmt" class="form-control form-control-sm" style="text-align:right" readonly />
+                <span asp-validation-for="InstlAmt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="RmAmt" class="control-label"></label>
+                <input id="txtRmAmtE" asp-for="RmAmt" class="form-control form-control-sm" style="text-align:right" readonly />
+                <span asp-validation-for="RmAmt" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="ShtRmk" class="control-label"></label>
+                <input asp-for="ShtRmk" class="form-control form-control-sm" />
+                <span asp-validation-for="ShtRmk" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            @if (ViewBag.RecEdit == true)
+            {
+                <input id="btnUpdate" type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    function calLoanInst() {
+        var flAmt = $("#txtFlAmtE").val();
+        var instl = $("#txtInstlE").val();
+        var instlAmt = (flAmt / instl);
+
+        if (instl > 0) {
+            $("#txtInstlEAmt").val(instlAmt);
+        }
+
+        if (flAmt > 0) {
+            $("#txtRmAmtE").val(flAmt);
+        }
+    }
+
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        var flAmt = $("#txtFlAmtE").val();
+        var rmAmt = $("#txtRmAmtE").val();    
+
+        if (flAmt == rmAmt) {
+            $('#txtIssuDateE').prop('readonly', false);
+            $("#txtEftYearE").prop('readonly', false);
+            $("#drpMonthsE").prop('disabled', false);
+            $("#txtFlAmtE").prop('readonly', false);
+            $("#txtInstlE").prop('readonly', false);
+        }
+        else {
+            $("#txtIssuDateE").prop('readonly', true);
+            $("#txtEftYearE").prop('readonly', true);
+            $("#drpMonthsE").prop('disabled', true);
+            $("#txtFlAmtE").prop('readonly', true);
+            $("#txtInstlE").prop('readonly', true);
+        }
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

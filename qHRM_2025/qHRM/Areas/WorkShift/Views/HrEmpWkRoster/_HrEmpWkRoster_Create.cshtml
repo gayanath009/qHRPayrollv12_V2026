@@ -1,0 +1,186 @@
+@model qHRM.Areas.WorkShift.Models.HrEmpWkRoster
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label class="control-label">Employee Type</label>
+                <br />
+                <fieldset class="form-group">
+                    <div class="row">
+                        <div class="col-sm-10">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="chkAllEmp" value="A" checked onclick="showReProcessOptions();">
+                                <label class="form-check-label" for="gridRadios1">
+                                    All Employees
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdEmp" value="S" onclick="showReProcessOptions();">
+                                <label class="form-check-label" for="gridRadios2">
+                                    Individual Employee
+                                </label>
+                            </div>
+                            <input id="txtempTyp" asp-for="EmpTyp" hidden />
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="form-group col-md-8">
+                <br /> <br />
+                <div id="dvEmp">
+                    <select asp-for="EmpSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme"))">
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label asp-for="RstId" class="control-label"></label>
+            <select asp-for="RstId" id="drpRstTyp" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstRstrs, "RstId", "NameEng"))">
+                <option value="">-- Select Roster --</option>
+            </select>
+            <span asp-validation-for="RstId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group  col-md-6">
+            <label asp-for="StDate" class="control-label"></label>
+            <input id="dtpStartDate" asp-for="StDate" class="form-control form-control-sm" />
+            <span asp-validation-for="StDate" class="text-danger"></span>
+        </div>
+        <div class="form-group  col-md-6">
+            <label>
+                End Date
+                <input type="checkbox" id="chkEndDate" onclick="enableEndDate()" class="e-left mycheckbox" >
+            </label>
+            <input id="dtpEndDate" asp-for="EndDate" class="form-control form-control-sm" style="visibility:hidden"/>
+            <span asp-validation-for="EndDate" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label>
+                Skip Roster Validation
+                <input id="chkRstVal" type="checkbox" data-ng-model="rememberMe" asp-for="SkpRstVldtn" class="pull-right mycheckbox">
+            </label>
+
+        </div>
+        <div class="form-group col-md-6">
+            <label>
+                Consider for Attendance
+                <input id="chkCnsdrAttd" type="checkbox" data-ng-model="rememberMe" asp-for="CndrAtndc" class="pull-right mycheckbox">
+            </label>
+            <span asp-validation-for="CndrAtndc" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <input type="button" id="btnCreateNew" value="Create" class="btn btn-sm btn-primary btn-block" onclick="vldtFrm()" />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+
+    <script>
+        $(function () {
+            $('#modalCreate').find('.select2-dropdown').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalCreate')
+            });
+
+            showReProcessOptions();
+        });
+
+        function showReProcessOptions() {
+            var chkAllEmp = document.getElementById("chkAllEmp");
+            var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+            var dvEmp = document.getElementById("dvEmp");
+
+            if (chkAllEmp && chkAllEmp.checked == true) {
+                dvEmp.style.display = "none";
+                $('#txtempTyp').val('A');
+            }
+            else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+                dvEmp.style.display = "block";
+                $('#txtempTyp').val('S');
+            }
+        }
+
+        function enableEndDate() {
+            var chkEndDate = document.getElementById("chkEndDate");
+            if (chkEndDate && chkEndDate.checked == true) {
+                $('#dtpEndDate').attr("style","visibility:visible");
+            }
+            else {
+                $('#dtpEndDate').attr("style", "visibility:hidden");
+            }
+        }
+
+        function vldtFrm() {
+            var err = 0;
+            var ref = 0;
+            var empTyp = 'A';
+            var chkAllEmp = document.getElementById("chkAllEmp");
+            var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+            var drpRstTyp = $('#drpRstTyp').val();
+            var dtpStartDate = $("#dtpStartDate").val();
+            var dtpEndDate = $("#dtpEndDate").val();               
+            var chkCnsdrAttd = $("#chkCnsdrAttd").is(":checked"); 
+
+            $('#btnCreateNew').attr('disabled', true);
+
+            if (chkAllEmp && chkAllEmp.checked == true) {
+                empTyp = 'A';
+                ref = 0;
+                err = 0;                   
+            }
+            else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+                empTyp = 'S';
+                ref = $('#drpEmp').val() || 0;
+                err = 0;
+            }
+            
+            if (empTyp == 'S' && (!ref || ref == 0)) {
+                err += 1;                    
+            }
+
+            if (!drpRstTyp || drpRstTyp == 0) { //Shift is not selected                    
+                err += 1;
+            }
+                            
+            if (err == 0) {           
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: '/WorkShift/HrEmpWkRoster/Create',
+                    dataType: "json",                        
+                    data: { EmpTyp: empTyp, EmpSysId: ref, RstId: drpRstTyp, StDate: dtpStartDate, EndDate: dtpEndDate, CndrAtndc: chkCnsdrAttd },
+                    success: function (data) {
+                        alert(data.data);                           
+                        $('#btnCreateNew').attr('disabled', false);
+                        window.location.href = "/WorkShift/HrEmpWkRoster/Index";
+                    },
+                    error: function (xhr, err) {
+                        alert('Creating shifts got failed.');
+                        $('#btnCreateNew').attr('disabled', false);
+                    }
+                });
+            } else {
+                alert('Please validate form values.');
+                $('#btnCreateNew').attr('disabled', false);
+            }
+        }
+    </script>

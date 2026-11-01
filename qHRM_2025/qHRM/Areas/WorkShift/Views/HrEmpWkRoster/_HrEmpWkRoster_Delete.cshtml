@@ -1,0 +1,28 @@
+﻿@using Syncfusion.EJ2
+@model qHRM.Areas.WorkShift.Models.HrEmpWkRoster
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<h5>Are you sure you want to delete this?</h5>
+
+@using (Html.BeginForm("Delete", "HrEmpWkRoster"))
+{<div>
+    @Html.HiddenFor(model => model.RecId)
+    @Html.HiddenFor(model => model.StDate)
+    <div class="form-group">
+        Employee Name : @ViewBag.EmpName
+    </div>
+    <div class="form-group">
+        Roster Name : @ViewBag.RstName
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.StDate) : @Html.DisplayFor(model => model.StDate)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.EndDate) : @Html.DisplayFor(model => model.EndDate)
+    </div>
+    <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+</div>
+}
+<ejs-scripts></ejs-scripts>
+

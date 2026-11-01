@@ -1,0 +1,83 @@
+@model qHRM.Areas.SysAdmin.Models.AdmUserView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "AdmUser"))
+{
+<div>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @Html.HiddenFor(model => model.Usr_Id)
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <input asp-for="exUsr_Name" class="form-control form-control-sm" hidden />
+            <input asp-for="AspUser_Id" class="form-control form-control-sm" hidden />
+            <input asp-for="AspUser_Name" class="form-control form-control-sm" hidden />
+
+            <label asp-for="Usr_Name" class="control-label"></label>
+            <input asp-for="Usr_Name" class="form-control form-control-sm" />
+            <span asp-validation-for="Usr_Name" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <label asp-for="email" class="control-label"></label>
+            <input asp-for="email" class="form-control form-control-sm" />
+            <span asp-validation-for="email" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <label asp-for="Grp_Id" class="control-label"></label>
+            <select asp-for="Grp_Id" id="drpGrp" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstUG, "GpId", "GpName", Model?.Grp_Id))">
+                <option value="">-- Select User Group --</option>
+            </select>
+            <span asp-validation-for="Grp_Id" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <label asp-for="Full_Name" class="control-label"></label>
+            <select asp-for="Emp_Sys_Id" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.Emp_Sys_Id))">
+                <option value="">-- Select Employee --</option>
+            </select>
+            <span asp-validation-for="Emp_Sys_Id" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <label asp-for="EntityId" class="control-label"></label>
+            <select asp-for="EntityId" id="drpEntity" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstEntity, "EntId", "NameEng", Model?.EntityId))">
+                <option value="">-- Select Entity --</option>
+            </select>
+            <span asp-validation-for="EntityId" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <div class="form-group col-md-12">
+            <label asp-for="Remarks" class="control-label"></label>
+            <input asp-for="Remarks" class="form-control form-control-sm" />
+            <span asp-validation-for="Remarks" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Save" class="btn btn-sm btn-primary btn-block" />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

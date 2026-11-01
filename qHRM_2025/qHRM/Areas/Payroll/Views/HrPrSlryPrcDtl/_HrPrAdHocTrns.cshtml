@@ -1,0 +1,39 @@
+﻿@using Syncfusion.EJ2;
+<div>
+    <ejs-grid id="GridAdHocTrns" width="auto" dataSource="ViewBag.dsAdHocTrns" allowPaging="true" allowFiltering="true"
+              allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+        <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+        <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+        <e-grid-columns>
+            <e-grid-column field="EftMonth" headerText="Month" width="100"></e-grid-column>
+            <e-grid-column field="TrnDate" headerText="Date" width="50" format='yMd'></e-grid-column>
+            <e-grid-column field="TrnTypDesc" headerText="Type" width="100"></e-grid-column>
+            <e-grid-column field="EmpDesc" headerText="Employee" width="100"></e-grid-column>
+            <e-grid-column field="Ref" headerText="Reference" width="80"></e-grid-column>
+            <e-grid-column field="TrnAmt" headerText="Amount" width="80" format='0.00' textAlign="Right"></e-grid-column>
+            <e-grid-column field="RecStatTxt" headerText="Status" width="80"></e-grid-column>
+        </e-grid-columns>
+    </ejs-grid>
+</div>
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("GridAdHocTrns").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+        else if (args.item.id === 'Grid_pdfexport') {
+            gridObj.pdfExport();
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalOthrPymnt').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    })
+</script>
+<ejs-scripts></ejs-scripts>

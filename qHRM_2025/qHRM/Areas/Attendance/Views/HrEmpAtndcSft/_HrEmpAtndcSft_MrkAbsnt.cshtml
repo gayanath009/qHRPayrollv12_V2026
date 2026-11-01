@@ -1,0 +1,53 @@
+@model qHRM.Areas.Attendance.Models.HrEmpAttdView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+<form asp-action="MarkAbsent" asp-controller="HrEmpAtndcSft" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            Are you sure to mark the employee as Absent?
+        </div>
+    </div>
+    <div class="form-group">
+        <label asp-for="EmpSysId" class="control-label"></label>
+        <select asp-for="EmpSysId" id="drpEmpMkAbs" class="form-control form-control-sm select2-dropdown"
+                asp-items="@(new SelectList(ViewBag.lstEmployee, "ESysId", "FulNme"))">
+            <option value="">-- Select Employee --</option>
+        </select>
+        <span asp-validation-for="EmpSysId" class="text-danger"></span>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label asp-for="FromDate" class="control-label"></label>
+            <input asp-for="FromDate" class="form-control form-control-sm" />
+            <span asp-validation-for="FromDate" class="text-danger"></span>
+        </div>
+        <div class="form-group col-md-6">
+            <label asp-for="ToDate" class="control-label"></label>
+            <input asp-for="ToDate" class="form-control form-control-sm" />
+            <span asp-validation-for="ToDate" class="text-danger"></span>
+            <input type="hidden" asp-for="Note" value="#" class="form-control form-control-sm" />
+        </div>
+    </div>
+
+    <div class="form-group">
+        <input type="submit" value="Mark Absent" class="btn btn-sm btn-primary btn-block" />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</form>
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalMarkAbsent').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalMarkAbsent')
+        });
+
+        $('#modalMarkAbsent').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

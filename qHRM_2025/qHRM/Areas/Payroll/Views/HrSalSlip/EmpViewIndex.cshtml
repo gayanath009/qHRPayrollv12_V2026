@@ -1,0 +1,227 @@
+﻿@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@model qHRM.Areas.Payroll.Models.PrSalarySheetView
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Salary Sheet</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Salary Sheet</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div id="tabs">
+                        <div>
+                            <input id="txtMnt" type="text" asp-for="EftMnt" hidden />
+                            <input id="txtYr" type="text" asp-for="EftYr" hidden />
+                        </div>
+
+                        <div class="border">
+                            <div class="form-row">
+                                <div class="form-group col-md-4"></div>
+                                <div class="form-group col-md-4">
+                                    <p class="text-center h6 font-weight-normal text-primary mb-1">Filter Pay Sheets</p>
+                                </div>
+                                <div class="form-group col-md-4"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-4"></div>
+                                <div class="form-group col-md-2">
+                                    <label class="control-label control-label-sm">Year</label>
+                                    <select placeholer="Select Year" id="drpYear"
+                                            asp-items="@(new SelectList(ViewBag.lstYear, "value", "text",ViewBag.SelectedYear))" class="form-control form-control-sm" onchange="filterPaySlip();">
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-2">
+                                    <label class="control-label control-label-sm">Month</label>
+                                    <select placeholer="Select Month" id="drpMonth"
+                                            asp-items="@(new SelectList(ViewBag.lstMonth, "value", "text",ViewBag.SelectedMonth))" class="form-control form-control-sm" onchange="filterPaySlip();">
+                                    </select>
+                                </div>
+                                <div class="form-group col-md-4"></div>
+                            </div>
+                        </div>
+
+                        <br />
+                        <!--Grid-->
+                        <div class="control-section">
+                            <table class="table table-bordered table-sm">
+                                <thead>
+                                    <tr>
+                                        <th class="bg-success h5 font-weight-bold">Allowances</th>
+                                        <th class="bg-success h5 font-weight-bold text-right">QR.</th>
+                                        <th class="bg-danger h5 font-weight-bold">Deductions</th>
+                                        <th class="bg-danger h5 font-weight-bold text-right">QR.</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-content">
+                                </tbody>
+                            </table>
+                            <div><a href="#" class="btn btn-primary btn-sm">Download PaySlip</a></div>
+                            <ejs-button id="hideToast"></ejs-button>
+                        </div>
+                        <!--Grid-->
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        $("#txtEftMnt").val(efMnt);
+        $("#txtEftYr").val(efYr);
+        filterPaySlip();
+    });
+
+
+
+
+    function filterPaySlip() {
+
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        $("#txtMnt").val(efMnt);
+        $("#txtYr").val(efYr);
+
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Payroll/HrSalSlip/GetPaySlipByEmp',
+            dataType: "json",
+            data: { eftYr: efYr, eftMnt: efMnt },
+            success: function (data) {
+                console.log(data);
+                var tr = '';
+                $.each(data.data, function (i, obj) {
+                    tr = `<tr><td class="h5 font-weight-bold">Basic Salary</td><td class="text-right h5 font-weight-bold">${sprtrComs(obj.BasicSalary)}</td><td>Salary Advance</td><td class="text-right">${sprtrComs(obj.SalaryAdvance)}</td></tr>`;
+                    tr = tr + `<tr><td class="">House Rent</td><td class="text-right">${sprtrComs(obj.HouseRent)}</td><td>Staff Loans</td><td class="text-right">${sprtrComs(obj.StaffLoans)}</td></tr>`;
+                    tr = tr + `<tr><td>Transportation</td><td class="text-right">${sprtrComs(obj.Transport)}</td><td>No Pay</td><td class="text-right">${sprtrComs(obj.NoPay)}</td></tr>`;
+                    tr = tr + `<tr><td>Position</td><td class="text-right">${sprtrComs(obj.Position)}</td><td>Other Deductions</td><td class="text-right">${sprtrComs(obj.OthrRcvryAmt)}</td></tr>`;
+                    tr = tr + `<tr><td>Mobile</td><td class="text-right">${sprtrComs(obj.Mobile)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Medical</td><td class="text-right">${sprtrComs(obj.MedicalAllowance)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Project</td><td class="text-right">${sprtrComs(obj.ProjectAllowance)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Special</td><td class="text-right">${sprtrComs(obj.SpcAllowance)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Other</td><td class="text-right">${sprtrComs(obj.OthrAlwnc)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Incentives</td><td class="text-right">${sprtrComs(obj.Incentives)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Overtime</td><td class="text-right">${sprtrComs(obj.Overtime)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td>Other Adjustments (Payments)</td><td class="text-right">${sprtrComs(obj.OthrPmt)}</td><td></td><td class="text-right"></td></tr>`;
+                    tr = tr + `<tr><td class="h5 font-weight-bold">Gross Salary</td><td class="text-right h5 font-weight-bold">${sprtrComs(obj.GrossSalary)}</td><td class="h5 font-weight-bold">Total Deductions</td><td class="text-right h5 font-weight-bold">${sprtrComs(obj.TotalDeductions)}</td></tr>`;
+                    tr = tr + `<tr><td class="h5 font-weight-bold">Net Salary</td><td class="text-right h5 font-weight-bold">${sprtrComs(obj.NtSlry)}</td><td></td><td></td></tr>`;
+                });
+                $("#table-content").html(tr);
+
+            },
+            error: function (xhr, err) {
+                toastObj.show(toasts[3]);
+            }
+        });
+
+    };
+
+    function sprtrComs(nStr) {
+        nStr += '';
+        x = nStr.split('.');
+        x1 = x[0];
+        x2 = x.length > 1 ? '.' + x[1] : '';
+        var rgx = /(\d+)(\d{3})/;
+        while (rgx.test(x1)) {
+            x1 = x1.replace(rgx, '$1' + ',' + '$2');
+        }
+        return x1 + x2;
+    }
+</script>
+
+
+
+<script type="text/javascript">
+
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Pay Sheets Generated', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'No Record Found.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose the employee first.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Error!', content: 'Application Error', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Salary Sheet Generated', cssClass: 'e-toast-warning', icon: 'e-success toast-icons' }];
+    var btnEleHide = document.getElementById('hideToast');
+
+    setTimeout(
+        () => {
+            toastObj.show({
+                target: document.body
+            });
+        }, 500);
+
+    function created() {
+        toastObj = this;
+    }
+
+
+    function onclose(e) {
+        if (e.toastContainer.childElementCount === 0) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+    function onBeforeOpen() {
+        btnEleHide.style.display = 'inline-block';
+    }
+</script>
+
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    #toast_types button {
+        margin: 5px;
+        min-width: 160px;
+        max-width: 160px;
+    }
+
+    .toast-icons {
+        font-family: 'Toast_icons' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toast_type .e-toast-icon.e-icons {
+        height: auto;
+        font-size: 30px;
+    }
+
+    .toast-icons.e-success::before {
+        content: "\e701";
+    }
+
+    .toast-icons.e-error::before {
+        content: "\e700";
+    }
+
+    .toast-icons.e-info::before {
+        content: "\e704";
+    }
+
+    .toast-icons.e-warning::before {
+        content: "\e703";
+    }
+</style>

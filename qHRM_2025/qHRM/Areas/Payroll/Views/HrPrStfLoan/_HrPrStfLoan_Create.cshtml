@@ -1,0 +1,196 @@
+@model qHRM.Areas.Payroll.Models.HrPrStfLoan
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrPrStfLoan"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.StfLnId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <select asp-for="EmpSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "EmpSysId", "EmpDesc"))">
+                    <option value="">-- Select Employee --</option>
+                </select>
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="LnTypId" class="control-label"></label>
+                <select asp-for="LnTypId" id="drpLnTypId" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstLnTyp, "LnTypId", "LnTypDesc"))">
+                    <option value="">-- Select Loan Type --</option>
+                </select>
+                <span asp-validation-for="LnTypId" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="LnCode" class="control-label"></label>
+                <input id="txtLnCode" asp-for="LnCode" class="form-control form-control-sm" readonly />
+                <span asp-validation-for="LnCode" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label asp-for="IssuDate" class="control-label"></label>
+                        <input asp-for="IssuDate" class="form-control form-control-sm" />
+                        <span asp-validation-for="IssuDate" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group  col-md-6">
+                        <label asp-for="EftYear" class="control-label"></label>
+                        <input id="txtYear" asp-for="EftYear" class="form-control form-control-sm" onchange="CalcLnInst()" />
+                        <span asp-validation-for="EftYear" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label asp-for="EftMonth" class="control-label"></label>
+                        <select asp-for="EftMonth" id="drpMonths" class="form-control form-control-sm select2-dropdown"
+                                asp-items="@(new SelectList(ViewBag.lstMonths, "Indx", "ElmntTxt"))">
+                            <option value="">-- Select Month --</option>
+                        </select>
+                        <span asp-validation-for="EftMonth" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label asp-for="FlAmt" class="control-label"></label>
+                        <input id="txtFlAmt" asp-for="FlAmt" class="form-control form-control-sm" style="text-align:right" onchange="CalcLnInst()" />
+                        <span asp-validation-for="FlAmt" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label asp-for="Instl" class="control-label"></label>
+                        <input id="txtInstl" asp-for="Instl" class="form-control form-control-sm" style="text-align:right" onchange="CalcLnInst()" />
+                        <span asp-validation-for="Instl" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label asp-for="InstlAmt" class="control-label"></label>
+                        <input id="txtInstlAmt" asp-for="InstlAmt" class="form-control form-control-sm" style="text-align:right" readonly />
+                        <span asp-validation-for="InstlAmt" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label asp-for="RmAmt" class="control-label"></label>
+                        <input id="txtRmAmt" asp-for="RmAmt" class="form-control form-control-sm" style="text-align:right" readonly />
+                        <span asp-validation-for="RmAmt" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label asp-for="ShtRmk" class="control-label"></label>
+                        <input asp-for="ShtRmk" class="form-control form-control-sm" />
+                        <span asp-validation-for="ShtRmk" class="text-danger"></span>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group col-md-6">
+                <div class="control-section">
+                    <ejs-grid id="grdInstlmnt" width="auto" dataSource="@ViewBag.DsInstlmnts" allowPaging="true" allowResizing="true">
+                        <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                        <e-grid-columns>
+                            <e-grid-column field="Year" headerText="Year" width="100" />
+                            <e-grid-column field="Month" headerText="Month" width="100" />
+                            <e-grid-column field="Instlmnt" headerText="Installment" width="100" />
+                        </e-grid-columns>
+                    </ejs-grid>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            @if (ViewBag.RecAdd == true)
+            {
+                <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    function GetStfLnCnt() {
+        var lnTypVal = $('#drpLnTypId').val();
+        var lnTypText = $('#drpLnTypId option:selected').text();
+
+        if (lnTypVal) {
+            $.ajax({
+                type: "GET",
+                url: "@(Url.Action("GetStfLoanCount", "HrPrStfLoan"))",
+                data: { lnTypId: lnTypVal },
+                success: function (data) {
+                    var n = lnTypText.indexOf("-");
+                    var lnCode = lnTypText.substring(0, n).trim().concat('-').concat((parseInt(data.data) + 1).toString());
+                    $("#txtLnCode").val(lnCode);
+                },
+                error: function (xhr, err) { }
+            });
+        }
+    }
+
+    function CalcLnInst() {
+        var grdInstlmnt = document.getElementById('grdInstlmnt')?.ej2_instances?.[0];
+        var iYr = $("#txtYear").val();
+        var iMnth = $("#drpMonths").val();
+        var flAmt = $("#txtFlAmt").val();
+        var instl = $("#txtInstl").val();
+        var instlAmt = 0;
+
+        if (instl > 0 && flAmt > 0) {
+            $.ajax({
+                type: "GET",
+                url: "@(Url.Action("CalcLnInst", "HrPrStfLoan"))",
+                data: {
+                    yr: iYr, mnth: iMnth, lnAmt: flAmt, instlmnts: instl
+                },
+                success: function (data) {
+                    if (grdInstlmnt) {
+                        grdInstlmnt.dataSource = data.data;
+                    }
+                    instlAmt = Math.ceil(flAmt / instl);
+                    $("#txtInstlAmt").val(instlAmt);
+                    $("#txtRmAmt").val(flAmt);
+                },
+                error: function (xhr, err) { }
+            });
+        }
+    }
+
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#drpLnTypId').on('change', function () {
+            GetStfLnCnt();
+        });
+
+        $('#drpMonths').on('change', function () {
+            CalcLnInst();
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>
+<ejs-scripts></ejs-scripts>

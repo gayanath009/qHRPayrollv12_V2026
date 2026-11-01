@@ -1,0 +1,53 @@
+﻿@model qHRM.Areas.Entity.Models.OrgDesignation
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "OrgDesignation"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.DesigId)
+        <div class="form-group">
+            <label asp-for="DesigCode" class="control-label"></label>
+            <input asp-for="DesigCode" class="form-control form-control-sm" />
+            <span asp-validation-for="DesigCode" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NameEng" class="control-label"></label>
+            <input asp-for="NameEng" class="form-control form-control-sm" />
+            <span asp-validation-for="NameEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="JobDescEng" class="control-label"></label>
+            <input asp-for="JobDescEng" class="form-control form-control-sm" />
+            <span asp-validation-for="JobDescEng" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DesigLevel" class="control-label"></label>
+            <input asp-for="DesigLevel" class="form-control form-control-sm" />
+            <span asp-validation-for="DesigLevel" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="MinEmpGrd" class="control-label"></label>
+            <input asp-for="MinEmpGrd" class="form-control form-control-sm" />
+            <span asp-validation-for="MinEmpGrd" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="MaxEmpGrd" class="control-label"></label>
+            <input asp-for="MaxEmpGrd" class="form-control form-control-sm" />
+            <span asp-validation-for="MaxEmpGrd" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+

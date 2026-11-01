@@ -1,0 +1,71 @@
+﻿@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("", "HrPrStfLoanPmt"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    </div>
+    <div class="card-body">
+        <table class="table table-borderless table-sm">
+            <tbody>
+                <tr class="font-weight-bold">
+                    <td>Employee</td>
+                    <td>: @ViewBag.EmpDtl</td>
+                </tr>
+                <tr class="font-weight-bold">
+                    <td>Loan Code</td>
+                    <td>: @ViewBag.LnCode</td>
+                </tr>
+                <tr><td colspan="2"></tr>
+                <tr><td colspan="2"></tr>
+                <tr>
+                    <td class="font-weight-bold">Entry Date</td>
+                    <td>: @ViewBag.EntryDate</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Deduction Amount</td>
+                    <td>: @ViewBag.ExpPmtAmt</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Effective Year</td>
+                    <td>: @ViewBag.EftYear</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Effective Month</td>
+                    <td>: @ViewBag.EftMonth</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Excepmtion Installments</td>
+                    <td>: @ViewBag.ExpInstl</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Note</td>
+                    <td>: @ViewBag.Note</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Created By</td>
+                    <td>: @ViewBag.CrtName</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Created Date</td>
+                    <td>: @ViewBag.CrtDateTime</td>
+                </tr>
+                <tr>
+                    <td class="font-weight-bold">Status</td>
+                    <td>: @ViewBag.RecStatTxt</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+        }
+        <ejs-scripts></ejs-scripts>

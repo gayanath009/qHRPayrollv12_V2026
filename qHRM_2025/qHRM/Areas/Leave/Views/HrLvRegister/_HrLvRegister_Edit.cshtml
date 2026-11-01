@@ -1,0 +1,232 @@
+@model qHRM.Areas.Leave.Models.HrLvRegister
+
+@if (ViewBag.IsSubmittedToWorkflow == true)
+{
+    <script>
+        $('#modalEdit').find('.modal-title').text('Leave Information');
+    </script>
+    <div class="p-2">
+        <div class="alert alert-warning d-flex align-items-center mb-3 shadow-sm" style="border-left: 5px solid #e67e22; background-color: #fff8f0; color: #8a4b08; border-radius: 8px; padding: 18px 20px;">
+            <i class="fas fa-exclamation-triangle fa-2x mr-3 text-warning" style="color: #e67e22 !important;"></i>
+            <div>
+                <h6 class="font-weight-bold mb-1" style="color: #7d3c00;">Notice</h6>
+                <div style="font-size: 0.95rem; font-weight: 500;">
+                    You can not edit the leave once you submitted the leave to the workflow
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-3" style="background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0 !important;">
+            <div class="card-body py-3 px-3">
+                <h6 class="font-weight-bold text-secondary mb-3" style="font-size: 0.88rem; text-transform: uppercase; letter-spacing: 0.5px;">Leave Details</h6>
+                <div class="row" style="font-size: 0.9rem;">
+                    @if (!string.IsNullOrEmpty(ViewBag.EmpName as string))
+                    {
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block" style="font-size: 0.8rem;">Employee</span>
+                            <span class="font-weight-bold text-dark">@ViewBag.EmpName</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(ViewBag.LvTypeName as string))
+                    {
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block" style="font-size: 0.8rem;">Leave Type</span>
+                            <span class="font-weight-bold text-dark">@ViewBag.LvTypeName</span>
+                        </div>
+                    }
+                    <div class="col-sm-6 mb-2">
+                        <span class="text-muted d-block" style="font-size: 0.8rem;">Date Range</span>
+                        <span class="font-weight-bold text-dark">@Model.StDate.ToString("dd/MM/yyyy") - @Model.EndDate.ToString("dd/MM/yyyy")</span>
+                    </div>
+                    <div class="col-sm-3 mb-2">
+                        <span class="text-muted d-block" style="font-size: 0.8rem;">Days</span>
+                        <span class="font-weight-bold text-dark">@Model.Days day(s)</span>
+                    </div>
+                    <div class="col-sm-3 mb-2">
+                        <span class="text-muted d-block" style="font-size: 0.8rem;">Workflow Status</span>
+                        <span class="@Model.WfStatBadgeClass font-weight-bold">@Model.WfStatDisplay</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Note))
+                    {
+                        <div class="col-12 mt-1">
+                            <span class="text-muted d-block" style="font-size: 0.8rem;">Note</span>
+                            <span class="text-secondary">@Model.Note</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="text-right">
+            <button type="button" class="btn btn-sm btn-secondary px-4 font-weight-bold" data-dismiss="modal">Close</button>
+        </div>
+    </div>
+}
+else
+{
+    <script>
+        $('#modalEdit').find('.modal-title').text('Modify Leave');
+    </script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+    @using (Html.BeginForm("Edit", "HrLvRegister", FormMethod.Post, new { id = "formEditLeave" }))
+    {
+        <span class="alert-success">
+            @Html.ValidationSummary(true)
+        </span>
+        <div class="dl-horizontal">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            @Html.HiddenFor(model => model.LvId)
+            @Html.HiddenFor(model => model.Incident)
+            @Html.HiddenFor(model => model.LvYear)
+            @Html.HiddenFor(model => model.RecStat)
+            @Html.HiddenFor(model => model.ex_StDate)
+            @Html.HiddenFor(model => model.ex_EndDate)
+
+            <!-- Overlapping Leave Warning Banner -->
+            <div id="overlapWarningPanelEdit" class="alert alert-danger py-2 px-3 mb-3" style="display:none; font-size: 0.86rem; border-left: 4px solid #dc3545;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-calendar-times mr-2 text-danger" style="font-size: 1.1rem;"></i>
+                    <div>
+                        <strong>Date Conflict: </strong>
+                        <span id="overlapWarningMsgEdit">You already have a leave within the selected date range.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <select asp-for="EmpSysId" id="drpEmployeeEdit" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model.EmpSysId))">
+                    <option value="">-- Select Employee --</option>
+                </select>
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LvTypId" class="control-label"></label>
+                <select asp-for="LvTypId" id="drpLvTypEdit" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstLvTyp, "LvTypId", "NameEng", Model.LvTypId))">
+                    <option value="">-- Select Leave Type --</option>
+                </select>
+                <span asp-validation-for="LvTypId" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="CurrAvblDays" class="control-label"></label>
+                <input asp-for="CurrAvblDays" class="form-control form-control-sm" disabled />
+                <span asp-validation-for="CurrAvblDays" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="StDate" class="control-label"></label>
+                <input id="lvStDateEdit" asp-for="StDate" class="form-control form-control-sm" onchange="caculateDaysEdit()" />
+                <span asp-validation-for="StDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="EndDate" class="control-label"></label>
+                <input id="lvEndDateEdit" asp-for="EndDate" class="form-control form-control-sm" onchange="caculateDaysEdit()" />
+                <span asp-validation-for="EndDate" class="text-danger"></span>
+                <span id="overlapDateErrorEdit" class="text-danger font-weight-bold" style="display:none; font-size: 0.82rem;"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="Days" class="control-label"></label>
+                <input id="lvDaysEdit" asp-for="Days" class="form-control form-control-sm" readonly />
+                <span asp-validation-for="Days" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                @if (ViewBag.RecEdit == true)
+                {
+                    <input type="submit" id="btnSubmitEdit" value="Update" class="btn btn-sm btn-primary btn-block" />
+                }
+                <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+            </div>
+        </div>
+    }
+
+    <script>
+        var hasLeaveOverlapEdit = false;
+
+        function checkLeaveOverlapEdit() {
+            var empSysId = $('#drpEmployeeEdit').val();
+            var stDate = $('#lvStDateEdit').val();
+            var endDate = $('#lvEndDateEdit').val();
+            var lvId = $('#LvId').val() || 0;
+            var lvTypId = $('#drpLvTypEdit').val() || 0;
+
+            if (!empSysId || !stDate || !endDate) {
+                hasLeaveOverlapEdit = false;
+                $('#overlapWarningPanelEdit').slideUp();
+                $('#overlapDateErrorEdit').hide();
+                return;
+            }
+
+            $.ajax({
+                type: "GET",
+                url: "/Leave/HrLvRegister/CheckLeaveOverlap",
+                data: { empSysId: empSysId, stDate: stDate, endDate: endDate, lvId: lvId, lvTypId: lvTypId },
+                dataType: "json",
+                success: function (res) {
+                    if (res && res.hasOverlap) {
+                        hasLeaveOverlapEdit = true;
+                        var msg = res.message || "You already have a leave within the selected date range.";
+                        $('#overlapWarningMsgEdit').text(msg);
+                        $('#overlapWarningPanelEdit').slideDown();
+                        $('#overlapDateErrorEdit').text(msg).show();
+                        $('#btnSubmitEdit').prop('disabled', true);
+                    } else {
+                        hasLeaveOverlapEdit = false;
+                        $('#overlapWarningPanelEdit').slideUp();
+                        $('#overlapDateErrorEdit').hide();
+                        $('#btnSubmitEdit').prop('disabled', false);
+                    }
+                },
+                error: function () { }
+            });
+        }
+
+        function caculateDaysEdit() {
+            var start = $('#lvStDateEdit').val();
+            var end = $('#lvEndDateEdit').val();
+            var startDay = new Date(start);
+            var endDay = new Date(end);
+            var millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+            var millisBetween = endDay.getTime() - startDay.getTime();
+            var days = millisBetween / millisecondsPerDay;
+            var calDays = Math.floor(days) + 1;
+            if (calDays > 0) {
+                $('#lvDaysEdit').val(calDays);
+            }
+            else {
+                $('#lvDaysEdit').val(0);
+            }
+            checkLeaveOverlapEdit();
+        }
+
+        $(function () {
+            $('#modalEdit').find('.select2-dropdown').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalEdit')
+            });
+
+            $('#modalEdit').find('.select2-dropdown').on('change', function () {
+                try { $(this).valid(); } catch (e) { }
+                checkLeaveOverlapEdit();
+            });
+
+            $('#formEditLeave').on('submit', function (e) {
+                if (hasLeaveOverlapEdit) {
+                    $('#overlapWarningPanelEdit').slideDown();
+                    $('#overlapDateErrorEdit').show();
+                    e.preventDefault();
+                    return false;
+                }
+            });
+        });
+    </script>
+}

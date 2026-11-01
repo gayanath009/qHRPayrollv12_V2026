@@ -1,0 +1,886 @@
+@using Microsoft.AspNetCore.Identity
+@using qHRM.Areas.Identity.Data;
+@using Microsoft.AspNetCore.Http;
+@inject SignInManager<qHRMUser> signInManager
+@inject IHttpContextAccessor HttpContextAccessor
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge">
+    <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
+    <title>Welcome To | Qcs HR & Payroll System</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Custom fonts for this template-->
+    <link href="~/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="~/vendor/google-font/google-font.css" rel="stylesheet" />
+    <!-- Custom styles for this template-->
+    <link href="~/css/sb-admin-2.min.css" rel="stylesheet">
+    <!-- Syncfution Style -->
+    <link href="~/css/bootstrap4.css" rel="stylesheet" />
+    <!-- Glyphicon -->
+    <link href="~/glyphicon/all.css" rel="stylesheet" />
+    <link href="~/glyphicon/all.min.css" rel="stylesheet" />
+    <link href="~/glyphicon/fontawesome.css" rel="stylesheet" />
+    <link href="~/glyphicon/fontawesome.min.css" rel="stylesheet" />
+    <link href="~/glyphicon/fontface.css" rel="stylesheet" />
+    <link href="~/glyphicon/glyphicon.css" rel="stylesheet" />
+    <!-- Custom Theme Bootstarp : Added By Gayanath 25/04/2020 -->
+    <link href="~/css/customTheme.css" rel="stylesheet" asp-append-version="true" />
+    <!-- qHRM Visual Enhancements : Primary #540033 -->
+    <link href="~/css/qhrm-enhancements.css" rel="stylesheet" asp-append-version="true" />
+    <!-- Select2 Searchable Dropdown Styles -->
+    <link href="~/css/select2.min.css" rel="stylesheet" />
+    <link href="~/css/select2-bootstrap4.min.css" rel="stylesheet" />
+    <!-- Core jQuery in head so partial views and body scripts can use $ without ReferenceError -->
+    <script src="~/vendor/jquery/jquery.min.js"></script>
+</head>
+
+<body class="page-top">
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion toggled" id="accordionSidebar">
+            <!-- Sidebar - Brand -->
+            <a class="sidebar-brand d-flex align-items-center justify-content-center" href="#">
+                <div class="sidebar-brand-icon">
+                    @*<i class="fas fa-app-store"></i>*@
+                </div>
+                <div><img src="~/images/qcslogo.png" width="100" height="65" /></div>
+                <!--sidebar-brand-text mx-sm-3-->
+                @*<div class="sidebar-brand-text mx-sm-3">HR & Payroll</div>*@
+                @*<span>HR & Payroll</span>*@
+            </a>
+
+            @{
+                //General Info//
+                string ADM_ORG = @HttpContextAccessor.HttpContext.Session.GetString("ADM_ORG");
+                string ADM_Entity = @HttpContextAccessor.HttpContext.Session.GetString("ADM_Entity");
+                string ADM_DEPT = @HttpContextAccessor.HttpContext.Session.GetString("ADM_DEPT");
+                string ADM_LOC = @HttpContextAccessor.HttpContext.Session.GetString("ADM_LOC");
+                string ADM_CNTRY = @HttpContextAccessor.HttpContext.Session.GetString("ADM_CNTRY");
+                string ADM_NLTY = @HttpContextAccessor.HttpContext.Session.GetString("ADM_NLTY");
+                string ADM_HLDY = @HttpContextAccessor.HttpContext.Session.GetString("ADM_HLDY");
+
+                //Human Resource//
+
+                string ADM_EM_GRD = @HttpContextAccessor.HttpContext.Session.GetString("ADM_EM_GRD");
+                string ADM_DESG = @HttpContextAccessor.HttpContext.Session.GetString("ADM_DESG");
+                string ADM_EM_GRP = @HttpContextAccessor.HttpContext.Session.GetString("ADM_EM_GRP");
+                string ORG_CHT = @HttpContextAccessor.HttpContext.Session.GetString("ORG_CHT");
+                string EM_GEN_INF = @HttpContextAccessor.HttpContext.Session.GetString("EM_GEN_INF");
+
+                //Employees//                
+                string EM_CNF = @HttpContextAccessor.HttpContext.Session.GetString("EM_CNF");
+                string EM_JB_ASG = @HttpContextAccessor.HttpContext.Session.GetString("EM_JB_ASG");
+                string EM_PRB_PRD = @HttpContextAccessor.HttpContext.Session.GetString("EM_PRB_PRD");
+                string EM_PRV_EXP = @HttpContextAccessor.HttpContext.Session.GetString("EM_PRV_EXP");
+                string EM_BNK_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_BNK_DTL");
+                string EM_RES_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_RES_DTL");
+                string EM_DOC_SMR = @HttpContextAccessor.HttpContext.Session.GetString("EM_DOC_SMR");
+                string EM_PHT_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_PHT_DTL");
+                string EM_SPR_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_SPR_DTL");
+                string EM_DEP_DTL = @HttpContextAccessor.HttpContext.Session.GetString("EM_DEP_DTL");
+                string EM_DEP_DOC = @HttpContextAccessor.HttpContext.Session.GetString("EM_DEP_DOC");
+
+                //Attendance//
+                string ATN_REG = @HttpContextAccessor.HttpContext.Session.GetString("ATN_REG");
+                string ATN_EXP = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP");
+                string ATN_EXP_RQ = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP_RQ");
+                string ATN_EXP_AP = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP_AP");
+
+                //Work SHift & Rosters//
+                string WK_SFT = @HttpContextAccessor.HttpContext.Session.GetString("WK_SFT");
+                string WK_RST = @HttpContextAccessor.HttpContext.Session.GetString("WK_RST");
+                string WK_RST_EMP = @HttpContextAccessor.HttpContext.Session.GetString("WK_RST_EMP");
+                //string WK_SFT_EMP = @HttpContextAccessor.HttpContext.Session.GetString("WK_SFT_EMP");
+
+                //Leave//
+                string STRY_CMPLC = @HttpContextAccessor.HttpContext.Session.GetString("STRY_CMPLC");
+                string LV_GPLCY = @HttpContextAccessor.HttpContext.Session.GetString("LV_GPLCY");
+                string LV_GPLCYDT = @HttpContextAccessor.HttpContext.Session.GetString("LV_GPLCYDT");
+                string LV_REG = @HttpContextAccessor.HttpContext.Session.GetString("LV_REG");
+                // Leave Workflow Integration
+                string LV_WF_CFG = @HttpContextAccessor.HttpContext.Session.GetString("LV_WF_CFG");
+                string LV_WF_DLG = @HttpContextAccessor.HttpContext.Session.GetString("LV_WF_DLG");
+
+                //Payroll//
+                string PR_CONF = @HttpContextAccessor.HttpContext.Session.GetString("PR_CONF");
+                string LV_TYP = @HttpContextAccessor.HttpContext.Session.GetString("LV_TYP");
+                string OT_RT = @HttpContextAccessor.HttpContext.Session.GetString("OT_RT");
+                string STF_LN_TYP = @HttpContextAccessor.HttpContext.Session.GetString("STF_LN_TYP");
+                string STF_LN = @HttpContextAccessor.HttpContext.Session.GetString("STF_LN");
+                string STF_LN_PMT = @HttpContextAccessor.HttpContext.Session.GetString("STF_LN_PMT");
+                string SLRY_STRUC = @HttpContextAccessor.HttpContext.Session.GetString("SLRY_STRUC");
+                string SLRY_EXCLD = @HttpContextAccessor.HttpContext.Session.GetString("SLRY_EXCLD");
+                string AD_HOC_TYP = @HttpContextAccessor.HttpContext.Session.GetString("AD_HOC_TYP");
+                string AD_HOC_TR = @HttpContextAccessor.HttpContext.Session.GetString("AD_HOC_TR");
+                string SLRY_PRC = @HttpContextAccessor.HttpContext.Session.GetString("SLRY_PRC");
+                string SLRY_SHT = @HttpContextAccessor.HttpContext.Session.GetString("SLRY_SHT");
+                string PR_INCTV = @HttpContextAccessor.HttpContext.Session.GetString("PR_INCTV");
+                string PRJ_ALWNC = @HttpContextAccessor.HttpContext.Session.GetString("PRJ_ALWNC");
+                string ZH_CVT = @HttpContextAccessor.HttpContext.Session.GetString("ZH_CVT");
+
+
+                //Admin Privileges//
+                string SY_ADM = @HttpContextAccessor.HttpContext.Session.GetString("SY_ADM");
+                string SY_PRV = @HttpContextAccessor.HttpContext.Session.GetString("SY_PRV");
+                string SY_USR = @HttpContextAccessor.HttpContext.Session.GetString("SY_USR");
+
+                // Module Privilege Section Aggregations
+                bool hasHRPrivs = (ORG_CHT != null || EM_GEN_INF != null);
+                bool hasAttnPrivs = (ATN_REG != null || ATN_EXP != null || ATN_EXP_RQ != null || ATN_EXP_AP != null);
+                bool hasWorkShiftPrivs = (WK_RST != null || WK_RST_EMP != null);
+                bool hasLeavePrivs = (LV_TYP != null || LV_REG != null || LV_WF_CFG != null || LV_WF_DLG != null);
+                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null);
+                bool hasSysAdminPrivs = (SY_ADM != null || SY_PRV != null || SY_USR != null);
+
+                // Settings Privileges
+                bool hasSettingsGeneralPrivs = (ADM_ORG != null || ADM_Entity != null || ADM_DEPT != null || ADM_LOC != null || ADM_CNTRY != null || ADM_NLTY != null || ADM_HLDY != null);
+                bool hasSettingsHRPrivs = (EM_CNF != null || ADM_EM_GRD != null || ADM_DESG != null || ADM_EM_GRP != null);
+                bool hasSettingsShiftPrivs = (WK_SFT != null);
+                bool hasSettingsPayrollPrivs = (PR_CONF != null || OT_RT != null || STF_LN_TYP != null);
+                bool hasSettingsPrivs = (hasSettingsGeneralPrivs || hasSettingsHRPrivs || hasSettingsShiftPrivs || hasSettingsPayrollPrivs);
+            }
+
+            @if (@HttpContextAccessor.HttpContext.Session.GetInt32("userID") != null)
+            {
+                <!-- Divider -->
+                <hr class="sidebar-divider my-0">
+
+                <br />
+
+                <li class="nav-item">
+                    <a class="nav-link" href="/Home/Index">
+                        <i class="fas fa-fw fa-home"></i>
+                        <span>Home</span>
+                    </a>
+                </li>
+
+
+
+                <!-- Nav Item - Human Resource Collapse Menu -->
+                @if (hasHRPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseHR" aria-expanded="true" aria-controls="collapseHR">
+                            <i class="fas fa-fw fa-user-clock"></i>
+                            <span>Human Resource</span>
+                        </a>
+                        <div id="collapseHR" class="collapse" aria-labelledby="headingMaster" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (ORG_CHT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Entity" asp-controller="OrgEmpCht" asp-action="OrgEmpCht_v2">Organization Chart</a>
+                                }
+                                @if (EM_GEN_INF != null)
+                                {
+                                    <a class="collapse-item" asp-area="Employee" asp-controller="HrEmpGenInfo" asp-action="Index">Employees</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Attendance Collapse Menu -->
+                @if (hasAttnPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAttn" aria-expanded="true" aria-controls="collapseAttn">
+                            <i class="fas fa-fw fa-table"></i>
+                            <span>Attendance</span>
+                        </a>
+                        <div id="collapseAttn" class="collapse" aria-labelledby="headingAttn" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (ATN_REG != null)
+                                {
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcSft" asp-action="Index">Attendance</a>
+                                }
+                                @if (ATN_EXP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAttendExp" asp-action="Index">Excemption</a>
+                                }
+                                @if (ATN_EXP_RQ != null)
+                                {
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcExpRqst" asp-action="Index">Request Excemptions</a>
+                                }
+                                @if (ATN_EXP_AP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcExpAprv" asp-action="Index">Approve Excemptions</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Work Shift & Rosters Collapse Menu -->
+                @if (hasWorkShiftPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseWkSft" aria-expanded="true" aria-controls="collapseWkSft">
+                            <i class="fas fa-fw fa-dice"></i>
+                            <span>Work Shift</span>
+                        </a>
+                        <div id="collapseWkSft" class="collapse" aria-labelledby="headingWkSft" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (WK_RST != null)
+                                {
+                                    <a class="collapse-item" asp-area="WorkShift" asp-controller="HrWkRoster" asp-action="Index">Work Rosters</a>
+                                }
+                                @if (WK_RST_EMP != null)
+                                {
+                                    <a class="collapse-item" asp-area="WorkShift" asp-controller="HrEmpWkRoster" asp-action="Index">Employee Rosters</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Leave Collapse Menu -->
+                @if (hasLeavePrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseLeave" aria-expanded="true" aria-controls="collapseLeave">
+                            <i class="fas fa-fw fa-suitcase"></i>
+                            <span>Leave</span>
+                        </a>
+                        <div id="collapseLeave" class="collapse" aria-labelledby="headingLeave" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (LV_TYP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvType" asp-action="Index">Leave Types</a>
+                                }
+                                @if (LV_REG != null)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvRegister" asp-action="Index">Leave Register</a>
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvRegister" asp-action="Pending">
+                                        <i class="fas fa-inbox fa-xs mr-1" style="color:#540033;opacity:.85;"></i>Pending Approvals
+                                    </a>
+                                }
+                                @* ── Leave Workflow Integration ─── *@
+                                @if (HttpContextAccessor.HttpContext.Session.GetString("LV_WF_CFG") != null)
+                                {
+                                    <hr style="margin:4px 16px;border-color:#eee;" />
+                                    <h6 class="collapse-header" style="color:#540033;font-size:10px;font-weight:700;padding:4px 16px 2px;text-transform:uppercase;letter-spacing:.5px;">
+                                        Workflow
+                                    </h6>
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvWfConfig" asp-action="Index">
+                                        <i class="fas fa-cogs fa-xs mr-1" style="color:#540033;opacity:.7;"></i>WF Configuration
+                                    </a>
+                                }
+                                @if (HttpContextAccessor.HttpContext.Session.GetString("LV_WF_DLG") != null)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvWfDelegation" asp-action="Index">
+                                       Approval Delegation
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Payroll Collapse Menu -->
+                @if (hasPayrollPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePayroll" aria-expanded="true" aria-controls="collapsePayroll">
+                            <i class="fas fa-fw fa-dollar-sign"></i>
+                            <span>Payroll</span>
+                        </a>
+                        <div id="collapsePayroll" class="collapse" aria-labelledby="headingPayroll" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (STF_LN != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStfLoan" asp-action="Index">Staff Loans</a>
+                                }
+                                @if (SLRY_STRUC != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrEmpSlryStruc" asp-action="Index">Salary Structures</a>
+                                }
+                                @if (PRJ_ALWNC != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrProjAlwnc" asp-action="Index">Project Allowances</a>
+                                }
+                                @if (SLRY_EXCLD != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrSlryPrcExcld" asp-action="Index">Excluded from Salary Process</a>
+                                }
+                                @if (AD_HOC_TYP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrAdHocTrnType" asp-action="Index">Adjustment Types</a>
+                                }
+                                @if (AD_HOC_TR != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrAdHocTrns" asp-action="Index">Adjustments</a>
+                                }
+                                @if (PR_INCTV != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrInctv" asp-action="Index">Incentive</a>
+                                }
+                                @if (SLRY_PRC != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrSlryPrcDtl" asp-action="Index">Salary Process</a>
+                                }
+                                @if (SLRY_SHT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrSalSlip" asp-action="Index">Salary Reports</a>
+                                }
+                                @if (ZH_CVT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrZohoConvert" asp-action="Index">Convert Zoho File</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - User Administration Collapse Menu -->
+                @if (hasSysAdminPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities" aria-expanded="true" aria-controls="collapseUtilities">
+                            <i class="fas fa-fw fa-wrench"></i>
+                            <span>User Administration</span>
+                        </a>
+                        <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (SY_ADM != null)
+                                {
+                                    <a class="collapse-item" asp-area="SysAdmin" asp-controller="AdmUserGroup" asp-action="Index">User Groups</a>
+                                }
+                                @if (SY_PRV != null)
+                                {
+                                    <a class="collapse-item" asp-area="SysAdmin" asp-controller="AdmUserGroupPrivilege" asp-action="Index">Privileges</a>
+                                }
+                                @if (SY_USR != null)
+                                {
+                                    <a class="collapse-item" asp-area="SysAdmin" asp-controller="AdmUser" asp-action="Index">Users</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Settings Collapse Menu -->
+                @if (hasSettingsPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSettings" aria-expanded="true" aria-controls="collapseSettings">
+                            <i class="fas fa-fw fa-cogs"></i>
+                            <span>Settings</span>
+                        </a>
+                        <div id="collapseSettings" class="collapse" aria-labelledby="headingSettings" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (ADM_ORG != null)
+                                {
+                                    <a class="collapse-item" asp-area="General" asp-controller="OrgInfo" asp-action="Index">Organization</a>
+                                }
+                                @if (ADM_Entity != null)
+                                {
+                                    <a class="collapse-item" asp-area="General" asp-controller="OrgEntity" asp-action="Index">Entity</a>
+                                }
+                                @if (ADM_DEPT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Entity" asp-controller="OrgDepartment" asp-action="Index">Departments</a>
+                                }
+                                @if (ADM_LOC != null)
+                                {
+                                    <a class="collapse-item" asp-area="Entity" asp-controller="OrgLocation" asp-action="Index">Locations</a>
+                                }
+                                @if (ADM_CNTRY != null)
+                                {
+                                    <a class="collapse-item" asp-area="General" asp-controller="OrgCountry" asp-action="Index">Countries</a>
+                                }
+                                @if (ADM_NLTY != null)
+                                {
+                                    <a class="collapse-item" asp-area="General" asp-controller="OrgNationality" asp-action="Index">Nationalities</a>
+                                }
+                                @if (ADM_HLDY != null)
+                                {
+                                    <a class="collapse-item" asp-area="Entity" asp-controller="OrgHoliday" asp-action="Index">Holidays</a>
+                                }
+
+                                @if (hasSettingsGeneralPrivs && (hasSettingsHRPrivs || hasSettingsShiftPrivs || hasSettingsPayrollPrivs))
+                                {
+                                    <hr style="margin:4px 16px;border:0;border-top:1px solid #eaecf4;" />
+                                }
+
+                                @if (EM_CNF != null)
+                                {
+                                    <a class="collapse-item" asp-area="Employee" asp-controller="HrEmpConfig" asp-action="Index">Employee Configuration</a>
+                                }
+                                @if (ADM_EM_GRD != null)
+                                {
+                                    <a class="collapse-item" asp-area="Employee" asp-controller="HrEmpGrade" asp-action="Index">Employee Grades</a>
+                                }
+                                @if (ADM_DESG != null)
+                                {
+                                    <a class="collapse-item" asp-area="Entity" asp-controller="OrgDesignation" asp-action="Index">Designations</a>
+                                }
+                                @if (ADM_EM_GRP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Employee" asp-controller="HrEmpGroup" asp-action="Index">Employee Groups</a>
+                                }
+
+                                @if (hasSettingsHRPrivs && (hasSettingsShiftPrivs || hasSettingsPayrollPrivs))
+                                {
+                                    <hr style="margin:4px 16px;border:0;border-top:1px solid #eaecf4;" />
+                                }
+
+                                @if (WK_SFT != null)
+                                {
+                                    <a class="collapse-item" asp-area="WorkShift" asp-controller="HrWkShift" asp-action="Index">Work Shifts</a>
+                                }
+
+                                @if (hasSettingsShiftPrivs && hasSettingsPayrollPrivs)
+                                {
+                                    <hr style="margin:4px 16px;border:0;border-top:1px solid #eaecf4;" />
+                                }
+
+                                @if (PR_CONF != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrConfig" asp-action="Index">Payroll Configuration</a>
+                                }
+                                @if (OT_RT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrOtrate" asp-action="Index">OT Rates</a>
+                                }
+                                @if (STF_LN_TYP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStfLoanType" asp-action="Index">Staff Loan Types</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+            }
+
+            <!-- Divider -->
+            @*<hr class="sidebar-divider">*@
+
+            <!-- Heading -->
+            @*<div class="sidebar-heading">
+                    Test Link
+                </div>*@
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            @*<li class="nav-item">
+                    <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
+                        <i class="fas fa-fw fa-folder"></i>
+                        <span>Pages</span>
+                    </a>
+                    <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                        <div class="bg-white py-2 collapse-inner rounded">
+                            <h6 class="collapse-header">Test Priv Screens:</h6>
+                            <a class="collapse-item" asp-area="SysAdmin" asp-controller="AdmUserGroupPrivilege" asp-action="Index">Privileges</a>
+
+                        </div>
+                    </div>
+                </li>*@
+
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+
+        </ul>
+        <!-- End of Sidebar -->
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    @if (@HttpContextAccessor.HttpContext.Session.GetInt32("userID") != null)
+                    {
+                        <!-- Topbar Search -->
+                        <form class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search">
+                            <div class="input-group">
+                                <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
+                                <div class="input-group-append">
+                                    <button class="btn btn-primary" type="button">
+                                        <i class="fas fa-search fa-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        @if (@HttpContextAccessor.HttpContext.Session.GetInt32("userID") != null)
+                        {
+                            <!-- Nav Item - Search Dropdown (Visible Only XS) -->
+                            <li class="nav-item dropdown no-arrow d-sm-none">
+                                <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    <i class="fas fa-search fa-fw"></i>
+                                </a>
+                                <!-- Dropdown - Messages -->
+                                <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in" aria-labelledby="searchDropdown">
+                                    <form class="form-inline mr-auto w-100 navbar-search">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." aria-label="Search" aria-describedby="basic-addon2">
+                                            <div class="input-group-append">
+                                                <button class="btn btn-primary" type="button">
+                                                    <i class="fas fa-search fa-sm"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </li>
+                        }
+
+
+                        @if (@HttpContextAccessor.HttpContext.Session.GetInt32("userID") != null)
+                        {
+                            <!-- Nav Item - Messages -->
+                            <li class="nav-item dropdown no-arrow mx-1">
+                                <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" onclick="ReadNotifications();">
+                                    <i class="fas fa-bell fa-lg text-gray-600"></i>
+                                    <!-- Counter - Messages -->
+                                    <span id="notification" class="badge badge-danger badge-counter" style="display:none; font-size: 0.72rem; padding: 0.25em 0.45em;"></span>
+                                </a>
+                                <!-- Dropdown - Messages -->
+                                <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="messagesDropdown" style="width: 380px; max-width: 92vw; border-radius: 10px; border: 1px solid #e2e8f0; overflow: hidden; padding: 0;">
+                                    <div class="dropdown-header d-flex align-items-center justify-content-between py-2 px-3" style="background: #540033; color: #fff;">
+                                        <span class="font-weight-bold" style="font-size: 0.9rem;"><i class="fas fa-bell mr-1"></i> Notification Center</span>
+                                        <button type="button" class="btn btn-link btn-sm text-white p-0" style="font-size: 0.75rem; text-decoration: none; opacity: 0.85;" onclick="ReadNotifications();">Mark all as read</button>
+                                    </div>
+                                    <div id="notification-content" style="max-height: 380px; overflow-y: auto; overflow-x: hidden; scrollbar-width: thin;"></div>
+                                </div>
+                            </li>
+                            <div class="topbar-divider d-none d-sm-block"></div>
+                        }
+
+
+                        @{
+                            if (@HttpContextAccessor.HttpContext.Session.GetInt32("userID") != null)
+                            {
+
+                                string usrName = @HttpContextAccessor.HttpContext.Session.GetString("userFullName");
+                                string usrImage = @HttpContextAccessor.HttpContext.Session.GetString("userPhoto");
+                                if (string.IsNullOrWhiteSpace(usrImage))
+                                {
+                                    usrImage = "user.png";
+                                }
+                                <!-- Nav Item - User Information -->
+                                <li class="nav-item dropdown no-arrow">
+                                    <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                        <span class="mr-2 d-none d-lg-inline text-gray-900 small">@usrName</span>
+                                        <img class="img-profile rounded-circle" style="object-fit: cover;" src="~/attach/empImages/@usrImage" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';">
+                                    </a>
+                                    <!-- Dropdown - User Information -->
+                                    <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+
+                                        @if (HttpContextAccessor.HttpContext?.Session?.GetInt32("userGrpId") == 1)
+                                        {
+                                            <a class="dropdown-item" asp-area="Config" asp-controller="SysConfig" asp-action="Index">
+                                                <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
+                                                Settings
+                                            </a>
+                                        }
+                                        <a class="dropdown-item" asp-area="SysAdmin" asp-controller="AdmUser" asp-action="UserActivityLogInit">
+                                            <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
+                                            User Login Activities
+                                        </a>
+                                        <a class="dropdown-item" asp-area="SysAdmin" asp-controller="AdmUser" asp-action="ChangePassword" asp-route-id="@HttpContextAccessor.HttpContext.Session.GetInt32("userID")">
+                                            <i class="fas fa-lock fa-sm fa-fw mr-2 text-gray-400"></i>
+                                            Change Password
+                                        </a>
+                                        <div class="dropdown-divider"></div>
+                                        <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                            <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                            Logout
+                                        </a>
+                                    </div>
+                                </li>
+                            }
+                        }
+
+
+
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                    <!--Partial View for Messages-->
+                    <partial name="_StatusMessages.cshtml" />
+                    @RenderBody()
+                </div>
+                <!-- /.container-fluid -->
+            </div>
+            <!-- End of Main Content -->
+            <!-- Footer -->
+            <footer class="sticky-footer bg-gradient-secondary">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>Copyright &copy; Qatar Computer Services @DateTime.Now.Year</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Are you sure to logout?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Select "Logout" below if you are ready to end your current session.</div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <form id="logoutForm" class="form-inline" asp-area="Identity" asp-page="/Account/Logout" method="post">
+                        <button id="logout" type="submit" class="btn btn-primary" style="background-color: #540033; border-color: #540033;">Logout</button>
+                    </form>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="~/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <!-- Select2 Searchable Dropdown Plugin -->
+    <script src="~/js/select2.min.js"></script>
+
+    <!-- Global Fix for Bootstrap Modal + Syncfusion EJ2 Controls -->
+    <script>
+        // 1. Permanently neutralize Bootstrap's internal modal focus & scrollbar mechanics
+        // to stop the 60fps focus-bounce and 17px body shudder with Syncfusion popups
+        if (typeof $.fn.modal !== 'undefined' && $.fn.modal.Constructor) {
+            $.fn.modal.Constructor.prototype._enforceFocus = function () { };
+            $.fn.modal.Constructor.prototype._setScrollbar = function () { };
+            $.fn.modal.Constructor.prototype._resetScrollbar = function () { };
+            $.fn.modal.Constructor.prototype._checkScrollbar = function () { };
+            $.fn.modal.Constructor.prototype._adjustDialog = function () { };
+            $.fn.modal.Constructor.prototype._resetAdjustments = function () { };
+        }
+
+        // 2. Automatically lift any modal out of parent cards/grids and attach directly to <body>
+        // to prevent parent overflow:hidden / z-index / position clipping
+        $(document).on('show.bs.modal', '.modal', function () {
+            if (!$(this).parent().is('body')) {
+                $(this).appendTo('body');
+            }
+            $(this).removeClass('fade');
+        });
+
+        // 3. Unbind any focus trapping and refresh EJ2 controls on modal shown
+        $(document).on('shown.bs.modal', '.modal', function () {
+            $(document).off('focusin.modal');
+            $(document).off('focusin.bs.modal');
+            var modalEl = this;
+            setTimeout(function () {
+                $(modalEl).find('.e-control').each(function () {
+                    if (this.ej2_instances && this.ej2_instances.length > 0) {
+                        try { this.ej2_instances[0].refresh(); } catch (e) { }
+                    }
+                });
+            }, 50);
+        });
+
+        // 4. Global initialization for Select2 Searchable Dropdowns across all pages & modals
+        $(function () {
+            $('.select2-dropdown').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+        });
+
+        $(document).on('shown.bs.modal', '.modal', function () {
+            var $modal = $(this);
+            $modal.find('.select2-dropdown').each(function () {
+                $(this).select2({
+                    theme: 'bootstrap4',
+                    width: '100%',
+                    dropdownParent: $modal
+                });
+            });
+        });
+
+        $(document).on('shown.bs.collapse shown.bs.tab', function (e) {
+            $(e.target).find('.select2-dropdown').each(function () {
+                if (!$(this).data('select2')) {
+                    $(this).select2({
+                        theme: 'bootstrap4',
+                        width: '100%'
+                    });
+                } else {
+                    $(this).next('.select2-container').css('width', '100%');
+                }
+            });
+        });
+    </script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="~/vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="~/js/sb-admin-2.min.js"></script>
+
+    <!-- Page level plugins -->
+    <script src="~/vendor/chart.js/Chart.min.js"></script>
+
+    <!--START Syncfusion.EJ2 START-->
+    <!--Get Latest from --> 
+    <!--https://cdn.syncfusion.com/ej2/dist/ej2.min.js-->
+    <script src="~/js/ej2.min.js"></script>
+    <!--END Syncfusion.EJ2 END-->
+
+
+    @RenderSection("Scripts", required: false)
+    <!--START Syncfusion.EJ2 START-->
+    <ejs-scripts></ejs-scripts>
+    <ejs-treeview id="listdata"></ejs-treeview>
+    <!--END Syncfusion.EJ2 END-->
+
+
+    <script>
+
+        $(document).ready(function () {
+            GetNotifications(); //Push Notification List
+            GetNotificationCount(); //Push Notification Count
+        });
+
+
+        function updatePushList() {
+            setTimeout(function () {
+                GetNotifications()
+            }, 6000);
+
+        }
+
+
+        function updatePushCount() {
+            setTimeout(function () {
+                GetNotificationCount()
+            }, 6000);
+
+        }
+
+        function GetNotifications() {
+            $.ajax({
+                url: '/Home/GetNotifyList',
+                method: 'GET',
+                success: function (data) {
+                    var items = (data && data.data) ? data.data : [];
+                    if (!items || items.length === 0) {
+                        $("#notification-content").html(
+                            '<div class="text-center py-4 text-muted small">' +
+                            '<i class="fas fa-inbox fa-2x mb-2 d-block text-gray-300"></i>' +
+                            'No notifications' +
+                            '</div>'
+                        );
+                        return;
+                    }
+
+                    var html = '';
+                    $.each(items, function (i, obj) {
+                        var subj = obj.Subject || obj.subject || 'Notification';
+                        var msg = obj.Message || obj.message || '';
+                        var reqId = obj.ReqId || obj.reqId || 0;
+                        var isRead = (obj.PushReadStat !== undefined && obj.PushReadStat !== null) ? obj.PushReadStat : (obj.pushReadStat || false);
+                        var crtDate = obj.CrtDateTime || obj.crtDateTime || '';
+                        var timeStr = '';
+
+                        if (crtDate) {
+                            try {
+                                var d = new Date(crtDate);
+                                timeStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short' }) + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                            } catch (e) {
+                                timeStr = crtDate;
+                            }
+                        }
+
+                        var targetUrl = (reqId > 0) ? ('/Leave/HrLvRegister/Index?openLvId=' + reqId) : '#';
+                        var unreadBg = (!isRead) ? 'background-color: #f8fafc; border-left: 3px solid #540033;' : 'border-left: 3px solid transparent;';
+                        var boldClass = (!isRead) ? 'font-weight-bold text-gray-900' : 'text-gray-800';
+
+                        html += '<a class="dropdown-item d-flex align-items-start py-2 px-3 border-bottom" href="' + targetUrl + '" style="' + unreadBg + ' text-decoration: none; white-space: normal; transition: background 0.15s;">' +
+                                '  <div class="mr-2 mt-1" style="flex-shrink: 0;">' +
+                                '    <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: ' + (!isRead ? '#fbeff6' : '#f1f5f9') + '; color: #540033;">' +
+                                '      <i class="fas fa-calendar-alt fa-sm"></i>' +
+                                '    </div>' +
+                                '  </div>' +
+                                '  <div style="flex-grow: 1; min-width: 0;">' +
+                                '    <div class="' + boldClass + '" style="font-size: 0.82rem; line-height: 1.3; margin-bottom: 2px;">' + subj + '</div>' +
+                                '    <div class="text-muted small" style="font-size: 0.75rem; line-height: 1.3; color: #64748b !important;">' + msg + '</div>' +
+                                (timeStr ? ('    <div class="text-xs text-muted mt-1" style="font-size: 0.68rem; color: #94a3b8 !important;"><i class="far fa-clock mr-1"></i>' + timeStr + '</div>') : '') +
+                                '  </div>' +
+                                '</a>';
+                    });
+
+                    $("#notification-content").html(html);
+                }
+            });
+            updatePushList();
+        }
+
+        function GetNotificationCount() {
+            $.ajax({
+                url: '/Home/GetNotifyCount',
+                method: 'GET',
+                success: function (data) {
+                    var items = (data && data.data) ? data.data : [];
+                    var recCount = items.length;
+                    if (recCount > 0) {
+                        $("#notification").show().text(recCount > 99 ? '99+' : recCount);
+                    } else {
+                        $("#notification").hide();
+                    }
+                }
+            });
+            updatePushCount();
+        }
+
+        function ReadNotifications() {
+            $.ajax({
+                url: '/Home/ReadNotify',
+                method: 'GET',
+                success: function (data) {
+                    $("#notification").hide();
+                }
+            });
+        }
+
+        $("#sidebarToggle").click(function (e) {
+            e.preventDefault();
+            $("#accordionSidebar").toggleClass("toggled");
+        });
+
+    </script>
+</body>
+</html>

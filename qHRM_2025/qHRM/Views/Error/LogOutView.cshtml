@@ -1,0 +1,58 @@
+﻿
+@{
+    ViewData["Title"] = "qHR System";
+}
+
+<style type="text/css">
+    .logout-image {
+        background-image: url("~/images/qcsLogoBw.gif");
+        background-color: #cccccc;
+        height: 450px;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        position: relative;
+    }
+
+    .logout-text {
+        text-align: center;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: white;
+    }
+</style>
+
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-xl-10 col-lg-12 col-md-9">
+            <div class="card o-hidden border-0 shadow-lg my-5">
+                <div class="card-body p-0">
+                    <div class="row">
+                        <div class="col-lg-6 d-none d-lg-block">
+                            <img src="~/images/bg-banner.png">
+                        </div>
+
+                        <div class="col-lg-6">
+                            <div class="p-5">
+                                <div class="logout-image">
+                                    <div class="logout-text">
+                                        <h1 style="font-size:30px">HR and Payroll</h1>
+                                        <h4>You were logged out.</h4>
+                                        <form asp-action="Index" asp-controller="Home">
+                                            <button type="submit" class="btn btn-primary btn-block">Login Back</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+

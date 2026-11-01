@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup Label="Globals">
+    <SccProjectName>%24/qHRP_Dev/SourceCodes/qHRM_2025/qHRM</SccProjectName>
+    <SccProvider>{4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}</SccProvider>
+    <SccAuxPath>http://appdev-vm:8080/tfs/qhrmaster</SccAuxPath>
+    <SccLocalPath>.</SccLocalPath>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>qHRM</AssemblyName>
+    <UserSecretsId>7d1696fe-618a-4af6-913d-2c756197d885</UserSecretsId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Areas\Attendance\Views\HrEmpAttendance\**" />
+    <Compile Remove="Areas\Payroll\Views\HrPrLvSlry\**" />
+    <Content Remove="Areas\Attendance\Views\HrEmpAttendance\**" />
+    <Content Remove="Areas\Payroll\Views\HrPrLvSlry\**" />
+    <EmbeddedResource Remove="Areas\Attendance\Views\HrEmpAttendance\**" />
+    <EmbeddedResource Remove="Areas\Payroll\Views\HrPrLvSlry\**" />
+    <None Remove="Areas\Attendance\Views\HrEmpAttendance\**" />
+    <None Remove="Areas\Payroll\Views\HrPrLvSlry\**" />
+    <Content Remove="wwwroot\salary\**" />
+    <None Include="wwwroot\salary\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Remove="Areas\Attendance\Controllers\HrEmpAttendanceController.cs" />
+    <Compile Remove="Areas\Attendance\Models\HrEmpAttendance.cs" />
+    <Compile Remove="Areas\Employee\Models\HrEmpGenInfo_temp.cs" />
+    <Compile Remove="Areas\Leave\Models\HrLvSlryEncsh.cs" />
+    <Compile Remove="Areas\Leave\Models\HrLvTktDtl.cs" />
+    <Compile Remove="Areas\SysAdmin\Data\AdmUserContext.cs" />
+    <Compile Remove="Areas\SysAdmin\Data\AdmUserGroupContext.cs" />
+    <Compile Remove="Areas\SysAdmin\Data\UserPrivileges.cs" />
+    <Compile Remove="Extensions\SessionExtensions.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AspNetCore.Reporting" Version="2.1.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Relational" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.14.2" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Syncfusion.EJ2.AspNet.Core" Version="18.3.0.44" />
+    <PackageReference Include="Syncfusion.EJ2.PdfViewer.AspNet.Core.Windows" Version="18.3.0.44" />
+    <PackageReference Include="Syncfusion.Pdf.Net.Core" Version="18.3.0.44" />
+    <PackageReference Include="Syncfusion.XlsIO.Net.Core" Version="18.3.0.44" />
+    <PackageReference Include="System.CodeDom" Version="10.0.0" />
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.Security.Permissions" Version="9.0.0" />
+    <PackageReference Include="System.Drawing.Common" Version="4.7.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\attach\empPaySlip\" />
+    <Folder Include="wwwroot\attach\slrySheet\" />
+    <Folder Include="wwwroot\errorLog\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Extensions\SessionExtensions.cs" />
+  </ItemGroup>
+
+</Project>

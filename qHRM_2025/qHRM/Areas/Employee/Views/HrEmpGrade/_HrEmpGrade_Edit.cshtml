@@ -1,0 +1,41 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpGrade
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrEmpGrade"))
+{
+<div class="dl-horizontal">
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    @Html.HiddenFor(model => model.GrdId)
+
+<div class="form-group">
+    <label asp-for="GrdCode" class="control-label"></label>
+    <input asp-for="ex_GrdCode" class="form-control form-control-sm" hidden />
+    <input asp-for="GrdCode" class="form-control form-control-sm" />
+    <span asp-validation-for="GrdCode" class="text-danger"></span>
+</div>
+    <div class="form-group">
+        
+        <label asp-for="TitleEng" class="control-label"></label>
+        <input asp-for="TitleEng" class="form-control form-control-sm" />
+        <span asp-validation-for="TitleEng" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="DescEng" class="control-label"></label>
+        <input asp-for="DescEng" class="form-control form-control-sm" />
+        <span asp-validation-for="DescEng" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        @if (ViewBag.RecEdit == true)
+        {
+            <input type="submit" value="Save" class="btn btn-sm btn-dark btn-block" />
+        }
+            <input type="button" value="Close" class="btn btn-sm btn-primary btn-block" data-dismiss="modal" />
+        </div>
+</div>
+
+}
+
+

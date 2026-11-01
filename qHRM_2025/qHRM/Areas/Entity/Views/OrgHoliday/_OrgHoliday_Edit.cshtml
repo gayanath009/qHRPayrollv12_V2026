@@ -1,0 +1,75 @@
+﻿@model qHRM.Areas.Entity.Models.OrgHoliday
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "OrgHoliday"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.HdId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="StDate" class="control-label"></label>
+                <input id="txtStDate" asp-for="StDate" class="form-control form-control-sm" />
+                <span asp-validation-for="StDate" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EndDate" class="control-label"></label>
+                <input id="txtEndDate" asp-for="EndDate" class="form-control form-control-sm" />
+                <span asp-validation-for="EndDate" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <div class="form-check">
+                    <input type="checkbox" asp-for="Recurring" class="form-check-input" id="chkRecurring">Recurring
+                    <span asp-validation-for="Recurring" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="NameEng" class="control-label"></label>
+                <input asp-for="NameEng" class="form-control form-control-sm" />
+                <span asp-validation-for="NameEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(document).ready(function () {
+        var stDate = $('#txtStDate').val();
+        var endDate = $('#txtEndDate').val();
+        var currentDate = new Date();
+
+        var StartDate = new Date(stDate);
+        var EndDate = new Date(endDate);       
+
+        if (StartDate < currentDate) {
+            $("#txtStDate").attr("disabled", "disabled");
+        }
+        else {
+            $("#txtStDate").removeAttr("disabled");
+        }
+        if (EndDate < currentDate) {
+            $("#txtEndDate").attr("disabled", "disabled");
+        }
+        else {
+            $("#txtEndDate").removeAttr("disabled");
+        }
+    });
+
+</script>
+<ejs-scripts></ejs-scripts>

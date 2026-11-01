@@ -1,0 +1,13 @@
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    string dashBoard = (HttpContextAccessor.HttpContext?.Session?.GetString("userDashboard") ?? "_emp_index_.cshtml").Trim();
+    if (string.IsNullOrWhiteSpace(dashBoard))
+    {
+        dashBoard = "_emp_index_.cshtml";
+    }
+}
+<partial name="~/Views/Home/@dashBoard"/>
+
+
+

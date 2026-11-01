@@ -1,0 +1,253 @@
+@model qHRM.Areas.Employee.Models.HrEmpDependent
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<form asp-action="Edit" asp-controller="HrEmpDependent" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="card">
+        <div class="card-body">
+            <input asp-for="DpndId" hidden />
+            <input asp-for="exPhotoName" hidden />
+            <input asp-for="exPhotoMime" hidden />
+            <input asp-for="RecStat" hidden />
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label asp-for="RltnTyp" class="control-label"></label>
+                    <select asp-for="RltnTyp" id="drpRltnTyp" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstRltnTyp, "ElmntTxt", "ElmntTxt", Model?.RltnTyp))">
+                        <option value="">-- Select Relationship --</option>
+                    </select>
+                    <span asp-validation-for="RltnTyp" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="Title" class="control-label"></label>
+                    <select asp-for="Title" id="drpTitle" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstTitle, "ElmntTxt", "ElmntTxt", Model?.Title))">
+                        <option value="">-- Select Title --</option>
+                    </select>
+                    <span asp-validation-for="Title" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label asp-for="FirstName" class="control-label"></label>
+                    <input asp-for="FirstName" class="form-control form-control-sm" />
+                    <span asp-validation-for="FirstName" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="MdlName" class="control-label"></label>
+                    <input asp-for="MdlName" class="form-control form-control-sm" />
+                    <span asp-validation-for="MdlName" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-3">
+                    <label asp-for="LastName" class="control-label"></label>
+                    <input asp-for="LastName" class="form-control form-control-sm" />
+                    <span asp-validation-for="LastName" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label asp-for="PstName" class="control-label"></label>
+                    <input asp-for="PstName" class="form-control form-control-sm" />
+                    <span asp-validation-for="PstName" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label asp-for="NameArb" class="control-label"></label>
+                    <input asp-for="NameArb" class="form-control form-control-sm" />
+                    <span asp-validation-for="NameArb" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="Dob" class="control-label"></label>
+                    <input asp-for="Dob" class="form-control form-control-sm" />
+                    <span asp-validation-for="Dob" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="Gender" class="control-label"></label>
+                    <select asp-for="Gender" id="drpGender" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstGender, "ElmntTxt", "ElmntTxt", Model?.Gender))">
+                        <option value="">-- Select Gender --</option>
+                    </select>
+                    <span asp-validation-for="Gender" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="BldGrp" class="control-label"></label>
+                    <select asp-for="BldGrp" id="drpBldGrp" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstBldGrp, "ElmntTxt", "ElmntTxt", Model?.BldGrp))">
+                        <option value="">-- Select Blood Group --</option>
+                    </select>
+                    <span asp-validation-for="BldGrp" class="text-danger"></span>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="CntryId" class="control-label"></label>
+                    <select asp-for="CntryId" id="drpCntry" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstCntry, "CntryId", "CntryNameEng", Model?.CntryId))">
+                        <option value="">-- Select Country --</option>
+                    </select>
+                    <span asp-validation-for="CntryId" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="NltyId" class="control-label"></label>
+                    <select asp-for="NltyId" id="drpNlty" class="form-control form-control-sm select2-dropdown">
+                        <option value="">-- Select Nationality --</option>
+                    </select>
+                    <span asp-validation-for="NltyId" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="MblPhone" class="control-label"></label>
+                    <input asp-for="MblPhone" class="form-control form-control-sm" />
+                    <span asp-validation-for="MblPhone" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="PsnEmail" class="control-label"></label>
+                    <input asp-for="PsnEmail" class="form-control form-control-sm" />
+                    <span asp-validation-for="PsnEmail" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="PmtTyp" class="control-label"></label>
+                    <select asp-for="PmtTyp" id="drpPmtType" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstDpdPmtTyp, "ElmntTxt", "ElmntTxt", Model?.PmtTyp))">
+                        <option value="">-- Select Permit Type --</option>
+                    </select>
+                    <span asp-validation-for="PmtTyp" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="PmtId" class="control-label"></label>
+                    <input asp-for="exPmtId" hidden />
+                    <input asp-for="PmtId" class="form-control form-control-sm" />
+                    <span asp-validation-for="PmtId" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="PmtExpDate" class="control-label"></label>
+                    <input asp-for="PmtExpDate" class="form-control form-control-sm" />
+                    <span asp-validation-for="PmtExpDate" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label asp-for="PstNo" class="control-label"></label>
+                    <input asp-for="exPstNo" hidden />
+                    <input asp-for="PstNo" class="form-control form-control-sm" />
+                    <span asp-validation-for="PstNo" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="PstExpDate" class="control-label"></label>
+                    <input asp-for="PstExpDate" class="form-control form-control-sm" />
+                    <span asp-validation-for="PstExpDate" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-4">
+                    <label asp-for="PstCntryId" class="control-label"></label>
+                    <select asp-for="PstCntryId" id="drpPstCntry" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstCntry, "CntryId", "CntryNameEng", Model?.PstCntryId))">
+                        <option value="">-- Select Country --</option>
+                    </select>
+                    <span asp-validation-for="PstCntryId" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label asp-for="Occupation" class="control-label"></label>
+                    <select asp-for="Occupation" id="drpOccupation" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstOccup, "ElmntTxt", "ElmntTxt", Model?.Occupation))">
+                        <option value="">-- Select Occupation --</option>
+                    </select>
+                    <span asp-validation-for="Occupation" class="text-danger"></span>
+                </div>
+                <div class="form-group col-md-6">
+                    <label asp-for="Institute" class="control-label"></label>
+                    <input asp-for="Institute" class="form-control form-control-sm" rows="5" />
+                    <span asp-validation-for="Institute" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label for="formControl">Image</label>
+                    <ejs-uploader id="imgUpload" autoUpload="false" allowedExtensions=".jpg, .png, .jpeg" maxFileSize="500000"></ejs-uploader>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <img src="~/attach/depndImages/@Model.PhotoName" width="165" height="220" />
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-12">
+                    <label asp-for="Note" class="control-label"></label>
+                    <input asp-for="Note" class="form-control form-control-sm" rows="5" />
+                    <span asp-validation-for="Note" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        @if (ViewBag.RecEdit == true)
+        {
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+        }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</form>
+<ejs-scripts></ejs-scripts>
+
+<script>
+    var allNlties = @Html.Raw(Json.Serialize(ViewBag.lstNlty));
+    var initialNltyId = @Html.Raw(Json.Serialize(Model?.NltyId));
+
+    function filterNlty(cntryId, selectedNltyId) {
+        var $nlty = $('#drpNlty');
+        $nlty.empty();
+        $nlty.append($('<option value="">-- Select Nationality --</option>'));
+        if (cntryId && allNlties) {
+            var filtered = allNlties.filter(function(n) { return (n.cntryId || n.CntryId) == cntryId; });
+            $.each(filtered, function(i, item) {
+                var id = item.nltyId || item.NltyId;
+                var text = item.nltyNameEng || item.NltyNameEng;
+                var opt = $('<option></option>').val(id).text(text);
+                if (id == selectedNltyId) {
+                    opt.prop('selected', true);
+                }
+                $nlty.append(opt);
+            });
+            $nlty.prop('disabled', false);
+        } else {
+            $nlty.prop('disabled', true);
+        }
+        $nlty.trigger('change.select2');
+    }
+
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        // Initialize nationality dropdown
+        var currentCntry = $('#drpCntry').val();
+        if (currentCntry) {
+            filterNlty(currentCntry, initialNltyId);
+        }
+
+        $('#drpCntry').on('change', function () {
+            filterNlty($(this).val(), null);
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

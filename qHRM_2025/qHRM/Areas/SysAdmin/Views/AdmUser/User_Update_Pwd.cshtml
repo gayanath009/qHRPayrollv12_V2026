@@ -1,0 +1,178 @@
+@model qHRM.Areas.SysAdmin.Models.AdmUserView
+@{
+    ViewData["Title"] = "Change Password";
+}
+
+<div class="container-fluid px-3 py-2">
+    <!-- Header Section -->
+    <div class="mb-4">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <div class="org-icon-badge mr-3" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(91, 13, 50, 0.1); display: flex; align-items: center; justify-content: center; color: #5b0d32; font-size: 1.3rem;">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <h1 class="h4 mb-0 font-weight-bold text-gray-800">Change Password</h1>
+                        <span class="badge badge-secondary px-2 py-1" style="font-size: 0.75rem;">SECURITY</span>
+                        <span class="badge badge-success px-2 py-1" style="font-size: 0.75rem; background-color: #28a745;">
+                            <i class="fas fa-lock mr-1"></i> AES-256 Encrypted
+                        </span>
+                    </div>
+                    <div class="small text-muted mt-1">
+                        <a asp-area="SysAdmin" asp-controller="AdmUser" asp-action="Index" class="text-muted text-decoration-none">System Administration</a>
+                        <span class="mx-1">&bull;</span>
+                        <span class="text-dark font-weight-medium">User Credentials</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Change Password Card -->
+    <div class="row">
+        <div class="col-lg-6 col-md-8 col-12">
+            <div class="card shadow-sm border-0 mb-4" style="border-radius: 12px;">
+                <div class="card-header bg-white py-3 border-bottom d-flex align-items-center justify-content-between" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <h6 class="m-0 font-weight-bold" style="color: #5b0d32;">
+                        <i class="fas fa-key mr-2"></i> Update Password
+                    </h6>
+                    <small class="text-muted"><i class="fas fa-info-circle mr-1"></i> AES-256 Policy</small>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChangePassword" asp-controller="AdmUser" method="post" id="formChangePassword">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small mb-3"></div>
+
+                        <!-- Hidden fields to ensure model state and user identity are preserved -->
+                        <input type="hidden" asp-for="Usr_Id" />
+                        <input type="hidden" asp-for="Usr_Name" />
+                        <input type="hidden" asp-for="Full_Name" />
+                        <input type="hidden" asp-for="AspUser_Id" />
+                        <input type="hidden" asp-for="AspUser_Name" />
+                        <input type="hidden" asp-for="email" />
+                        <input type="hidden" asp-for="Grp_Id" />
+                        <input type="hidden" asp-for="Emp_Sys_Id" />
+                        <input type="hidden" asp-for="EntityId" />
+
+                        <!-- Read-only Display Fields -->
+                        <div class="form-group mb-3">
+                            <label class="control-label small font-weight-bold text-gray-700">User Name</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-user text-muted"></i></span>
+                                </div>
+                                <input value="@Model?.Usr_Name" class="form-control form-control-sm bg-light" disabled style="border-left: 0;" />
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label class="control-label small font-weight-bold text-gray-700">Employee</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-light border-right-0"><i class="fas fa-id-badge text-muted"></i></span>
+                                </div>
+                                <input value="@Model?.Full_Name" class="form-control form-control-sm bg-light" disabled style="border-left: 0;" />
+                            </div>
+                        </div>
+
+                        <hr class="my-3" />
+
+                        <!-- Old Password Field -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Old_Password" class="control-label small font-weight-bold text-gray-700">Current (Old) Password</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-unlock text-muted"></i></span>
+                                </div>
+                                <input asp-for="Old_Password" type="password" id="inputOldPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Enter current password" autocomplete="current-password" required />
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-password-btn" type="button" data-target="#inputOldPassword" tabindex="-1">
+                                        <i class="fas fa-eye text-muted"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Old_Password" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <!-- New Password Field -->
+                        <div class="form-group mb-3">
+                            <label asp-for="Password" class="control-label small font-weight-bold text-gray-700">New Password</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-lock text-muted"></i></span>
+                                </div>
+                                <input asp-for="Password" type="password" id="inputNewPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Enter new password (min. 6 chars)" autocomplete="new-password" required />
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-password-btn" type="button" data-target="#inputNewPassword" tabindex="-1">
+                                        <i class="fas fa-eye text-muted"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <!-- Confirm Password Field -->
+                        <div class="form-group mb-4">
+                            <label asp-for="ConfirmPassword" class="control-label small font-weight-bold text-gray-700">Confirm New Password</label>
+                            <div class="input-group">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text bg-white border-right-0"><i class="fas fa-check-double text-muted"></i></span>
+                                </div>
+                                <input asp-for="ConfirmPassword" type="password" id="inputConfirmPassword" class="form-control form-control-sm border-left-0 border-right-0" placeholder="Re-enter new password" autocomplete="new-password" required />
+                                <div class="input-group-append">
+                                    <button class="btn btn-sm btn-outline-secondary border-left-0 toggle-password-btn" type="button" data-target="#inputConfirmPassword" tabindex="-1">
+                                        <i class="fas fa-eye text-muted"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <span asp-validation-for="ConfirmPassword" class="text-danger small mt-1 d-block"></span>
+                        </div>
+
+                        <!-- Policy Info Alert -->
+                        <div class="alert alert-light border small text-muted py-2 mb-4 d-flex align-items-center" style="border-radius: 8px;">
+                            <i class="fas fa-shield-alt fa-lg text-success mr-2"></i>
+                            <div>
+                                Passwords are encrypted using <strong>AES-256</strong> per the application security policy.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-flex align-items-center justify-content-between pt-2">
+                            <button type="submit" class="btn btn-sm px-4 text-white font-weight-medium shadow-sm" style="background-color: #5b0d32; border-color: #5b0d32; border-radius: 6px;">
+                                <i class="fas fa-check mr-1"></i> Update Password
+                            </button>
+                            <a asp-area="SysAdmin" asp-controller="AdmUser" asp-action="Index" class="btn btn-sm btn-outline-secondary px-3" style="border-radius: 6px;">
+                                <i class="fas fa-arrow-left mr-1"></i> Back
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<script>
+    $(document).ready(function () {
+        // Toggle Show/Hide Password
+        $('.toggle-password-btn').on('click', function () {
+            var targetSelector = $(this).data('target');
+            var $input = $(targetSelector);
+            var $icon = $(this).find('i');
+
+            if ($input.attr('type') === 'password') {
+                $input.attr('type', 'text');
+                $icon.removeClass('fa-eye').addClass('fa-eye-slash');
+            } else {
+                $input.attr('type', 'password');
+                $icon.removeClass('fa-eye-slash').addClass('fa-eye');
+            }
+        });
+    });
+</script>
+
+
+

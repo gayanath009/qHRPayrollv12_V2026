@@ -1,0 +1,688 @@
+@using Syncfusion.EJ2
+@model qHRM.Areas.Payroll.Models.ZohoConvertViewModel
+@{
+    ViewData["Title"] = "Convert Zoho File";
+    string[] monthNames = new[] { "", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    string currentMonthName = (Model.Month >= 1 && Model.Month <= 12) ? monthNames[Model.Month] : "";
+}
+
+<style>
+    :root {
+        /* Design tokens matching HrSalSlip & HrPrSlryPrcDtl */
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-surface2: #f1f5f9;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-accent: #6366f1;
+        --clr-accent2: #8b5cf6;
+        --clr-success: #16a34a;
+        --clr-warning: #f59e0b;
+        --clr-danger: #ef4444;
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 6px 24px rgba(2,6,23,0.06);
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .slry-wrap { font-family: 'Inter', sans-serif; padding: 0; }
+
+    /* ─── Compact Header Card (HrSalSlip OrgHeroCard Style) ─── */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border, #e2e8f0);
+        padding: 0.75rem 1.25rem;
+        margin: 0.75rem 2rem 1.25rem 2rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: #fdf2f8;
+        color: #540033;
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fbcfe8;
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    /* ─── Stat Cards (HrSalSlip Style) ─── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+        padding: 0 2rem;
+    }
+
+    .stat-card {
+        background: var(--clr-surface);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.25rem;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99,102,241,0.35);
+        box-shadow: 0 4px 14px rgba(2,6,23,0.08);
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+
+    .stat-card.sc-indigo::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.sc-green::before  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.sc-red::before    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.sc-amber::before  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card.sc-cyan::before   { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+    .stat-card.sc-maroon::before { background: linear-gradient(90deg, #540033, #990049); }
+
+    .stat-card-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--clr-muted);
+    }
+
+    .stat-card-val {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        margin-top: 0.25rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .stat-card-sub {
+        font-size: 0.7rem;
+        color: var(--clr-muted);
+        margin-top: 0.2rem;
+    }
+
+    /* ─── Control Panels (HrSalSlip Card Style) ─── */
+    .ctrl-panel {
+        background: var(--clr-surface);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
+        padding: 1.25rem 1.5rem;
+        box-shadow: var(--shadow-sm);
+        margin: 0 2rem 1.25rem 2rem;
+    }
+
+    .ctrl-panel-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: var(--clr-muted);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .ctrl-panel-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: var(--clr-border);
+    }
+
+    .ctrl-group { margin-bottom: 0.85rem; }
+    .ctrl-label {
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: var(--clr-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin-bottom: 0.35rem;
+    }
+
+    .ctrl-select {
+        width: 100%;
+        background: var(--clr-surface2);
+        border: 1px solid var(--clr-border);
+        color: var(--clr-text);
+        border-radius: var(--radius-sm);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.2s;
+        font-family: 'Inter', sans-serif;
+    }
+
+    .ctrl-select:focus { border-color: var(--clr-accent); }
+    .ctrl-select option { background: var(--clr-surface2); }
+
+    /* ─── Action Buttons (HrSalSlip Exact Styles & Colors) ─── */
+    .action-btn {
+        border: none;
+        border-radius: var(--radius-sm);
+        padding: 0.55rem 1.1rem;
+        font-size: 0.82rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-family: 'Inter', sans-serif;
+        letter-spacing: 0.01em;
+        text-decoration: none !important;
+        line-height: 1.4;
+    }
+
+    .action-btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .action-btn svg, .action-btn i { font-size: 0.95rem; flex-shrink: 0; }
+
+    /* HrSalSlip Button Colors */
+    .btn-process {
+        background: linear-gradient(135deg, #990049, #b80058);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(153,0,73,0.4);
+    }
+    .btn-process:hover:not(:disabled) {
+        box-shadow: 0 4px 20px rgba(153,0,73,0.6);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* 1. Outsourced Salary Sheet (HrSalSlip Maroon/Burgundy) */
+    .btn-outsourced {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(84,0,51,0.35);
+    }
+    .btn-outsourced:hover {
+        box-shadow: 0 4px 20px rgba(84,0,51,0.55);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* 2. In-House Salary Sheet (HrSalSlip Blue) */
+    .btn-inhouse {
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(2,132,199,0.35);
+    }
+    .btn-inhouse:hover {
+        box-shadow: 0 4px 20px rgba(2,132,199,0.55);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* 3. All Staff Sheet (HrSalSlip Slate/Navy) */
+    .btn-allstaff {
+        background: linear-gradient(135deg, #334155, #1e293b);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(30,41,59,0.35);
+    }
+    .btn-allstaff:hover {
+        box-shadow: 0 4px 20px rgba(30,41,59,0.55);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* 4. Summary Report (HrSalSlip Green) */
+    .btn-summary {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(34,197,94,0.35);
+    }
+    .btn-summary:hover {
+        box-shadow: 0 4px 20px rgba(34,197,94,0.55);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
+    /* ─── Grid Panel (HrSalSlip Exact Style) ─── */
+    .grid-panel {
+        background: var(--clr-surface);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin: 0 2rem 2rem 2rem;
+    }
+
+    .grid-panel-hdr {
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--clr-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .grid-panel-hdr h3 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        margin: 0;
+    }
+
+    .grid-inner { padding: 1rem; }
+
+    /* ─── Syncfusion EJ2 Grid Light-Theme Overrides (HrSalSlip Exact) ─── */
+    .e-grid { background: transparent !important; border: none !important; }
+    .e-grid .e-headercell {
+        background: #f8fafc !important;
+        color: var(--clr-muted) !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        border-color: var(--clr-border) !important;
+    }
+    .e-grid .e-rowcell {
+        background: transparent !important;
+        border-color: var(--clr-border) !important;
+        color: var(--clr-text) !important;
+        font-size: 0.8rem !important;
+    }
+    .e-grid .e-altrow .e-rowcell { background: #f8fafc !important; }
+    .e-grid .e-row:hover .e-rowcell { background: rgba(99,102,241,0.06) !important; }
+    .e-grid .e-footer-content, .e-grid .e-summarycell {
+        background: #f1f5f9 !important;
+        color: var(--clr-muted) !important;
+        font-size: 0.75rem !important;
+        border-color: var(--clr-border) !important;
+    }
+    .e-grid .e-summarycell a { color: var(--clr-accent) !important; text-decoration: none !important; }
+    .e-grid .e-summarycell a:hover { color: var(--clr-accent2) !important; }
+    .e-grid .e-pager { background: #f8fafc !important; border-color: var(--clr-border) !important; color: var(--clr-muted) !important; }
+    .e-grid .e-toolbar { background: #f8fafc !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-toolbar .e-tbar-btn {
+        background: var(--clr-surface) !important;
+        color: var(--clr-text) !important;
+        border: 1px solid var(--clr-border) !important;
+        border-radius: 6px !important;
+    }
+
+    .badge-inhouse {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+
+    .badge-outsourced {
+        background-color: #fdf2f8;
+        color: #990049;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="slry-wrap">
+
+    <!-- ─── 1. COMPACT HERO HEADER (HrSalSlip Style) ─── -->
+    <div class="org-hero-card">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <div class="org-icon-badge mr-3">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <h1 class="org-title">Convert Zoho File</h1>
+                        <span class="badge org-category-pill">PAYROLL</span>
+                    </div>
+                    <div class="org-breadcrumb">
+                        <a href="#" class="text-secondary font-weight-bold">Payroll</a> / <span class="text-dark font-weight-medium">Convert Zoho File</span>
+                        <span class="text-muted mx-1">&bull;</span>
+                        <span class="text-muted">Import Zoho salary details and generate salary sheets & summaries</span>
+                    </div>
+                </div>
+            </div>
+
+            @if (Model != null && Model.Employees != null && Model.Employees.Count > 0)
+            {
+                <form asp-action="Clear" method="post" class="mt-2 mt-sm-0">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="btn btn-sm btn-outline-secondary font-weight-bold" style="border-radius: var(--radius-sm); font-size: 0.78rem;" onclick="return confirm('Clear current imported data and upload a new file?');">
+                        <i class="fas fa-redo mr-1"></i> Upload New File
+                    </button>
+                </form>
+            }
+        </div>
+    </div>
+
+    <!-- ─── 2. STAT CARDS (HrSalSlip Style) ─── -->
+    @if (Model != null && Model.Employees != null && Model.Employees.Count > 0)
+    {
+        <div class="stat-grid">
+            <div class="stat-card sc-indigo">
+                <div class="stat-card-label">Total Employees</div>
+                <div class="stat-card-val">@Model.TotalCount</div>
+                <div class="stat-card-sub">
+                    <span class="badge-outsourced">@Model.OutsourcedCount Out</span>
+                    <span class="badge-inhouse ml-1">@Model.InHouseCount In</span>
+                </div>
+            </div>
+            <div class="stat-card sc-cyan">
+                <div class="stat-card-label">Total Fixed Salary</div>
+                <div class="stat-card-val">@Model.TotalFixedSalary.ToString("#,##0")</div>
+                <div class="stat-card-sub">Basic: @Model.TotalBasic.ToString("#,##0") QR.</div>
+            </div>
+            <div class="stat-card sc-green">
+                <div class="stat-card-label">Total Gross Salary</div>
+                <div class="stat-card-val">@Model.TotalGross.ToString("#,##0")</div>
+                <div class="stat-card-sub">Earnings & Allowances</div>
+            </div>
+            <div class="stat-card sc-red">
+                <div class="stat-card-label">Total Deductions</div>
+                <div class="stat-card-val" style="color: var(--clr-danger);">@Model.TotalDeductions.ToString("#,##0")</div>
+                <div class="stat-card-sub">Loans, No-Pay, Recoveries</div>
+            </div>
+            <div class="stat-card sc-maroon">
+                <div class="stat-card-label">Outsourced Staff Net</div>
+                <div class="stat-card-val" style="color: #990049;">@Model.OutsourcedStaffNet.ToString("#,##0")</div>
+                <div class="stat-card-sub">@Model.OutsourcedCount Employees</div>
+            </div>
+            <div class="stat-card sc-amber">
+                <div class="stat-card-label">Net Payable</div>
+                <div class="stat-card-val" style="color: #d97706;">@Model.TotalNetSalary.ToString("#,##0")</div>
+                <div class="stat-card-sub">In-House: @Model.InternalStaffNet.ToString("#,##0") QR.</div>
+            </div>
+        </div>
+    }
+
+    <!-- ─── 3. FILE IMPORT CARD (HrSalSlip ctrl-panel Style) ─── -->
+    <div class="ctrl-panel">
+        <div class="ctrl-panel-title">
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+            </svg>
+            Import Zoho File
+        </div>
+
+        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+            @Html.AntiForgeryToken()
+            <div class="row align-items-end">
+                <div class="col-lg-5 col-md-12 mb-3 mb-lg-0">
+                    <div class="ctrl-label">Select Zoho / Excel File (.xlsx or .xls)</div>
+                    <div class="custom-file">
+                        <input type="file" name="excelFile" class="custom-file-input" id="excelFile" accept=".xlsx, .xls" required />
+                        <label class="custom-file-label" for="excelFile" id="fileLabel" style="border-radius: var(--radius-sm); font-size: 0.85rem; color: var(--clr-muted);">Choose Zoho file...</label>
+                    </div>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3 mb-lg-0">
+                    <div class="ctrl-label">Salary Month</div>
+                    <select name="month" class="ctrl-select">
+                        @for (int m = 1; m <= 12; m++)
+                        {
+                            if (m == Model.Month)
+                            {
+                                <option value="@m" selected="selected">@monthNames[m]</option>
+                            }
+                            else
+                            {
+                                <option value="@m">@monthNames[m]</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-2 col-md-4 col-sm-6 mb-3 mb-lg-0">
+                    <div class="ctrl-label">Salary Year</div>
+                    <select name="year" class="ctrl-select">
+                        @for (int y = DateTime.Today.Year + 1; y >= DateTime.Today.Year - 5; y--)
+                        {
+                            if (y == Model.Year)
+                            {
+                                <option value="@y" selected="selected">@y</option>
+                            }
+                            else
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <div class="col-lg-3 col-md-4 col-sm-12 mb-3 mb-lg-0">
+                    <button type="submit" class="action-btn btn-process" style="width: 100%;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                            <path d="M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V10.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708l3-3z"/>
+                        </svg>
+                        <span>Process File</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- ─── 4. REPORT ACTION BUTTONS (HrSalSlip Button Styling & Colors) ─── -->
+    @if (Model != null && Model.Employees != null && Model.Employees.Count > 0)
+    {
+        <div class="ctrl-panel">
+            <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap: 1rem;">
+                <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                    <span class="font-weight-bold text-dark" style="font-size: 0.85rem;">
+                        <i class="fas fa-print text-muted mr-1"></i> Reports:
+                    </span>
+                    <span class="badge badge-light border text-muted py-1 px-2" style="font-size: 0.75rem;">
+                        @currentMonthName @Model.Year
+                    </span>
+                    @if (!string.IsNullOrEmpty(Model.FileName))
+                    {
+                        <span class="badge badge-light border text-muted py-1 px-2" style="font-size: 0.75rem;">
+                            <i class="fas fa-file-excel text-success mr-1"></i> @Model.FileName
+                        </span>
+                    }
+                </div>
+
+                <!-- Attached image 4 buttons with exact HrSalSlip colors -->
+                <div class="d-flex align-items-center flex-wrap" style="gap: 0.6rem;">
+                    <!-- 1. Outsourced Salary Sheet (Burgundy / Purple) -->
+                    <a href="@Url.Action("PrintStaffSalarySheet", "HrPrZohoConvert", new { area = "Payroll", sctn = 1 })" 
+                       target="_blank" class="action-btn btn-outsourced">
+                        <i class="far fa-file-pdf"></i>
+                        <span>Outsourced Salary Sheet</span>
+                    </a>
+
+                    <!-- 2. In-House Salary Sheet (Blue) -->
+                    <a href="@Url.Action("PrintStaffSalarySheet", "HrPrZohoConvert", new { area = "Payroll", sctn = 0 })" 
+                       target="_blank" class="action-btn btn-inhouse">
+                        <i class="far fa-file-pdf"></i>
+                        <span>In-House Salary Sheet</span>
+                    </a>
+
+                    <!-- 3. All Staff Sheet (Dark Slate Navy) -->
+                    <a href="@Url.Action("PrintStaffSalarySheet", "HrPrZohoConvert", new { area = "Payroll", sctn = 2 })" 
+                       target="_blank" class="action-btn btn-allstaff">
+                        <i class="far fa-file-pdf"></i>
+                        <span>All Staff Sheet</span>
+                    </a>
+
+                    <!-- 4. Summary Report (Green) -->
+                    <a href="@Url.Action("PrintSlrySht", "HrPrZohoConvert", new { area = "Payroll" })" 
+                       target="_blank" class="action-btn btn-summary">
+                        <i class="far fa-file-alt"></i>
+                        <span>Summary Report</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ─── 5. DATA GRID (HrSalSlip Syncfusion EJ2 Grid Exact Style) ─── -->
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>Salary Sheet Records</h3>
+                <span class="badge badge-light" style="font-size:0.75rem; color:var(--clr-muted); font-weight:600;">
+                    @Model.Employees.Count Records
+                </span>
+            </div>
+
+            <div class="grid-inner">
+                <ejs-grid id="Grid" width="auto" dataSource="@Model.Employees" allowSorting="true" allowPaging="true" allowGrouping="true" allowFiltering="true" allowResizing="true"
+                          allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                    <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                    <e-grid-aggregates>
+                        <e-grid-aggregate>
+                            <e-aggregate-columns>
+                                <e-aggregate-column field="Basic" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="HrAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="TrnsAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="PstnAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="ProjAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="IncntvAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="MobAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OtAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="MedAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="SpcAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrPmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="GrsSlry" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="SlryAdv" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="StfLnPmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="NoPayAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrRcvryAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="TotDctAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="BnkAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="CshAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="NtSlry" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                            </e-aggregate-columns>
+                        </e-grid-aggregate>
+                    </e-grid-aggregates>
+
+                    <e-grid-pagesettings pageCount=5 pageSize=20></e-grid-pagesettings>
+                    <e-grid-columns>
+                        <e-grid-column field="Index" headerText="SI" width="60" minWidth="10"></e-grid-column>
+                        <e-grid-column field="DeptName" headerText="Department" width="130" minWidth="10"></e-grid-column>
+                        <e-grid-column field="EmpId" headerText="Employee ID" width="110" minWidth="10"></e-grid-column>
+                        <e-grid-column field="FullName" headerText="Name" width="150" minWidth="10"></e-grid-column>
+                        <e-grid-column field="DesigName" headerText="Designation" width="135" minWidth="10"></e-grid-column>
+                        <e-grid-column field="InHouse" headerText="In-House" width="105" type="boolean" displayAsCheckBox="true" textAlign="Center"></e-grid-column>
+                        <e-grid-column field="AbFct" headerText="Absent" width="85" textAlign="Center"></e-grid-column>
+                        <e-grid-column field="Basic" headerText="Basic" width="120" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Allowances" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "HrAlwnc", Width = "115", HeaderText = "HRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "TrnsAlwnc", Width = "115", HeaderText = "TRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "PstnAlwnc", Width = "115", HeaderText = "Position", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "ProjAlwnc", Width = "115", HeaderText = "Project", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "IncntvAmt", Width = "115", HeaderText = "Incentives", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "MobAlwnc", Width = "115", HeaderText = "Mobile", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OtAmt", Width = "115", HeaderText = "Overtime", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "MedAlwnc", Width = "115", HeaderText = "Medical", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "SpcAlwnc", Width = "115", HeaderText = "Special", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrAlwnc", Width = "125", HeaderText = "Other Allowance", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrPmt", Width = "125", HeaderText = "Other Adjstmnt", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="GrsSlry" headerText="Gross Salary" width="135" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Deductions" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "SlryAdv", Width = "120", HeaderText = "Salary Advance", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "StfLnPmt", Width = "120", HeaderText = "Staff Loans", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "NoPayAmt", Width = "120", HeaderText = "NoPay", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrRcvryAmt", Width = "130", HeaderText = "Othr Adjustments", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="TotDctAmt" headerText="Total Deductions" width="135" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Net Salary" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "BnkAmt", Width = "130", HeaderText = "Bank Transfer", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "CshAmt", Width = "130", HeaderText = "Cash Payment", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "NtSlry", Width = "130", HeaderText = "Total Net", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="Rmks" headerText="Remarks" width="150"></e-grid-column>
+                    </e-grid-columns>
+                </ejs-grid>
+            </div>
+        </div>
+    }
+
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var fileInput = document.getElementById("excelFile");
+        var fileLabel = document.getElementById("fileLabel");
+        if (fileInput && fileLabel) {
+            fileInput.addEventListener("change", function () {
+                if (fileInput.files.length > 0) {
+                    fileLabel.textContent = fileInput.files[0].name;
+                }
+            });
+        }
+    });
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid");
+        if (gridObj && gridObj.ej2_instances && gridObj.ej2_instances[0]) {
+            if (args.item.id === 'Grid_excelexport') {
+                gridObj.ej2_instances[0].excelExport();
+            }
+        }
+    }
+</script>

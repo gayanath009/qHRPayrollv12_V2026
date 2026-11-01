@@ -1,0 +1,103 @@
+@model qHRM.Areas.Email.Models.SysConfig
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@{
+    ViewData["Title"] = "Settings";
+}
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Configuration</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item">Settings</li>
+                <li class="breadcrumb-item active">Configuration</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div id="tabs">
+
+                        @using (Html.BeginForm("Update", "SysConfig"))
+                        {
+                            <span class="alert-success ">
+                                @Html.ValidationSummary(true)
+                            </span>
+                            <div class="dl-horizontal">
+                                <div asp-validation-summary="ModelOnly" class="text-danger">
+                                </div>
+                                @Html.HiddenFor(model => model.Id)
+                                <div class="form-group">
+                                    <label asp-for="Server" class="control-label"></label>
+                                    <input asp-for="Server" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Server" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="Port" class="control-label"></label>
+                                    <input asp-for="Port" class="form-control form-control-sm" />
+                                    <span asp-validation-for="Port" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="FromEmail" class="control-label"></label>
+                                    <input asp-for="FromEmail" class="form-control form-control-sm" />
+                                    <span asp-validation-for="FromEmail" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="TestEmail" class="control-label"></label>
+                                    <input asp-for="TestEmail" class="form-control form-control-sm" />
+                                    <span asp-validation-for="TestEmail" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label asp-for="ServiceAcct" class="control-label"></label>
+                                    <input asp-for="ServiceAcct" class="form-control form-control-sm" />
+                                    <span asp-validation-for="ServiceAcct" class="text-danger"></span>
+                                </div>
+                                <div class="form-group">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <label asp-for="ServiceAcctPwd" class="control-label mb-0"></label>
+                                        <span class="badge badge-success" style="font-size: 0.72rem;">
+                                            <i class="fas fa-lock mr-1"></i>AES-256 Encrypted in Database
+                                        </span>
+                                    </div>
+                                    <div class="input-group input-group-sm">
+                                        <input asp-for="ServiceAcctPwd" id="txtServiceAcctPwd" type="password" class="form-control" autocomplete="new-password" />
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" id="btnTogglePwd" onclick="togglePasswordVisibility()">
+                                                <i class="fas fa-eye" id="iconTogglePwd"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <small class="form-text text-muted">Password will be stored encrypted with AES-256 in the database.</small>
+                                    <span asp-validation-for="ServiceAcctPwd" class="text-danger"></span>
+                                </div>
+                                <div class="form-group mt-4">
+                                    <button type="submit" class="btn btn-primary btn-block">
+                                        <i class="fas fa-save mr-1"></i> Save Configuration
+                                    </button>
+                                </div>
+                            </div>
+                        }
+
+                        <script>
+                            function togglePasswordVisibility() {
+                                var input = document.getElementById("txtServiceAcctPwd");
+                                var icon = document.getElementById("iconTogglePwd");
+                                if (input.type === "password") {
+                                    input.type = "text";
+                                    icon.classList.remove("fa-eye");
+                                    icon.classList.add("fa-eye-slash");
+                                } else {
+                                    input.type = "password";
+                                    icon.classList.remove("fa-eye-slash");
+                                    icon.classList.add("fa-eye");
+                                }
+                            }
+                        </script>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}
+

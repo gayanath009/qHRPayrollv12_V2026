@@ -1,0 +1,22 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpDpndDoc
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("Delete", "HrEmpDpndDoc"))
+{<div>
+    @Html.HiddenFor(model => model.DocId)
+    @Html.HiddenFor(model => model.DocName)
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.DocTypId) : @Html.DisplayFor(model => model.DocTypId)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.Desc) : @Html.DisplayFor(model => model.Desc)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.DocName) : @Html.DisplayFor(model => model.DocName)
+    </div>
+    @if (ViewBag.RecDelete == true)
+    {
+        <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+    </div>
+}

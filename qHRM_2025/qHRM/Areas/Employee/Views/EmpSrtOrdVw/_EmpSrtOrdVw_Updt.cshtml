@@ -1,0 +1,53 @@
+﻿@model qHRM.Areas.Employee.Models.EmpSrtOrdVw
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("Update", "EmpSrtOrdVw"))
+{<div>
+    @Html.HiddenFor(model => model.EmpSysId)
+    @Html.HiddenFor(model => model.DeptId)
+    @Html.HiddenFor(model => model.DeptSrtOrd)
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.DeptName) : @Html.DisplayFor(model => model.DeptName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.DesigName) : @Html.DisplayFor(model => model.DesigName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.EmpId) : @Html.DisplayFor(model => model.EmpId)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.EmpName) : @Html.DisplayFor(model => model.EmpName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.EmpSrtOrd) : @Html.DisplayFor(model => model.EmpSrtOrd)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.DeptSrtOrd) : @Html.DisplayFor(model => model.DeptSrtOrd)
+    </div>
+    <div class="form-group">
+        <label asp-for="ex_EmpSrtOrd" class="control-label"></label>
+        <input asp-for="ex_EmpSrtOrd" class="form-control form-control-sm" />
+        <span asp-validation-for="ex_EmpSrtOrd" class="text-danger"></span>
+    </div>
+
+    <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+    <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+
+</div>
+<script type="text/javascript">
+
+    $(function () {
+
+        $("#@Html.IdFor(s => s.ex_EmpSrtOrd)")
+        .on("input",function () {
+
+            if ($(this).val() < 1 || $(this).val() > 999999) {
+                alert("Cannot be less than 1 or more than 999999");
+                $(this).val("");
+            }
+        });
+
+    });
+
+ </script>
+
+}

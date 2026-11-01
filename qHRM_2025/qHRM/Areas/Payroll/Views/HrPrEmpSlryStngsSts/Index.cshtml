@@ -1,0 +1,56 @@
+﻿@model IEnumerable<qHRM.Areas.Payroll.Data.PayrollContext.HrPrEmpSlryStngsSts>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Incomplete Salary Settings</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Incomplete Salary Settings</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.EmpLst" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowResizing="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="EmpId" headerText="Employee Id" width="70"></e-grid-column>
+                                <e-grid-column field="EmpNm" headerText="Employee Name" width="125"></e-grid-column>
+                                <e-grid-column field="JbAsgnSts" headerText="Job Assignment" width="100"></e-grid-column>
+                                <e-grid-column field="LocSts" headerText="Location" width="100"></e-grid-column>
+                                <e-grid-column field="SlrySts" headerText="Salary" width="100"></e-grid-column>
+                                <e-grid-column field="ExcldSts" headerText="Excluded" width="100"></e-grid-column>
+                                 @if (ViewBag.RecEdit == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>

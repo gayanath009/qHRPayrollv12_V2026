@@ -1,0 +1,1822 @@
+@using Syncfusion.EJ2
+@using Microsoft.AspNetCore.Http;
+@using static qHRM.Areas.Employee.Data.EmployeeContext;
+@using static qHRM.Areas.Attendance.Data.AttnContext;
+@using static qHRM.Areas.Payroll.Data.PayrollContext;
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Home Page";
+
+    var palettes = new String[] { "#E94649", "#F6B53F", "#6FAAB0", "#C4C24A" };
+}
+
+<style>
+    .hr-compact-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: all 0.2s ease-in-out;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 145px;
+        height: 100%;
+    }
+    .hr-compact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+        border-color: #cbd5e1;
+    }
+    .hr-card-accent-maroon { border-top: 3px solid #540033 !important; }
+    .hr-card-accent-blue   { border-top: 3px solid #2563eb !important; }
+    .hr-card-accent-teal   { border-top: 3px solid #0d9488 !important; }
+    .hr-card-accent-purple { border-top: 3px solid #7c3aed !important; }
+    .hr-card-accent-amber  { border-top: 3px solid #d97706 !important; }
+    .hr-card-accent-emerald{ border-top: 3px solid #059669 !important; }
+
+    #valTotalGross {
+        color: #540033 !important;
+    }
+
+    .hr-compact-card .hr-card-header {
+        padding: 0.6rem 0.75rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #1e293b;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .hr-compact-card .hr-card-body {
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .hr-compact-card .hr-icon-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 0.35rem;
+        transition: transform 0.2s ease;
+    }
+    .hr-compact-card:hover .hr-icon-badge {
+        transform: scale(1.1);
+    }
+    .hr-compact-card .hr-card-footer {
+        padding: 0.45rem 0.6rem;
+        background: #ffffff;
+        border-top: 1px solid #f1f5f9;
+        text-align: center;
+    }
+    .badge-pulse {
+        animation: pulseAnimation 2s infinite;
+    }
+    @@keyframes pulseAnimation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+    }
+
+    .btn-brand-maroon-sm {
+        background: linear-gradient(135deg, #540033 0%, #760c4b 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 4px 14px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-brand-maroon-sm:hover {
+        background: linear-gradient(135deg, #3d0025 0%, #5e083b 100%);
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
+        color: #ffffff !important;
+        text-decoration: none;
+    }
+
+    #tbl7DaysAttendance thead th {
+        background-color: #540033 !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-color: #540033 !important;
+        vertical-align: middle;
+        padding: 8px 10px;
+    }
+    #tbl7DaysAttendance tbody td {
+        vertical-align: middle;
+        padding: 7px 10px;
+        border-top: 1px solid #f1f5f9;
+    }
+    #tbl7DaysAttendance .badge {
+        font-size: 0.74rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+    }
+    #tbl7DaysAttendance .badge-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-secondary {
+        background-color: #cbd5e1 !important;
+        color: #334155 !important;
+    }
+    #tbl7DaysAttendance .badge-success {
+        background-color: #22c55e !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-info {
+        background-color: #38bdf8 !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+</style>
+
+<div class="container-fluid px-3 pt-3">
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid #e2e8f0; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-th-large mr-2" style="color: #540033; font-size: 1.1rem;"></i>
+                        <h5 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 1.05rem;">HR Management Hub</h5>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        @if (ViewBag.userGrpId == 1 || HttpContextAccessor.HttpContext?.Session?.GetInt32("userGrpId") == 1)
+                        {
+                            <a asp-area="Config" asp-controller="SysConfig" asp-action="Index" class="btn btn-sm btn-outline-secondary mr-2" style="border-radius: 8px; font-size: 0.78rem;" title="System Settings">
+                                <i class="fas fa-cog mr-1"></i>Settings
+                            </a>
+                        }
+                        <span class="text-muted small">Overview & Analytics</span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+
+                    <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                        <e-toast-position X="Center"></e-toast-position>
+                    </ejs-toast>
+
+                    <!-- Single Compact Row of 5 Cards -->
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-5 mb-4">
+                        <!-- Card 1: Employees by Nationality -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+                            <div class="hr-compact-card hr-card-accent-maroon">
+                                <div class="hr-card-header" title="Employees by Nationality">
+                                    <i class="fas fa-globe-americas mr-1" style="color: #540033;"></i> Nationality
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #fdf2f8; color: #540033;">
+                                        <i class="fas fa-globe-americas"></i>
+                                    </div>
+                                    <span class="badge badge-light border text-muted small mt-1">Diversity View</span>
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center align-items-center">
+                                    <button class="btn btn-sm btn-outline-secondary mr-1 px-2 py-1" data-toggle="modal" data-target="#modalEmpByNtly" style="border-radius: 6px; font-size: 0.76rem;" onclick="viewNltyEmpDtl()">
+                                        <i class="fas fa-eye mr-1"></i>View
+                                    </button>
+                                    @using (Html.BeginForm("PrintNltySmry", "Home", FormMethod.Post, new { target = "_blank", @class = "d-inline" }))
+                                    {
+                                        <button class="btn-brand-maroon-sm px-2 py-1" style="font-size: 0.76rem;" type="submit">
+                                            <i class="fas fa-print mr-1"></i>Print
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 2: Organizational Structure -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+                            <div class="hr-compact-card hr-card-accent-blue">
+                                <div class="hr-card-header" title="Organizational Structure">
+                                    <i class="fas fa-sitemap mr-1" style="color: #2563eb;"></i> Org Structure
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #eff6ff; color: #2563eb;">
+                                        <i class="fas fa-sitemap"></i>
+                                    </div>
+                                    <span class="badge badge-light border text-muted small mt-1">Company Tree</span>
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <a class="btn-brand-maroon-sm px-3 py-1" asp-area="Entity" asp-controller="OrgEmpCht" asp-action="Index" style="font-size: 0.76rem;">
+                                        <i class="fas fa-network-wired mr-1"></i>Org Chart
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Department Summary -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+                            <div class="hr-compact-card hr-card-accent-teal">
+                                <div class="hr-card-header" title="Department Summary">
+                                    <i class="fas fa-building mr-1" style="color: #0d9488;"></i> Departments
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #f0fdfa; color: #0d9488;">
+                                        <i class="fas fa-building"></i>
+                                    </div>
+                                    <span class="badge badge-light border text-muted small mt-1">Headcount Stats</span>
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <button class="btn-brand-maroon-sm px-3 py-1" data-toggle="modal" data-target="#modalChtDeptEmpCnt" style="font-size: 0.76rem;">
+                                        <i class="fas fa-chart-bar mr-1"></i>Dpt. Count
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 4: Last Week Staff Attendance -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+                            <div class="hr-compact-card hr-card-accent-purple">
+                                <div class="hr-card-header" title="Last Week Staff Attendance">
+                                    <i class="fas fa-calendar-week mr-1" style="color: #7c3aed;"></i> Week Attendance
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #f5f3ff; color: #7c3aed;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <span class="badge badge-light border text-muted small mt-1">Company Trends</span>
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <button class="btn-brand-maroon-sm px-3 py-1" data-toggle="modal" data-target="#modalChtDlyAtndSmry" style="font-size: 0.76rem;" onclick="hideDlyAttd()">
+                                        <i class="fas fa-chart-line mr-1"></i>View Stats
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 5: Pending Leave Approvals -->
+                        <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
+                            <div class="hr-compact-card hr-card-accent-amber" style="cursor: pointer;" onclick="window.location.href='/Leave/HrLvRegister/Pending'">
+                                <div class="hr-card-header" title="Pending Leave Approvals">
+                                    <i class="fas fa-clock mr-1" style="color: #d97706;"></i> Leave Approvals
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #fffbeb; color: #d97706;">
+                                        <i class="fas fa-user-clock"></i>
+                                    </div>
+                                    @if ((ViewBag.PendingLeaveCount ?? 0) > 0)
+                                    {
+                                        <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 badge-pulse" style="font-size: 0.78rem;">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>@ViewBag.PendingLeaveCount Pending
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light border text-muted px-2 py-1" style="font-size: 0.78rem;">
+                                            0 Pending
+                                        </span>
+                                    }
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <a href="/Leave/HrLvRegister/Pending" class="btn-brand-maroon-sm px-3 py-1" style="font-size: 0.76rem;" onclick="event.stopPropagation();">
+                                        <i class="fas fa-check-circle mr-1"></i>Review
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attendance Section: Last 7 Days (Hierarchy Driven) -->
+                    <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ede9fe; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div>
+                                    <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                                        Attendance History <span class="badge badge-light border text-muted ml-1" style="font-size: 0.75rem; font-weight: 500;">Last 7 Days</span>
+                                    </h6>
+                                    <small class="text-muted" id="lblAttnDateRange">
+                                        @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).DateRangeText : "Recent 7 Days")
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap">
+                                <label class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-sitemap mr-1"></i>Employee:</label>
+                                <select id="ddlHierarchyEmp" class="form-control form-control-sm mr-2" style="min-width: 260px; max-width: 340px; border-radius: 8px; font-weight: 600; color: #334155;" onchange="onHierarchyEmpChange()">
+                                    @if (ViewBag.lstHierarchyEmployees != null)
+                                    {
+                                        foreach (var emp in (IEnumerable<HrEmpGen>)ViewBag.lstHierarchyEmployees)
+                                        {
+                                            <option value="@emp.ESysId" selected="@(emp.ESysId == (int)(ViewBag.LoggedEmpSysId ?? 0) ? "selected" : null)">@emp.FulNme</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="onHierarchyEmpChange()" title="Reload Attendance" style="border-radius: 8px;">
+                                    <i class="fas fa-sync-alt" id="attnRefreshIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <!-- 4 KPI Summary Pills -->
+                            <div class="row mb-3">
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #f0fdf4;">
+                                        <span class="text-muted small d-block">Present Days</span>
+                                        <span id="kpiAttnPresent" class="font-weight-bold text-success h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).PresentDays : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #fef2f2;">
+                                        <span class="text-muted small d-block">Absent Days</span>
+                                        <span id="kpiAttnAbsent" class="font-weight-bold text-danger h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).AbsentDays : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #fffbeb;">
+                                        <span class="text-muted small d-block">Late Arrivals</span>
+                                        <span id="kpiAttnLate" class="font-weight-bold text-warning h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).LateCount : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #eff6ff;">
+                                        <span class="text-muted small d-block">Total Work Hours</span>
+                                        <span id="kpiAttnHours" class="font-weight-bold text-primary h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).TotalWorkHoursFormatted : "0h 00m")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 7-Day Attendance Table -->
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-striped mb-0 text-center" style="font-size: 0.85rem;" id="tbl7DaysAttendance">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th class="text-left pl-3">Day & Date</th>
+                                            <th>Check-In</th>
+                                            <th>Check-Out</th>
+                                            <th>Working Hours</th>
+                                            <th>Late (Mins)</th>
+                                            <th>Early Leave (Mins)</th>
+                                            <th>OT (Mins)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody7DaysAttendance">
+                                        @if (ViewBag.InitAttendanceSummary != null && ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days != null)
+                                        {
+                                            foreach (var day in ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days)
+                                            {
+                                                <tr>
+                                                    <td class="text-left pl-3 font-weight-bold text-dark">
+                                                        <span class="text-muted mr-1">@day.DayName,</span> @day.DateFormatted
+                                                    </td>
+                                                    <td>@day.InTime</td>
+                                                    <td>@day.OutTime</td>
+                                                    <td><span class="badge badge-light border">@day.WorkHours</span></td>
+                                                    <td>@(day.LateMinutes > 0 ? Html.Raw("<span class='text-warning font-weight-bold'>" + day.LateMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td>@(day.EarlyLeaveMinutes > 0 ? Html.Raw("<span class='text-danger'>" + day.EarlyLeaveMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td>@(day.OtMinutes > 0 ? Html.Raw("<span class='text-success font-weight-bold'>" + day.OtMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td><span class="badge @day.StatusClass px-2 py-1">@day.Status</span></td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Creative Monthly Company Salary Section -->
+                    <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                                    <i class="fas fa-wallet"></i>
+                                </div>
+                                <div>
+                                    <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                                        Monthly Company Payroll & Salary Analytics
+                                        <span id="lblSlryStatusBadge" class="badge @(ViewBag.InitSalarySummary != null && ((CompanySalarySummaryDto)ViewBag.InitSalarySummary).IsProcessed ? "badge-success" : "badge-secondary") ml-1" style="font-size: 0.72rem; font-weight: 600;">
+                                            @(ViewBag.InitSalarySummary != null ? ((CompanySalarySummaryDto)ViewBag.InitSalarySummary).StatusText : "Not Processed")
+                                        </span>
+                                    </h6>
+                                    <small class="text-muted" id="lblSlryMonthText">
+                                        @(ViewBag.InitSalarySummary != null ? (((CompanySalarySummaryDto)ViewBag.InitSalarySummary).MonthName + (!string.IsNullOrEmpty(((CompanySalarySummaryDto)ViewBag.InitSalarySummary).CategoryText) ? " • " + ((CompanySalarySummaryDto)ViewBag.InitSalarySummary).CategoryText : "")) : "Payroll Overview")
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap">
+                                <label class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-calendar-alt mr-1"></i>Month:</label>
+                                <select id="slryFilterYear" class="form-control form-control-sm mr-1" style="width: 85px; border-radius: 8px; font-weight: 600;" onchange="onSalaryPeriodChange()">
+                                    @if (ViewBag.lstYear != null)
+                                    {
+                                        foreach (var yr in ViewBag.lstYear)
+                                        {
+                                            <option value="@yr.Value" selected="@(yr.Value.ToString() == ViewBag.DefaultSalaryYear?.ToString() ? "selected" : null)">@yr.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <select id="slryFilterMonth" class="form-control form-control-sm mr-2" style="width: 110px; border-radius: 8px; font-weight: 600;" onchange="onSalaryPeriodChange()">
+                                    @if (ViewBag.lstMonth != null)
+                                    {
+                                        foreach (var mn in ViewBag.lstMonth)
+                                        {
+                                            <option value="@mn.Value" selected="@(mn.Value.ToString() == ViewBag.DefaultSalaryMonth?.ToString() ? "selected" : null)">@mn.Text</option>
+                                        }
+                                    }
+                                </select>
+                                <label class="mr-1 mb-0 small font-weight-bold text-muted"><i class="fas fa-users mr-1"></i>Staff:</label>
+                                <select id="slryFilterCat" class="form-control form-control-sm mr-2" style="width: 145px; border-radius: 8px; font-weight: 600;" onchange="onSalaryPeriodChange()">
+                                    <option value="ALL" selected>All Staff</option>
+                                    <option value="OUTSRC">Outsource Staff</option>
+                                    <option value="IN_HOUSE">In-House Staff</option>
+                                </select>
+                                @if ((@HttpContextAccessor.HttpContext.Session.GetInt32("userGrpId") == 2) || (@HttpContextAccessor.HttpContext.Session.GetInt32("userGrpId") == 7))
+                                {
+                                    <button class="btn-brand-maroon-sm mr-1" data-toggle="modal" data-target="#modalSlrySheetView" style="font-size: 0.78rem; padding: 4px 10px;" onclick="getSalarySheetFromSection()">
+                                        <i class="fas fa-download mr-1"></i> Salary Sheet
+                                    </button>
+                                }
+                                <button class="btn btn-sm btn-outline-secondary" onclick="onSalaryPeriodChange()" title="Reload Salary Overview" style="border-radius: 8px;">
+                                    <i class="fas fa-sync-alt" id="slryRefreshIcon"></i>
+                                </button>
+                                <!-- Hidden selectors to preserve compatibility with existing modal scripts -->
+                                <select id="drpYear" class="d-none" asp-items="@(new SelectList(ViewBag.lstYear, "value", "text"))"></select>
+                                <select id="drpMonth" class="d-none" asp-items="@(new SelectList(ViewBag.lstMonth, "value", "text", ViewBag.SelectedMonth))"></select>
+                                <a id="Slrydwnld" class="btn" style="display:none"><i class="fa fa-download"></i></a>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            @{
+                                var initSlry = (CompanySalarySummaryDto)ViewBag.InitSalarySummary;
+                            }
+                            <!-- 4 Hero Stat Cards -->
+                            <div class="row mb-3">
+                                <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+                                    <div class="p-3 rounded border" style="background: linear-gradient(135deg, #fdf4ff 0%, #fae8ff 100%); border-left: 4px solid #540033 !important;">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="small font-weight-bold text-uppercase text-primary" style="color: #540033 !important;">Total Gross Salary</span>
+                                            <i class="fas fa-coins text-primary" style="color: #540033 !important; font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex align-items-baseline">
+                                            <span class="small font-weight-bold mr-1 text-primary" style="color: #540033 !important;">QAR</span>
+                                            <h4 class="mb-0 font-weight-bold text-primary" style="color: #540033 !important;" id="valTotalGross">
+                                                @(initSlry != null ? initSlry.TotalGross.ToString("N2") : "0.00")
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+                                    <div class="p-3 rounded border" style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border-left: 4px solid #059669 !important;">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-success small font-weight-bold text-uppercase">Net Payout</span>
+                                            <i class="fas fa-hand-holding-usd text-success" style="font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex align-items-baseline">
+                                            <span class="small font-weight-bold text-success mr-1">QAR</span>
+                                            <h4 class="mb-0 font-weight-bold text-success" id="valTotalNet">
+                                                @(initSlry != null ? initSlry.TotalNet.ToString("N2") : "0.00")
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+                                    <div class="p-3 rounded border" style="background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); border-left: 4px solid #dc2626 !important;">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-danger small font-weight-bold text-uppercase">Total Deductions</span>
+                                            <i class="fas fa-receipt text-danger" style="font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex align-items-baseline">
+                                            <span class="small font-weight-bold text-danger mr-1">QAR</span>
+                                            <h4 class="mb-0 font-weight-bold text-danger" id="valTotalDeductions">
+                                                @(initSlry != null ? initSlry.TotalDeductions.ToString("N2") : "0.00")
+                                            </h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-12 col-sm-6 col-lg-3 mb-2 mb-lg-0">
+                                    <div class="p-3 rounded border" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-left: 4px solid #2563eb !important;">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span class="text-primary small font-weight-bold text-uppercase">Beneficiaries</span>
+                                            <i class="fas fa-users text-primary" style="font-size: 1.1rem;"></i>
+                                        </div>
+                                        <div class="d-flex align-items-baseline">
+                                            <h4 class="mb-0 font-weight-bold text-primary" id="valEmployeeCount">
+                                                @(initSlry != null ? initSlry.EmployeeCount.ToString() : "0")
+                                            </h4>
+                                            <span class="small text-muted ml-1">Staff Members</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Salary Breakdown & Distribution Panels -->
+                            <div class="row">
+                                <!-- Components Distribution -->
+                                <div class="col-12 col-lg-7 mb-3 mb-lg-0">
+                                    <div class="p-3 rounded border bg-white h-100">
+                                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                            <span class="font-weight-bold text-dark small text-uppercase"><i class="fas fa-chart-pie mr-1 text-primary"></i>Salary Components Breakdown</span>
+                                            <span class="badge badge-light border text-muted" id="badgeBasicShare">
+                                                Basic: @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalBasic / initSlry.TotalGross * 100).ToString("0.0") : "0")%
+                                            </span>
+                                        </div>
+                                        
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span><i class="fas fa-circle text-primary mr-1" style="font-size: 0.6rem;"></i><strong>Basic Salary</strong></span>
+                                                <span class="font-weight-bold" id="valBasic">@(initSlry != null ? initSlry.TotalBasic.ToString("N2") : "0.00") QAR</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-primary" id="progBasic" role="progressbar" style="width: @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalBasic / initSlry.TotalGross * 100).ToString("0") : "0")%;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span><i class="fas fa-circle mr-1" style="color: #0d9488; font-size: 0.6rem;"></i><strong>Housing Allowance</strong></span>
+                                                <span class="font-weight-bold" id="valHousing">@(initSlry != null ? initSlry.TotalHousing.ToString("N2") : "0.00") QAR</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar" id="progHousing" role="progressbar" style="width: @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalHousing / initSlry.TotalGross * 100).ToString("0") : "0")%; background-color: #0d9488;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span><i class="fas fa-circle mr-1" style="color: #7c3aed; font-size: 0.6rem;"></i><strong>Transport Allowance</strong></span>
+                                                <span class="font-weight-bold" id="valTransport">@(initSlry != null ? initSlry.TotalTransport.ToString("N2") : "0.00") QAR</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar" id="progTransport" role="progressbar" style="width: @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalTransport / initSlry.TotalGross * 100).ToString("0") : "0")%; background-color: #7c3aed;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span><i class="fas fa-circle mr-1" style="color: #d97706; font-size: 0.6rem;"></i><strong>Other Allowances & Incentives</strong></span>
+                                                <span class="font-weight-bold" id="valOtherAlwnc">@(initSlry != null ? initSlry.TotalOtherAllowances.ToString("N2") : "0.00") QAR</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar" id="progOtherAlwnc" role="progressbar" style="width: @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalOtherAllowances / initSlry.TotalGross * 100).ToString("0") : "0")%; background-color: #d97706;"></div>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <div class="d-flex justify-content-between small mb-1">
+                                                <span><i class="fas fa-circle mr-1" style="color: #059669; font-size: 0.6rem;"></i><strong>Overtime & Bonuses</strong></span>
+                                                <span class="font-weight-bold" id="valOvertimeBonus">@(initSlry != null ? (initSlry.TotalOvertime + initSlry.TotalBonus).ToString("N2") : "0.00") QAR</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar" id="progOvertimeBonus" role="progressbar" style="width: @(initSlry != null && initSlry.TotalGross > 0 ? ((initSlry.TotalOvertime + initSlry.TotalBonus) / initSlry.TotalGross * 100).ToString("0") : "0")%; background-color: #059669;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Deductions Breakdown Panel -->
+                                <div class="col-12 col-lg-5">
+                                    <div class="p-3 rounded border bg-white h-100">
+                                        <div class="d-flex align-items-center justify-content-between mb-3 border-bottom pb-2">
+                                            <span class="font-weight-bold text-dark small text-uppercase"><i class="fas fa-file-invoice mr-1 text-danger"></i>Deductions & Recoveries</span>
+                                            <span class="badge badge-light border text-danger" id="badgeDeductionShare">
+                                                @(initSlry != null && initSlry.TotalGross > 0 ? (initSlry.TotalDeductions / initSlry.TotalGross * 100).ToString("0.0") : "0")% of Gross
+                                            </span>
+                                        </div>
+
+                                        <ul class="list-group list-group-flush small">
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                                <span><i class="fas fa-hand-holding-usd text-muted mr-2"></i>Staff Loan Repayments</span>
+                                                <span class="font-weight-bold text-dark" id="valStaffLoan">@(initSlry != null ? initSlry.StaffLoan.ToString("N2") : "0.00") QAR</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                                <span><i class="fas fa-money-check text-muted mr-2"></i>Salary Advances</span>
+                                                <span class="font-weight-bold text-dark" id="valSalaryAdvance">@(initSlry != null ? initSlry.SalaryAdvance.ToString("N2") : "0.00") QAR</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                                <span><i class="fas fa-user-times text-muted mr-2"></i>No-Pay Deductions</span>
+                                                <span class="font-weight-bold text-dark" id="valNoPay">@(initSlry != null ? initSlry.NoPay.ToString("N2") : "0.00") QAR</span>
+                                            </li>
+                                            <li class="list-group-item d-flex justify-content-between align-items-center px-0 py-2">
+                                                <span><i class="fas fa-undo text-muted mr-2"></i>Other Recoveries</span>
+                                                <span class="font-weight-bold text-dark" id="valOtherRecoveries">@(initSlry != null ? initSlry.OtherRecoveries.ToString("N2") : "0.00") QAR</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Row 3-->
+                    <br /><br />
+                    <div class="modal fade" id="modalEmpByNtly" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document" style="max-width: 95%; max-height:95%">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Employee Count By Nationality</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="divNltyEmpSmry">
+                                        <div class="form-row">
+                                            <div class="form-group col-md-1"></div>
+                                            <div class="form-group col-md-7">
+                                                <ejs-chart id="chtEmpByNtly" theme="Fabric" width=100% height="100%" pointClick="chtEmpByNtlyPointClick">
+                                                    <e-chart-chartarea>
+                                                        <e-chartarea-border width="0"></e-chartarea-border>
+                                                    </e-chart-chartarea>
+                                                    <e-chart-tooltipsettings enable="true">
+                                                    </e-chart-tooltipsettings>
+                                                    <e-chart-primaryxaxis valueType="Category" title="Nationality"
+                                                                          interval=1>
+                                                        <e-majorgridlines width="0"></e-majorgridlines>
+                                                    </e-chart-primaryxaxis>
+                                                    <e-chart-primaryyaxis labelFormat="{value}%"
+                                                                          edgeLabelPlacement="Shift" title="Percentage" minimum="0" maximum="50" interval="10">
+                                                        <e-majorgridlines width="1"></e-majorgridlines>
+                                                        <e-majorticklines width="1"></e-majorticklines>
+                                                        <e-linestyle width="1"></e-linestyle>
+                                                        <e-labelstyle color="black"></e-labelstyle>
+                                                    </e-chart-primaryyaxis>
+
+                                                    <e-series-collection>
+                                                        <e-series fill="#801957" dataSource="@ViewBag.dsActual" xName="NltyName" yName="StfRatio" name="Actual" width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                                                            <e-series-marker>
+                                                                <e-series-datalabel position="Middle" visible="false">
+                                                                    <e-font color="#ffffff" size="10.5px" fontWeight="500"></e-font>
+                                                                </e-series-datalabel>
+                                                            </e-series-marker>
+                                                        </e-series>
+                                                        <e-series fill="#595758" dataSource="@ViewBag.dsAllocated" xName="NltyName" yName="StfRatio" name="Allocated" width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                                                            <e-series-marker>
+                                                                <e-series-datalabel position="Middle" visible="false">
+                                                                    <e-font color="#ffffff" size="10.5px" fontWeight="500"></e-font>
+                                                                </e-series-datalabel>
+                                                            </e-series-marker>
+                                                        </e-series>
+
+                                                    </e-series-collection>
+                                                </ejs-chart>
+                                            </div>
+                                            <div class="form-group col-md-3">
+                                                <ejs-grid id="Grid" width="auto" dataSource="ViewBag.dsNltyEmpSmry" rowHeight="40" gridLines="Both" allowSorting="true" dataBound="OnDataBound">
+                                                    <e-grid-aggregates>
+                                                        <e-grid-aggregate>
+                                                            <e-aggregate-columns>
+                                                                <e-aggregate-column field="ActlEmpCnt" type="Sum" footerTemplate="${Sum}" s></e-aggregate-column>
+                                                                <e-aggregate-column field="ActlInEmpCnt" type="Sum" footerTemplate="${Sum}"></e-aggregate-column>
+                                                                <e-aggregate-column field="ActlOsEmpCnt" type="Sum" footerTemplate="${Sum}"></e-aggregate-column>
+                                                            </e-aggregate-columns>
+                                                        </e-grid-aggregate>
+                                                    </e-grid-aggregates>
+                                                    <e-grid-columns>
+                                                        <e-grid-column template="#itemTemplate" field="NltyName" headerText="Nationality" width="70" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                                                        <e-grid-column field="AlctdEmpCnt" headerText="Allocated" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                                                        <e-grid-column field="ActlEmpCnt" headerText="Actual" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                                                        <e-grid-column field="ActlInEmpCnt" headerText="In-Hs" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                                                        <e-grid-column field="ActlOsEmpCnt" headerText="Out-Src" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                                                    </e-grid-columns>
+                                                </ejs-grid>
+                                            </div>
+                                            <div class="form-group col-md-1"></div>
+                                        </div>
+                                    </div>
+                                    <div id="divNltyEmpDtl" style="display:none;">
+                                        <div class="form-row">
+                                            <div class="form-group col-md-12">
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-3">
+                                                        <button type="button" class="btn btn-outline-primary" onclick="hideNltyEmpDtl()">Back</button>
+                                                    </div>
+                                                    <div class="form-group col-md-6" style="align-items:center">
+                                                        <label id="labelNltyHeading1" class="h4"></label>
+                                                    </div>
+                                                    <div class="form-group col-md-3"></div>
+                                                </div>
+
+                                                <div>&nbsp;</div>
+                                                <ejs-grid id="gridECht" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true" allowSorting="true" detailTemplate="#detailtemplate">
+                                                    <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                                                    <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                    <e-grid-columns>
+                                                        <e-grid-column field="" headerText=" " width="40" template="#_avatar"></e-grid-column>
+                                                        <e-grid-column field="EmpId" headerText="Employee ID" width="75"></e-grid-column>
+                                                        <e-grid-column field="FullName" headerText="Full Name" width="125"></e-grid-column>
+                                                        <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
+                                                        <e-grid-column field="Grade" headerText="Grade" width="50"></e-grid-column>
+                                                        <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="50"></e-grid-column>
+                                                        <e-grid-column field="Ex_DobTxt" headerText="DOB" width="50"></e-grid-column>
+                                                        <e-grid-column field="Ex_Age" headerText="Age" width="50"></e-grid-column>
+                                                    </e-grid-columns>
+                                                </ejs-grid>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <br />
+                    <!-- Department wise Summary -->
+                    <div class="modal fade" id="modalChtDeptEmpCnt" tabindex="-1" role="dialog" aria-labelledby="exampleChtDeptEmpCnt" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document" style="max-width: 70%; max-height:95%;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Employee Count By Department</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-row">
+
+                                        <div class="form-group col-md-3"></div>
+                                        <div class="form-group col-md-6">
+                                            <div id="divChtEmpByDpt">
+                                                <ejs-chart id="clmChtDeptEmpCnt" title="Employee Count By Department" pointRender="window.pointRender" height="100%" width="100%" pointClick="GetEmpByDptPointClick">
+                                                    <e-chart-tooltipsettings enable="true">
+                                                    </e-chart-tooltipsettings>
+                                                    <e-chart-primaryxaxis valueType="Category" interval=1>
+                                                        <e-majorgridlines width="0"></e-majorgridlines>
+                                                    </e-chart-primaryxaxis>
+                                                    <e-chart-primaryyaxis title="Count" minimum="0" maximum="80" interval="10">
+                                                        <e-majorgridlines width="1"></e-majorgridlines>
+                                                        <e-majorticklines width="2"></e-majorticklines>
+                                                        <e-linestyle width="1"></e-linestyle>
+                                                        <e-labelstyle color="black"></e-labelstyle>
+                                                    </e-chart-primaryyaxis>
+                                                    <e-chart-chartarea>
+                                                        <e-chartarea-border width="0"></e-chartarea-border>
+                                                    </e-chart-chartarea>
+                                                    <e-series-collection>
+                                                        <e-series dataSource="ViewBag.dsDeptEmpSmry" xName='DeptCode' yName='EmpCnt' width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                                                            <e-series-marker>
+                                                                <e-series-datalabel visible="true" position="Top">
+                                                                    <e-font color="#ffffff" fontWeight="600"></e-font>
+                                                                </e-series-datalabel>
+                                                            </e-series-marker>
+                                                        </e-series>
+                                                    </e-series-collection>
+                                                </ejs-chart>
+                                            </div>
+
+                                        </div>
+                                        <div class="form-group col-md-3"></div>
+                                    </div>
+                                    <div class="form-group col-md-12">
+                                        <div id="divChtEmpByDptDtl" style="display:none;">
+                                            <div>
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-2">
+                                                        <button type="button" class="btn btn-outline-primary" onclick="hideEmpByDpt()">Back</button>
+                                                    </div>
+                                                    <div class="form-group col-md-10">
+                                                        <label id="labelDptHeading" class="h4"></label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div>&nbsp;</div>
+                                            <ejs-grid id="grdEmpByDpt" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true" allowSorting="true" detailTemplate="#detailtemplate">
+                                                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                <e-grid-columns>
+                                                    <e-grid-column field="" headerText=" " width="40" template="#_avatar"></e-grid-column>
+                                                    <e-grid-column field="EmpId" headerText="Employee ID" width="75"></e-grid-column>
+                                                    <e-grid-column field="FullName" headerText="Full Name" width="125"></e-grid-column>
+                                                    <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
+                                                    <e-grid-column field="Grade" headerText="Grade" width="50"></e-grid-column>
+                                                    <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="50"></e-grid-column>
+                                                    <e-grid-column field="Ex_DobTxt" headerText="DOB" width="50"></e-grid-column>
+                                                    <e-grid-column field="Ex_Age" headerText="Age" width="50"></e-grid-column>
+                                                </e-grid-columns>
+                                            </ejs-grid>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Attendance Summary-->
+                    <div class="modal fade" id="modalChtDlyAtndSmry" tabindex="-1" role="dialog" aria-labelledby="exampleChtDlyAtndSmry" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document" style="max-width: 95%; max-height:95%;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Last Week Staff Attendance Count</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-6">
+                                            <ejs-chart id="chtDlyAtndSmry" title="Last Week Staff Attendance Count" width="120%" pointClick="chtDlyAtndSmryPointClick">
+                                                <e-chart-tooltipsettings enable="true">
+                                                </e-chart-tooltipsettings>
+                                                <e-chart-primaryxaxis valueType="Category"
+                                                                      labelFormat="y"
+                                                                      intervalType="Days"
+                                                                      edgeLabelPlacement="Shift" title="Dates">
+                                                    <e-majorgridlines width="0"></e-majorgridlines>
+                                                </e-chart-primaryxaxis>
+                                                <e-chart-primaryyaxis labelFormat="{value}"
+                                                                      rangePadding="None"
+                                                                      minimum=0
+                                                                      maximum=120
+                                                                      interval=20 title="Staff Count">
+                                                    <e-linestyle width="0"></e-linestyle>
+                                                    <e-majorticklines width="0"></e-majorticklines>
+                                                </e-chart-primaryyaxis>
+                                                <e-chart-chartarea>
+                                                    <e-chartarea-border width="0"></e-chartarea-border>
+                                                </e-chart-chartarea>
+                                                <e-series-collection>
+                                                    <e-series dataSource="ViewBag.dsDlyAtndSmry" xName="EftDate" width="2" opacity="1" yName="EmpCnt" type="@Syncfusion.EJ2.Charts.ChartSeriesType.Line">
+                                                        <e-series-marker visible="true" height="10" width="10"></e-series-marker>
+                                                    </e-series>
+                                                </e-series-collection>
+                                            </ejs-chart>
+                                            <br />
+                                        </div>
+                                        <div class="form-group col-md-6">
+                                            <div id="divChtDayAtndc" style="display:none;">
+                                                <input id="lblAttdChartHeading" type="hidden" />
+                                                <ejs-accumulationchart id="chtDayAttnSmry" title="Attendance Summary" enableAnimation="true" width="auto" height="auto" pointClick="chtDayAttnSmryClick">
+                                                    <e-accumulationchart-center x="50%" y="50%"></e-accumulationchart-center>
+                                                    <e-accumulationchart-tooltipsettings enable="true"></e-accumulationchart-tooltipsettings>
+                                                    <e-accumulationchart-legendsettings visible="true">
+                                                    </e-accumulationchart-legendsettings>
+                                                    <e-accumulation-series-collection>
+                                                        <e-accumulation-series dataSource="ViewBag.dsDayAttnSmry" xName="Status" yName="Count" name="Attendance Summary" explodeIndex="0" explode="true" explodeOffset="10%">
+                                                            <e-accumulationseries-datalabel name="Pcentge" visible="true">
+                                                                <e-font fontWeight="600" color="white"></e-font>
+                                                            </e-accumulationseries-datalabel>
+                                                        </e-accumulation-series>
+                                                    </e-accumulation-series-collection>
+                                                </ejs-accumulationchart>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-12">
+                                            <label id="lblgridDayAtndcHeading" class="h4" />
+                                            <div id="divVwDayAtndc" style="display:none;">
+                                                <ejs-grid id="gridDayAtndc" dataSource="ViewBag.dsDayAttnDtl" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true">
+                                                    <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                                                    <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                    <e-grid-columns>
+                                                        <e-grid-column field="EftvDate" headerText="Date" width="125"></e-grid-column>
+                                                        <e-grid-column field="EmpId" headerText="Employee ID" width="125"></e-grid-column>
+                                                        <e-grid-column field="FullName" headerText="Full Name" width="200"></e-grid-column>
+                                                        <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
+                                                        <e-grid-column field="Status" headerText="Status" width="60"></e-grid-column>
+                                                        <e-grid-column field="InTime" headerText="In" width="125"></e-grid-column>
+                                                        <e-grid-column field="OutTime" headerText="Out" width="125"></e-grid-column>
+                                                    </e-grid-columns>
+                                                </ejs-grid>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Today Attendance Summary-->
+                    <div class="modal fade" id="modalChtTdyAtndcSmry" tabindex="-1" role="dialog" aria-labelledby="exampleChtTdyAtndcSmry" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document" style="max-width: 95%; max-height:95%;">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Today Attendance Count</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-row">
+                                        <div class="form-group col-md-3">&nbsp;</div>
+                                        <div class="form-group col-md-6">
+                                            <ejs-accumulationchart id="chtTdyAtndcSmry" title="Today Attendance Count" enableAnimation="true" width="auto" pointClick="chtTdyAtndcSmryPointClick">
+                                                <e-accumulationchart-center x="50%" y="50%"></e-accumulationchart-center>
+                                                <e-accumulationchart-tooltipsettings enable="true"></e-accumulationchart-tooltipsettings>
+                                                <e-accumulationchart-legendsettings visible="true">
+                                                </e-accumulationchart-legendsettings>
+                                                <e-accumulation-series-collection>
+                                                    <e-accumulation-series dataSource="ViewBag.dsAttdToday" xName="Status" yName="Count" name="Today Attendance Summary" explodeIndex="0" explode="true" explodeOffset="10%">
+                                                        <e-accumulationseries-datalabel name="Pcentge" visible="true">
+                                                            <e-font fontWeight="600" color="white"></e-font>
+                                                        </e-accumulationseries-datalabel>
+                                                    </e-accumulation-series>
+                                                </e-accumulation-series-collection>
+                                            </ejs-accumulationchart>
+                                        </div>
+                                        <div class="form-group col-md-3">&nbsp;</div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-12">
+                                            <div id="divVwTdyAtndc" style="display:none;">
+                                                <label id="lblgrdTdyAtndcHeading" class="h4"></label>
+                                                <ejs-grid id="grdTdyAtndc" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true"
+                                                          allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                                                    <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                                                    <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                    <e-grid-columns>
+                                                        <e-grid-column field="EmpId" headerText="Employee ID" width="125"></e-grid-column>
+                                                        <e-grid-column field="FullName" headerText="Full Name" width="200"></e-grid-column>
+                                                        <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
+                                                        <e-grid-column field="Status" headerText="Status" width="60"></e-grid-column>
+                                                        <e-grid-column field="InTime" headerText="In" width="125"></e-grid-column>
+                                                    </e-grid-columns>
+                                                </ejs-grid>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-row">
+                                        <div class="form-group col-md-12">
+                                            <div id="divVwTdyOSAtndcSmry" style="display:none;">
+                                                <ejs-grid id="grdTodayOSAtndc" width="auto" allowPaging="true" allowResizing="true" allowFiltering="true">
+                                                    <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                                                    <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                    <e-grid-columns>
+                                                        <e-grid-column field="EmpId" headerText="Employee ID" width="125"></e-grid-column>
+                                                        <e-grid-column field="FullName" headerText="Full Name" width="200"></e-grid-column>
+                                                        <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
+                                                        <e-grid-column field="LocName" headerText="Location" width="150"></e-grid-column>
+                                                        <e-grid-column field="Status" headerText="Status" width="60"></e-grid-column>
+                                                    </e-grid-columns>
+                                                </ejs-grid>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-primary" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="modalSlrySheetView" tabindex="-1" role="dialog" aria-labelledby="exampleSlrySheetView" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document" style="max-width: 95%; max-height:95%">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Salary Sheet</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="control-section">
+                                        <ejs-pdfviewer id="pdfviewer2" style="height:641px;"></ejs-pdfviewer>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <ejs-button id="hideToast"></ejs-button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--Template Column-->
+<script type="text/x-jsrender" id="_avatar">
+    <img class="img-profile rounded-circle" style="width: 35px; height: 45px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${PhotoName ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+</script>
+
+<script id="itemTemplate" type="text/x-template">
+    <div>
+        <a rel='tag' href="#" class="e-underline" onclick="showNltyEmpDtl(${EmpRtoId})">${NltyName}</a> <!--EmpRtoId-->
+    </div>
+</script>
+<!--Template Column-->
+<!--START Detailed Template START-->
+<style type="text/css" class="cssStyles">
+    .detailtable td {
+        font-size: 13px;
+        padding: 4px;
+        max-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .photo {
+        width: 100px;
+        height: 100px;
+        border-radius: 50px;
+        box-shadow: inset 0 0 1px #e0e0e0, inset 0 0 14px rgba(0, 0, 0, 0.2);
+    }
+</style>
+
+
+<script type="text/x-template" id="detailtemplate">
+    <table class="detailtable" width="100%">
+        <colgroup>
+            <col width="25%" />
+            <col width="50%" />
+        </colgroup>
+        <tbody>
+            <tr>
+                <td>
+                    <span style="font-weight: 500;">Full Name: </span> ${FullName}
+                </td>
+                <td>
+                    <span style="font-weight: 500;">Nationality: </span> ${NltyName}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span style="font-weight: 500;">Office Location : </span> ${LocName}
+                </td>
+                <td>
+                    <span style="font-weight: 500;">Mobile: </span> ${MblPhone}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span style="font-weight: 500;">QID: </span> ${PmtId}
+                </td>
+                <td>
+                    <span style="font-weight: 500;">QID Expiry: </span> ${Ex_PmtExpDateTxt}
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <span style="font-weight: 500;">Passport No: </span> ${PstNo}
+                </td>
+                <td>
+                    <span style="font-weight: 500;">Passport Expiry: </span> ${Ex_PstExpDateTxt}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</script>
+<!--END Detailed Template END-->
+
+<script>
+
+    $(document).ready(function () {
+        $("#Slrydwnld").hide();
+        onSalaryPeriodChange();
+    });
+
+    function onHierarchyEmpChange() {
+        var empSysId = $("#ddlHierarchyEmp").val();
+        load7DaysAttendance(empSysId);
+    }
+
+    function load7DaysAttendance(empSysId) {
+        $("#attnRefreshIcon").addClass("fa-spin");
+        $.ajax({
+            type: "GET",
+            url: '/Home/GetEmployee7DayAttendance',
+            data: { empSysId: empSysId },
+            dataType: "json",
+            success: function (res) {
+                $("#attnRefreshIcon").removeClass("fa-spin");
+                if (res && res.ok && res.data) {
+                    var d = res.data;
+                    $("#lblAttnDateRange").text(d.dateRangeText || "Recent 7 Days");
+                    $("#kpiAttnPresent").text(d.presentDays);
+                    $("#kpiAttnAbsent").text(d.absentDays);
+                    $("#kpiAttnLate").text(d.lateCount);
+                    $("#kpiAttnHours").text(d.totalWorkHoursFormatted || "0h 00m");
+
+                    var tbody = $("#tbody7DaysAttendance");
+                    tbody.empty();
+                    if (d.days && d.days.length > 0) {
+                        $.each(d.days, function (i, day) {
+                            var lateHtml = day.lateMinutes > 0 ? ('<span class="text-warning font-weight-bold">' + day.lateMinutes + '</span>') : '<span class="text-muted">-</span>';
+                            var earlyHtml = day.earlyLeaveMinutes > 0 ? ('<span class="text-danger">' + day.earlyLeaveMinutes + '</span>') : '<span class="text-muted">-</span>';
+                            var otHtml = day.otMinutes > 0 ? ('<span class="text-success font-weight-bold">' + day.otMinutes + '</span>') : '<span class="text-muted">-</span>';
+
+                            var row = '<tr>' +
+                                '<td class="text-left pl-3 font-weight-bold text-dark"><span class="text-muted mr-1">' + day.dayName + ',</span> ' + day.dateFormatted + '</td>' +
+                                '<td>' + (day.inTime || '--') + '</td>' +
+                                '<td>' + (day.outTime || '--') + '</td>' +
+                                '<td><span class="badge badge-light border">' + (day.workHours || '--') + '</span></td>' +
+                                '<td>' + lateHtml + '</td>' +
+                                '<td>' + earlyHtml + '</td>' +
+                                '<td>' + otHtml + '</td>' +
+                                '<td><span class="badge ' + (day.statusClass || 'badge-secondary') + ' px-2 py-1">' + (day.status || 'Unknown') + '</span></td>' +
+                                '</tr>';
+                            tbody.append(row);
+                        });
+                    } else {
+                        tbody.append('<tr><td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td></tr>');
+                    }
+                }
+            },
+            error: function () {
+                $("#attnRefreshIcon").removeClass("fa-spin");
+            }
+        });
+    }
+
+    function onSalaryPeriodChange() {
+        var yr = parseInt($("#slryFilterYear").val(), 10) || new Date().getFullYear();
+        var mn = parseInt($("#slryFilterMonth").val(), 10) || (new Date().getMonth() + 1);
+        var cat = $("#slryFilterCat").val() || "ALL";
+        $("#drpYear").val(yr);
+        $("#drpMonth").val(mn);
+        loadCompanySalarySummary(yr, mn, cat);
+    }
+
+    function formatCurrency(num) {
+        if (isNaN(num) || num === null || num === undefined) return "0.00";
+        return parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function loadCompanySalarySummary(year, month, staffCat) {
+        if (!staffCat) {
+            staffCat = $("#slryFilterCat").val() || "ALL";
+        }
+        $("#slryRefreshIcon").addClass("fa-spin");
+        $.ajax({
+            type: "GET",
+            url: '@Url.Action("GetCompanySalarySummary", "Home")',
+            data: { year: year, month: month, staffCat: staffCat },
+            dataType: "json",
+            success: function (res) {
+                $("#slryRefreshIcon").removeClass("fa-spin");
+                if (res && res.ok && res.data) {
+                    var d = res.data;
+                    var s = {
+                        year: d.Year !== undefined ? d.Year : d.year,
+                        month: d.Month !== undefined ? d.Month : d.month,
+                        monthName: d.MonthName !== undefined ? d.MonthName : d.monthName,
+                        staffCategory: d.StaffCategory !== undefined ? d.StaffCategory : d.staffCategory,
+                        categoryText: d.CategoryText !== undefined ? d.CategoryText : d.categoryText,
+                        isProcessed: d.IsProcessed !== undefined ? d.IsProcessed : d.isProcessed,
+                        statusText: d.StatusText !== undefined ? d.StatusText : d.statusText,
+                        employeeCount: d.EmployeeCount !== undefined ? d.EmployeeCount : (d.employeeCount || 0),
+                        totalBasic: parseFloat(d.TotalBasic !== undefined ? d.TotalBasic : d.totalBasic) || 0,
+                        totalHousing: parseFloat(d.TotalHousing !== undefined ? d.TotalHousing : d.totalHousing) || 0,
+                        totalTransport: parseFloat(d.TotalTransport !== undefined ? d.TotalTransport : d.totalTransport) || 0,
+                        totalOtherAllowances: parseFloat(d.TotalOtherAllowances !== undefined ? d.TotalOtherAllowances : d.totalOtherAllowances) || 0,
+                        totalOvertime: parseFloat(d.TotalOvertime !== undefined ? d.TotalOvertime : d.totalOvertime) || 0,
+                        totalBonus: parseFloat(d.TotalBonus !== undefined ? d.TotalBonus : d.totalBonus) || 0,
+                        totalAllowances: parseFloat(d.TotalAllowances !== undefined ? d.TotalAllowances : d.totalAllowances) || 0,
+                        totalGross: parseFloat(d.TotalGross !== undefined ? d.TotalGross : d.totalGross) || 0,
+                        totalDeductions: parseFloat(d.TotalDeductions !== undefined ? d.TotalDeductions : d.totalDeductions) || 0,
+                        totalNet: parseFloat(d.TotalNet !== undefined ? d.TotalNet : d.totalNet) || 0,
+                        staffLoan: parseFloat(d.StaffLoan !== undefined ? d.StaffLoan : d.staffLoan) || 0,
+                        salaryAdvance: parseFloat(d.SalaryAdvance !== undefined ? d.SalaryAdvance : d.salaryAdvance) || 0,
+                        noPay: parseFloat(d.NoPay !== undefined ? d.NoPay : d.noPay) || 0,
+                        otherRecoveries: parseFloat(d.OtherRecoveries !== undefined ? d.OtherRecoveries : d.otherRecoveries) || 0
+                    };
+
+                    var catLabel = s.categoryText ? (" • " + s.categoryText) : "";
+                    $("#lblSlryMonthText").text((s.monthName || "Payroll Overview") + catLabel);
+
+                    if (s.isProcessed) {
+                        $("#lblSlryStatusBadge").removeClass("badge-info badge-warning badge-secondary").addClass("badge-success").text(s.statusText || "Processed & Finalized");
+                    } else {
+                        $("#lblSlryStatusBadge").removeClass("badge-success badge-info badge-warning").addClass("badge-secondary").text(s.statusText || "Not Processed");
+                    }
+
+                    $("#valTotalGross").text(formatCurrency(s.totalGross)).addClass("text-primary").attr("style", "color: #540033 !important;");
+                    $("#valTotalNet").text(formatCurrency(s.totalNet));
+                    $("#valTotalDeductions").text(formatCurrency(s.totalDeductions));
+                    $("#valEmployeeCount").text(s.employeeCount || 0);
+
+                    $("#valBasic").text(formatCurrency(s.totalBasic) + " QAR");
+                    $("#valHousing").text(formatCurrency(s.totalHousing) + " QAR");
+                    $("#valTransport").text(formatCurrency(s.totalTransport) + " QAR");
+                    $("#valOtherAlwnc").text(formatCurrency(s.totalOtherAllowances) + " QAR");
+                    $("#valOvertimeBonus").text(formatCurrency(s.totalOvertime + s.totalBonus) + " QAR");
+
+                    var gross = s.totalGross;
+                    if (gross > 0) {
+                        var pBasic = Math.min(100, (s.totalBasic / gross * 100));
+                        var pHousing = Math.min(100, (s.totalHousing / gross * 100));
+                        var pTransport = Math.min(100, (s.totalTransport / gross * 100));
+                        var pOther = Math.min(100, (s.totalOtherAllowances / gross * 100));
+                        var pOt = Math.min(100, ((s.totalOvertime + s.totalBonus) / gross * 100));
+                        var pDct = Math.min(100, (s.totalDeductions / gross * 100));
+
+                        $("#badgeBasicShare").text("Basic: " + pBasic.toFixed(1) + "%");
+                        $("#progBasic").css("width", pBasic + "%");
+                        $("#progHousing").css("width", pHousing + "%");
+                        $("#progTransport").css("width", pTransport + "%");
+                        $("#progOtherAlwnc").css("width", pOther + "%");
+                        $("#progOvertimeBonus").css("width", pOt + "%");
+                        $("#badgeDeductionShare").text(pDct.toFixed(1) + "% of Gross");
+                    } else {
+                        $("#badgeBasicShare").text("Basic: 0%");
+                        $("#progBasic").css("width", "0%");
+                        $("#progHousing").css("width", "0%");
+                        $("#progTransport").css("width", "0%");
+                        $("#progOtherAlwnc").css("width", "0%");
+                        $("#progOvertimeBonus").css("width", "0%");
+                        $("#badgeDeductionShare").text("0% of Gross");
+                    }
+
+                    $("#valStaffLoan").text(formatCurrency(s.staffLoan) + " QAR");
+                    $("#valSalaryAdvance").text(formatCurrency(s.salaryAdvance) + " QAR");
+                    $("#valNoPay").text(formatCurrency(s.noPay) + " QAR");
+                    $("#valOtherRecoveries").text(formatCurrency(s.otherRecoveries) + " QAR");
+                }
+            },
+            error: function () {
+                $("#slryRefreshIcon").removeClass("fa-spin");
+            }
+        });
+    }
+
+    function getSalarySheetFromSection() {
+        var yr = $("#slryFilterYear").val();
+        var mn = $("#slryFilterMonth").val();
+        $("#drpYear").val(yr);
+        $("#drpMonth").val(mn);
+        getSalarySheet();
+    }
+
+
+    function gridFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        var grid = document.getElementById('gridECht').ej2_instances[0];
+        this.columns[5].format = { type: 'date', format: 'dd/MM/yyyy' };
+    }
+
+    function chtEmpByNtlyPointClick(args) {
+        var grid = document.getElementById('gridECht').ej2_instances[0];
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+
+        divNltyEmpSmry.style.display = "none";
+        divNltyEmpDtl.style.display = "block";
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByNtlyName',
+            dataType: "json",
+            data: { Name: args.point.x },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                $('#labelNltyHeading1').text('Nationality : ' + args.point.x);
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    function viewNltyEmpDtl() {
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        divNltyEmpDtl.style.display = "none";
+        divNltyEmpSmry.style.display = "block";
+    }
+
+    function hideNltyEmpDtl() {
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+        divNltyEmpSmry.style.display = "block";
+        divNltyEmpDtl.style.display = "none";
+    }
+
+    function showNltyEmpDtl(Id) {
+        var grid = document.getElementById('gridECht').ej2_instances[0];
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+        divNltyEmpSmry.style.display = "none";
+        divNltyEmpDtl.style.display = "block";
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByNtlyRtoId',
+            //url: '/Home/GetEmployeeByNtlyName',
+            dataType: "json",
+            data: { Id: Id },
+            //data: { Name: Id },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                $('#labelNltyHeading1').text('');
+                $.each(data.data, function (i, obj) {
+                    $('#labelNltyHeading1').text('Nationality : ' + obj.NltyName);
+                });
+
+                if (Id == 12) {
+                    $('#labelNltyHeading1').text('Nationality : Others ');
+                }
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+
+
+    // Attendance Details Functions
+    function chtDlyAtndSmryPointClick(args) {
+        var gridDayAtndc = document.getElementById('gridDayAtndc').ej2_instances[0];
+        var chtDayAttnSmry = document.getElementById('chtDayAttnSmry').ej2_instances[0];
+        var divChtDayAtndc = document.getElementById("divChtDayAtndc");
+
+        divChtDayAtndc.style.display = "block";
+        divVwDayAtndc.style.display = "block";
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmpDlyAttnSmry',
+            dataType: "json",
+            data: { slctdDate: args.point.x },
+            success: function (data) {
+                console.log(data);
+                chtDayAttnSmry.series[0].dataSource = data.data;
+                chtDayAttnSmry.title = "Staff Attendance on " + args.point.x;
+                $('#lblAttdChartHeading').text(args.point.x);
+
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmpDlyAttn',
+            dataType: "json",
+            data: { slctdDate: args.point.x, status: "ALL" },
+            success: function (data) {
+                console.log(data);
+                gridDayAtndc.dataSource = data.data;
+
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+
+    }
+
+    function chtDayAttnSmryClick(args) {
+        var gridDayAtndc = document.getElementById('gridDayAtndc').ej2_instances[0];
+        //alert("Attendance : " + args.point.x );
+        var sDate = $('#lblAttdChartHeading').text();
+            
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmpDlyAttn',
+            dataType: "json",
+            data: { slctdDate: sDate, status: args.point.x },
+            success: function (data) {
+                console.log(data);
+                gridDayAtndc.dataSource = data.data;
+                //$('#lblgridDayAtndcHeading').text(args.point.x + " Staff Data on " + args.point.x);
+
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    function hideVwDayAtndc() {
+
+        var divDlyAtndSmry = document.getElementById("divDlyAtndSmry");
+        var divVwDayAtndc = document.getElementById("divVwDayAtndc");
+        divDlyAtndSmry.style.display = "block";
+        divVwDayAtndc.style.display = "none";
+    }
+    // End Attendance Details Functions
+
+    // Today Attendance Details Functions
+    function chtTdyAtndcSmryPointClick(args) {
+        var grdTdyAtndc = document.getElementById('grdTdyAtndc').ej2_instances[0];
+        var chtDayAttnSmry = document.getElementById('chtTdyAtndcSmry').ej2_instances[0];
+        var divVwTdyAtndcSmry = document.getElementById("divVwTdyAtndcSmry");
+        var divVwTdyOSAtndcSmry = document.getElementById("divVwTdyOSAtndcSmry");
+
+
+        divVwTdyAtndc.style.display = "block";
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetTdyAtndcDtls',
+            dataType: "json",
+            data: { status: args.point.x },
+            success: function (data) {
+                console.log(data);
+                grdTdyAtndc.dataSource = data.data;
+                $('#lblgrdTdyAtndcHeading').text("Today's " + args.point.x + " Staff List.");
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    //------------------- Employees By Department -----------------//
+    function GetEmpByDptPointClick(args) {
+
+        //alert("Department : " + args.point.x + "\n Value : " + args.point.y);
+
+        var grid = document.getElementById('grdEmpByDpt').ej2_instances[0];
+        var divChtEmpByDpt = document.getElementById("divChtEmpByDpt");
+        var divChtEmpByDptDtl = document.getElementById("divChtEmpByDptDtl");
+        divChtEmpByDpt.style.display = "none";
+        divChtEmpByDptDtl.style.display = "block";
+
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByDpt',
+            dataType: "json",
+            data: { Code: args.point.x },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                $.each(data.data, function (i, obj) {
+                    $('#labelDptHeading').text('Department : ' + obj.DeptName);
+                });
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    function grdEmpByDptLoadFormattings() {
+        this.columns[4].format = { type: 'date', format: 'dd/MM/yyyy' };
+    }
+
+    function showchtNltyEmpDtl() {
+        var divchtEmpByNtly = document.getElementById("divchtEmpByNtly");
+        var divchtNltyEmpDtl = document.getElementById("divchtNltyEmpDtl");
+        divchtEmpByNtly.style.display = "none";
+        divchtNltyEmpDtl.style.display = "block";
+    }
+
+    function hidechtNltyEmpDtl() {
+        var divchtEmpByNtly = document.getElementById("divchtEmpByNtly");
+        var divchtNltyEmpDtl = document.getElementById("divchtNltyEmpDtl");
+        divchtEmpByNtly.style.display = "block";
+        divchtNltyEmpDtl.style.display = "none";
+    }
+
+    function hideEmpByDpt() {
+        var divChtEmpByDpt = document.getElementById("divChtEmpByDpt");
+        var divChtEmpByDptDtl = document.getElementById("divChtEmpByDptDtl");
+        divChtEmpByDpt.style.display = "block";
+        divChtEmpByDptDtl.style.display = "none";
+    }
+
+    function hideDlyAttd() {
+        var divChtDayAtndc = document.getElementById("divChtDayAtndc");
+        var divVwDayAtndc = document.getElementById("divVwDayAtndc");
+        divChtDayAtndc.style.display = "none";
+        divVwDayAtndc.style.display = "none";
+    }
+
+    function loadTdyAttdSmry() {
+        var chtTdyAtndcSmry = document.getElementById('chtTdyAtndcSmry').ej2_instances[0];
+        $("#modalChtTdyAtndcSmry").modal("show");        
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8", 
+            url: '/Home/GetAtndcSmry', 
+            data: { field: "TODAY_SMRY", empId:0 ,sDate :"", eDate : ""},
+            dataType: "json",
+            success: function (data) {
+                chtTdyAtndcSmry.series[0].dataSource = data.data;
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    function PrintNltySmry() {
+        
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/PrintNltySmry',
+            dataType: "json",
+            success: function (data) {
+                console.log(data);
+            },
+            error: function (xhr, err) {
+                toastObj.show(toasts[3]);
+            }
+        });
+    }
+
+</script>
+
+<script>
+    //document.getElementById('prntChart').onclick = () => {
+    //    var chart = document.getElementById('chtEmpByNtly').ej2_instances[0];
+    //    chart.print();
+    //};
+
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[5].format = { type: 'date', format: 'dd/MM/yyyy' };
+    }
+
+    window.pointRender = function (args) {
+        //var highContrastColors = ['#240b17', '#331021', '#42142a', '#511934', '#601e3e', '#6f2247', '#7e2751', '#8d2c5b', '#9c3064',
+        //    '#ab356e', '#ba3a78', '#00bdae'];
+        var highContrastColors = ['#00bdae', '#404041', '#357cd2', '#e56590', '#f8b883', '#70ad47', '#dd8abd', '#7f84e8', '#7bb4eb',
+            '#ea7a57', '#404041', '#00bdae'];
+        args.fill = highContrastColors[args.point.index % 10];
+
+    }
+</script>
+
+<script>
+    function queryCellInfo(args) {
+        //var args = QueryCellInfoEventArgs;
+        var actual = 0;
+        var allocated = 0;
+
+        if (args.column.field === 'ActlEmpCnt') {
+            actual = args.data['ActlEmpCnt'];
+        }
+        if (args.column.field === 'AlctdEmpCnt') {
+            allocated = args.data["AlctdEmpCnt"]
+        }
+
+        if (actual <= allocated) {
+            if (args.column.field === 'ActlEmpCnt') {
+                args.cell.setAttribute('style', 'background-color:#02a33a ;color:white;');
+            }
+        }
+        else {
+            if (args.column.field === 'ActlEmpCnt') {
+                args.cell.setAttribute('style', 'background-color:#b80614 ;color:white;');
+            }
+        }
+    }
+
+
+    var initialRender = true
+    function OnDataBound() {
+        if (initialRender) {
+            this.aggregateModule.footerRenderer.contentTable.querySelector('.e-summarycell').innerText = "Total Employees";
+            //this.aggregateModule.footerRenderer.contentTable.querySelector('.e-templatecell').classList.add('custom-css');
+            initialRender = false;
+        }
+    }
+</script>
+
+<script>
+    function load(args) {
+        var indexedTheme = location.hash.split('/')[1];
+        indexedTheme = indexedTheme ? indexedTheme : 'Material';
+        args.accumulation.theme = (indexedTheme.charAt(0).toUpperCase() + indexedTheme.slice(1).replace(/dark/i, "Dark").replace(/light/i, "Light"));
+        args.accumulation.series[0].startAngle = 0;
+        args.accumulation.series[0].endAngle = 0;
+        args.accumulation.series[0].explodeIndex = 0;
+    }
+</script>
+
+<style>
+    .e-grid .e-rowcell.customcss {
+        background-color: white;
+        color: #540033;
+        font-family: "Segoe UI";
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .e-grid .e-headercell.customcss {
+        background-color: whitesmoke;
+        color: #540033;
+        font-family: 'Segoe UI';
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .e-grid .e-templatecell.custom-css {
+        color: #540033;
+        font-family: "Arial";
+        font-size: 15px;
+        font-weight: 600;
+    }
+
+    .e-grid .e-summarycell.custom-css {
+        color: #540033;
+        font-family: "Segoe UI";
+        font-size: 15px;
+        font-weight: 600;
+    }
+</style>
+
+<script type="text/javascript">
+
+    function getSalarySheet() {
+        var dwnurl = "";
+        var path = '/attach/slrySheet/';
+
+        var Yr = $("#drpYear").val()
+        var Mnt = $("#drpMonth").val()
+        $.ajax({
+            type: "GET", //GET
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/PrintSalarySheet',
+            dataType: "json",
+            data: { eftMnt: Mnt, eftYr: Yr },
+            success: function (data) {
+                //console.log(data);
+                if (data.data == 0) {
+                    toastObj.show(toasts[2]);
+                }
+                else {
+
+                    toastObj.show(toasts[0]);
+                    DownloadFile(data.data);
+                    //Update Download Button href//
+                    dwnurl = path.concat(data.data);
+                    //alert(dwnurl);
+                    $("#Slrydwnld").show();
+                    //$("#Slrydwnld").prop("href", dwnurl);
+
+                    $("#Slrydwnld").prop("href", dwnurl);
+
+                }
+            },
+            error: function (xhr, err) {
+                toastObj.show(toasts[1]);
+            }
+        });
+    }
+
+    function DownloadFile(fileName) {
+        var path = '/attach/slrySheet/';
+        var dwnurl = path.concat(fileName);
+        $.ajax({
+            url: dwnurl,
+            method: 'GET',
+            xhrFields: {
+                responseType: 'blob'
+            },
+            success: function (data) {
+                var a = document.createElement('a');
+                var url = window.URL.createObjectURL(data);
+                a.href = url;
+                a.download = fileName;
+                document.body.append(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            },
+            error: function (xhr, err) {
+
+                toastObj.show(toasts[1]);
+            }
+        });
+    }
+</script>
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("grdTdyAtndc").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+        else if (args.item.id === 'Grid_print') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+<!--Start Toast Start-->
+<script type="text/javascript">
+
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Downloaded successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'Downloading salary sheet got failed. Update your browser version.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Salary Process is not yet completed.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' }
+
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    setTimeout(
+        () => {
+            toastObj.show({
+                target: document.body
+            });
+        }, 500);
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (e.toastContainer.childElementCount === 0) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+    function onBeforeOpen() {
+        btnEleHide.style.display = 'inline-block';
+    }
+</script>
+
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,AAEAAAAKAIAAAwAgT1MvMj0gSRkAAAEoAAAAVmNtYXDnM+eRAAABsAAAAEpnbHlmzVnmlwAAAhgAAAZAaGVhZBEYIl8AAADQAAAANmhoZWEHlgN3AAAArAAAACRobXR4LvgAAAAAAYAAAAAwbG9jYQnUCGIAAAH8AAAAGm1heHABHQBcAAABCAAAACBuYW1lfUUTYwAACFgAAAKpcG9zdAxfTDgAAAsEAAAAggABAAADUv9qAFoEAAAAAAAD6AABAAAAAAAAAAAAAAAAAAAADAABAAAAAQAACcU5MF8PPPUACwPoAAAAANcI7skAAAAA1wjuyQAAAAAD6APoAAAACAACAAAAAAAAAAEAAAAMAFAABwAAAAAAAgAAAAoACgAAAP8AAAAAAAAAAQPqAZAABQAAAnoCvAAAAIwCegK8AAAB4AAxAQIAAAIABQMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAUGZFZABA5wDnCgNS/2oAWgPoAJYAAAABAAAAAAAABAAAAAPoAAAD6AAAA+gAAAPoAAAD6AAAA+gAAAPoAAAD6AAAA+gAAAPoAAAD6AAAAAAAAgAAAAMAAAAUAAMAAQAAABQABAA2AAAABAAEAAEAAOcK//8AAOcA//8AAAABAAQAAAABAAIAAwAEAAUABgAHAAgACQAKAAsAAAAAAAAAQgB8AMIA4gEcAZQCBgJwAo4DAAMgAAAAAwAAAAADlAOUAAsAFwAjAAABFwcXNxc3JzcnBycFDgEHLgEnPgE3HgEFHgEXPgE3LgEnDgEBTXh4L3h4L3h4L3h4AbwDt4qKtwMDt4qKt/0eBeuxsesFBeuxsesCbHh4L3h4L3h4L3h4p4q3AwO3ioq3AwO3irHrBQXrsbHrBQXrAAAAAwAAAAADlAOUAAUAEQAdAAABJwcXAScXDgEHLgEnPgE3HgEFHgEXPgE3LgEnDgEBr2UylwEbMqADt4qKtwMDt4qKt/0eBeuxsesFBeuxsesBrGQylgEcMqKKtwMDt4qKtwMDt4qx6wUF67Gx6wUF6wAAAAAFAAAAAAOUA5cABQARAB0AIQAlAAABFzcnNSMFDgEHLgEnPgE3HgEFHgEXPgE3LgEnDgElFzcnBRc3JwHKxiCnPwFOA6V8fKUDA6V8fKX9aATToJ/UBATUn5/UAh7ANsD9fja/NQGedzNj29F8pAMDpHx8pQMDpXyf1AQE1J+g0wQE0/GhQKGhQKFAAAQAAAAAA74DfgADAAcACgANAAAlMzUjNTM1IwEhCQEhAQHLUlJSUgFj/YwBOv42A5T+NuZUUqf+igIc/ZADFgAEAAAAAAOUA5QAAwAHABMAHwAAATM1IzUzNSMFDgEHLgEnPgE3HgEFHgEXPgE3LgEnDgEBylRUVFQBbgO3ioq3AwO3ioq3/R4F67Gx6wUF67Gx6wEk+lNT0Iq3AwO3ioq3AwO3irHrBQXrsbHrBQXrAAAAAAcAAAAAA+gDMQALABUAJQAuADcAQQBLAAABFhcVITUmJz4BMxYFFhcVITU+ATcWJQYHFSE1LgEjIgYHLgEjIgEWFAYiJjQ2MgUWFAYiJjQ2MiUGFBYXPgE0JiIFBhQWFz4BNCYiA1xEBP6sAxUeRiRX/qxEBP45BIlXV/7xZQsD6AvKUypvMzNvKlMCKxozTTMzTP6CGTNMNDRMAQItWUREWlqI/jstWkREWVmIAWMbFjc3IBgKDwQcGxY3NxY3BAQjJUt7e0tKFxgYFwEMGU01NU0zGhlNNTVNMxYthloCAlqGWy4thloCAlqGWwAAAAQAAAAAA5wCxwAIABQANABFAAABFBYyNjQmIgYXDgEHLgEnPgE3HgEfAQcOAQ8BNz4BNS4BJw4BBxQWHwEnLgEvATc+ATc2FiUOAQ8BFx4BNz4BPwEnJiciAb8fLR4eLR+wAkU0NEUBAUU0NEX8BgEemG0FBB8kAlZBQFcBKyUCCkeVTAYBH76RVMP+3bDPBwcKZclcu/AGCwrM2AoBxxYfHy0eHhc0RQEBRTQ1RQEBRSgEARpWGAECFUIoQVcCAldBLEYUAQEIQkAGASJsBwFCoRbFFAoJW0sBCo8LCgztAQAAAAIAAAAAA4ADbAA4AEEAAAEEJCcmDgEWFx4BHwEVFAYHDgEnJg4BFhcWNjc2Fx4BBx4BFzc+ASc2JicmJzUzPgE3PgEnJicjIiUUFjI2NCYiBgNM/tz+pwwMGxEDDAaMfAcSETKEQw8WBg8Og80hNSg4JwICEw0FDhECAjFJEBICPYhKDQgGChQCB/5dMUgxMUgxAuB/ZRcIAxgbCQdHEQGTGi8TOVgKAw8dFwMNuDUFHTGDCA0QAQECFQ8Mnz8LCasJKiUHGg0SATMkMDBJMDAAAAAAAgAAAAAC/QMkAAMADQAAAQchJxMeATMhMjY3EyEC2x3+bB0kBCQZAQQZJARH/ewDBuDg/fcZICAZAicAAwAAAAACzwPoACwAQwBPAAABERQfARYfAzMVHgE7ATI2NRE0JisBNTEWOwEyNjQmJyMiJi8BLgErAQ4BAxUzNTQ2NzMeARcVMzUuAScjIgcjESM1HgEXPgE3LgEnDgEBVQEBAwQCCAjXARENOg0REQ2zDROVExoaE2UQGAQfAxAKYg0RPR8RDZcNEQEeASIalxANAR8CTTo6TQEBTTo6TQJ8/nYEBQIGBAIFArYNERENARENEUoNGicZARMPfQoNARH98Hl5DREBARENeXkaIgEIAe3FOk0CAk06Ok0BAU0AAAAAAgAAAAAC5gMyAAkAEQAAJRQWMyEyNjURITcjFSE1IycjASApHgEaHin+WFBuAeR+JLD8HigoHgGfeT09HgAAAAAAEgDeAAEAAAAAAAAAAQAAAAEAAAAAAAEAEgABAAEAAAAAAAIABwATAAEAAAAAAAMAEgAaAAEAAAAAAAQAEgAsAAEAAAAAAAUACwA+AAEAAAAAAAYAEgBJAAEAAAAAAAoALABbAAEAAAAAAAsAEgCHAAMAAQQJAAAAAgCZAAMAAQQJAAEAJACbAAMAAQQJAAIADgC/AAMAAQQJAAMAJADNAAMAAQQJAAQAJADxAAMAAQQJAAUAFgEVAAMAAQQJAAYAJAErAAMAAQQJAAoAWAFPAAMAAQQJAAsAJAGnIEZpbmFsIFRvYXN0IE1ldHJvcFJlZ3VsYXJGaW5hbCBUb2FzdCBNZXRyb3BGaW5hbCBUb2FzdCBNZXRyb3BWZXJzaW9uIDEuMEZpbmFsIFRvYXN0IE1ldHJvcEZvbnQgZ2VuZXJhdGVkIHVzaW5nIFN5bmNmdXNpb24gTWV0cm8gU3R1ZGlvd3d3LnN5bmNmdXNpb24uY29tACAARgBpAG4AYQBsACAAVABvAGEAcwB0ACAATQBlAHQAcgBvAHAAUgBlAGcAdQBsAGEAcgBGAGkAbgBhAGwAIABUAG8AYQBzAHQAIABNAGUAdAByAG8AcABGAGkAbgBhAGwAIABUAG8AYQBzAHQAIABNAGUAdAByAG8AcABWAGUAcgBzAGkAbwBuACAAMQAuADAARgBpAG4AYQBsACAAVABvAGEAcwB0ACAATQBlAHQAcgBvAHAARgBvAG4AdAAgAGcAZQBuAGUAcgBhAHQAZQBkACAAdQBzAGkAbgBnACAAUwB5AG4AYwBmAHUAcwBpAG8AbgAgAE0AZQB0AHIAbwAgAFMAdAB1AGQAaQBvAHcAdwB3AC4AcwB5AG4AYwBmAHUAcwBpAG8AbgAuAGMAbwBtAAAAAAIAAAAAAAAACgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADAECAQMBBAEFAQYBBwEIAQkBCgELAQwBDQAFRXJyb3IHU3VjY2VzcwVBbGFybQdXYXJuaW5nBEluZm8HTWVldGluZwVCbGluawdTdHJldGNoA1NpcANTaXQFVHJhc2gAAAAA) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    #toast_types button {
+        margin: 5px;
+        min-width: 160px;
+        max-width: 160px;
+    }
+
+    .toast-icons {
+        font-family: 'Toast_icons' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toast_type .e-toast-icon.e-icons {
+        height: auto;
+        font-size: 30px;
+    }
+
+    .toast-icons.e-success::before {
+        content: "\e701";
+    }
+
+    .toast-icons.e-error::before {
+        content: "\e700";
+    }
+
+    .toast-icons.e-info::before {
+        content: "\e704";
+    }
+
+    .toast-icons.e-warning::before {
+        content: "\e703";
+    }
+</style>
+<!--End Toast End-->

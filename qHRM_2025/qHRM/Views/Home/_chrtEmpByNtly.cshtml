@@ -1,0 +1,138 @@
+﻿@using Syncfusion.EJ2
+<div class="form-row">
+    <div class="form-group col-md-1"></div>
+    <div class="form-group col-md-10">
+        <div id="divchrtEmpByNtly">
+
+            <ejs-chart id="chtEmpByNtly" theme="Fabric" width="1100px" height="100%" pointClick="chrtEmpByNtly_PointClick">
+                <e-chart-chartarea>
+                    <e-chartarea-border width="0"></e-chartarea-border>
+                </e-chart-chartarea>
+                <e-chart-tooltipsettings enable="true">
+                </e-chart-tooltipsettings>
+                <e-chart-primaryxaxis valueType="Category" title="Nationality"
+                                      interval=1>
+                    <e-majorgridlines width="0"></e-majorgridlines>
+                </e-chart-primaryxaxis>
+                <e-chart-primaryyaxis labelFormat="{value}%"
+                                      edgeLabelPlacement="Shift" title="Percentage"  minimum="0" maximum="50" interval="10">
+                    <e-majorgridlines width="1"></e-majorgridlines>
+                    <e-majorticklines width="1"></e-majorticklines>
+                    <e-linestyle width="1"></e-linestyle>
+                    <e-labelstyle color="black"></e-labelstyle>
+                </e-chart-primaryyaxis>               
+               
+                <e-series-collection>
+                    <e-series fill="#801957" dataSource="@ViewBag.dsActual" xName="NltyName" yName="StfRatio" name="Actual" width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                        <e-series-marker>
+                            <e-series-datalabel position="Middle" visible="false">
+                                <e-font color="#ffffff" size="10.5px" fontWeight="500"></e-font>
+                            </e-series-datalabel>
+                        </e-series-marker>
+                    </e-series>
+                    <e-series fill="#595758" dataSource="@ViewBag.dsAllocated" xName="NltyName" yName="StfRatio" name="Allocated" width=2 type="@Syncfusion.EJ2.Charts.ChartSeriesType.Column">
+                        <e-series-marker>
+                            <e-series-datalabel position="Middle" visible="false">
+                                <e-font color="#ffffff" size="10.5px" fontWeight="500"></e-font>
+                            </e-series-datalabel>
+                        </e-series-marker>
+                    </e-series>
+
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="form-group col-md-1"></div>
+    <div class="form-group col-md-12">
+        <div id="divchrtNltyEmpDtl" style="display:none;">
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <button type="button" class="btn btn-outline-primary" onclick="chrtNltyEmpDtl_Hide()">Back</button>
+                </div>
+                <div class="form-group col-md-6" style="align-items:center">
+                    <label id="labelNltyHeading" class="h4"></label>
+                </div>
+                <div class="form-group col-md-3"></div>
+            </div>
+
+            <div>&nbsp;</div>
+            @*<ejs-grid id="GridEmp1" width="auto" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowSorting="true"
+                      allowExcelExport="true" allowPdfExport="true">
+                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                <e-grid-columns>
+                    <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                    <e-grid-column field="EmpId" headerText="Employee ID" width="100"></e-grid-column>
+                    <e-grid-column field="Title" headerText="Title" width="50"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Full Name" width="200"></e-grid-column>
+                    <e-grid-column field="DeptName" headerText="Department" width="125"></e-grid-column>
+                    <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="125"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>*@
+
+            <ejs-grid id="GridEmp1" width="auto" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowSorting="true"
+                      allowExcelExport="true" allowPdfExport="true">
+                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                <e-grid-columns>
+                    <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                    <e-grid-column field="EmpId" headerText="Employee ID" width="100"></e-grid-column>
+                    <e-grid-column field="Title" headerText="Title" width="50"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Full Name" width="150"></e-grid-column>
+                    <e-grid-column field="DeptName" headerText="Department" width="175"></e-grid-column>
+                    <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="125"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+
+        </div>
+    </div>
+</div>
+
+<script>
+
+    $(document).ready(function () {
+        chrtNltyEmpDtl_Hide();
+    });
+
+    function chrtEmpByNtly_PointClick(args) {
+        var grid = document.getElementById('GridEmp1').ej2_instances[0];
+        var divchrtEmpByNtly = document.getElementById("divchrtEmpByNtly");
+        var divchrtNltyEmpDtl = document.getElementById("divchrtNltyEmpDtl");
+
+        divchrtEmpByNtly.style.display = "none";
+        divchrtNltyEmpDtl.style.display = "block";
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByNtlyName',
+            dataType: "json",
+            data: { Name: args.point.x },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                $.each(data.data, function (i, obj) {
+                }
+                
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    function chrtNltyEmpDtl_Hide() {
+        var divchrtEmpByNtly = document.getElementById("divchrtEmpByNtly");
+        var divchrtNltyEmpDtl = document.getElementById("divchrtNltyEmpDtl");
+        divchrtEmpByNtly.style.display = "block";
+        divchrtNltyEmpDtl.style.display = "none";
+    }
+
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("GridEmp1").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+<ejs-scripts></ejs-scripts>

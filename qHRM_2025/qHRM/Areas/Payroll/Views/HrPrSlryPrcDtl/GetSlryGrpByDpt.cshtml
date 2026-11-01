@@ -1,0 +1,327 @@
+﻿@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@model qHRM.Areas.Payroll.Models.HrPrSlryPrcHdr
+@using Microsoft.AspNetCore.Http;
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Salary By Department</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Salary By Department</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                        <e-toast-position X="Center"></e-toast-position>
+                    </ejs-toast>
+                    <div id="dvProcess" class="border">
+                        <div class="form-row">
+                            <div class="form-group col-md-4"></div>
+                            <div class="form-group col-md-4">
+                                <h4 class="mt-4">Choose the Month</h4>
+                            </div>
+                            <div class="form-group col-md-4"></div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group col-md-4"></div>
+                            <div class="form-group col-md-2">
+                                <label class="control-label control-label-sm">Year</label>
+                                <select placeholer="Select Year" id="drpYear"
+                                        asp-items="@(new SelectList(ViewBag.lstYear, "value", "text"))" class="form-control form-control-sm" onchange="loadSalaryDtls();">
+                                </select>
+                                <input id="crntStat" type="text" hidden />
+                            </div>
+                            <div class="form-group col-md-2">
+                                <label class="control-label control-label-sm">Month</label>
+                                <select placeholer="Select Month" id="drpMonth"
+                                        asp-items="@(new SelectList(ViewBag.lstMonth, "value", "text"))" class="form-control form-control-sm" onchange="loadSalaryDtls();">
+                                </select>
+                            </div>
+                            <div class="form-group col-md-4"></div>
+                        </div>                    
+                 
+                    </div>
+                    <div>&nbsp;</div>                 
+                   
+                    <br />
+                    <div id="tabs">
+                        <!--Grid-->
+                        <div class="control-section">
+                            <ejs-grid id="Grid" width="auto" dataSource="ViewBag.SlryDtl" allowSorting="true" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowResizing="true"
+                                      allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                                <e-grid-aggregates>
+                                    <e-grid-aggregate>
+                                        <e-aggregate-columns>
+                                            <e-aggregate-column field="BasicSalary" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="HouseRent" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Transport" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Position" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="ProjectAllowance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Incentives" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Mobile" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Overtime" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="MedicalAllowance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="OthrAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="OthrPmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="GrossSalary" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="SalaryAdvance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="StaffLoans" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="NoPay" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="OthrRcvryAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="TotalDeductions" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="NtSlry" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                        </e-aggregate-columns>
+                                    </e-grid-aggregate>
+                                </e-grid-aggregates>
+                                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                                <e-grid-groupsettings showDropArea="false" columns="@(new string[] { "Department"})"></e-grid-groupsettings>
+                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="Index" headerText="Ref." width="80" minWidth="10"></e-grid-column>
+                                    <e-grid-column field="Department" headerText="Department" width="150" minWidth="10"></e-grid-column>
+                                    <e-grid-column field="Emp_Id" headerText="Employee ID" width="100" minWidth="10"></e-grid-column>
+                                    <e-grid-column field="Full_Name" headerText="Name" width="150" minWidth="10"></e-grid-column>
+                                    <e-grid-column field="Designation" headerText="Designation" width="150" minWidth="10"></e-grid-column>
+                                    <e-grid-column field="BasicSalary" headerText="Basic Salary (QR.)" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                    <e-grid-column headerText="Allowances" textAlign="Center"
+                                                   columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "HouseRent", Width = "150", HeaderText = "Housing (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"},
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "Transport", Width = "150", HeaderText = "Transport (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "Position", Width = "150", HeaderText =  "Position (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "ProjectAllowance", Width = "150", HeaderText = "Proj. Allowance (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "Incentives", Width = "150", HeaderText = "Incentives (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "Mobile", Width = "150", HeaderText = "Mobile (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "Overtime", Width = "150", HeaderText = "Overtime (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10", },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "MedicalAllowance", Width = "150", HeaderText = "Medical Allowance (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrAlwnc", Width = "150", HeaderText = "Othr Allowance (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" }
+
+                                            } )">
+                                    </e-grid-column>
+                                    <e-grid-column field="OthrPmt" headerText="Othr Adjstmnt (QR.)" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                    <e-grid-column field="GrossSalary" headerText="Gross Salary" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                    <e-grid-column headerText="Deductions" textAlign="Center"
+                                                   columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "SalaryAdvance", Width = "150", HeaderText = "Salary Advance (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"  },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "StaffLoans", Width = "150", HeaderText = "Staff Loans (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "NoPay", Width = "150", HeaderText =  "NoPay (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" }
+
+                                           } )">
+                                    </e-grid-column>
+                                    <e-grid-column field="OthrRcvryAmt" headerText="Othr Deductions (QR.)" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                    <e-grid-column field="TotalDeductions" headerText="Total Deductions" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                    <e-grid-column headerText="Net Salary" textAlign="Center"
+                                                   columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "NtSlry", Width = "150", HeaderText = "Net Salary (QR.)", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"  },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "PmtModTxt", Width = "150", HeaderText = "Pay Mode", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Left,  MinWidth="10" },
+                                                   new Syncfusion.EJ2.Grids.GridColumn { Field = "BnkAcct", Width = "150", HeaderText = "Bank Acct", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Left,  MinWidth="10" }
+
+                                            } )">
+                                    </e-grid-column>
+                                    <e-grid-column field="Remarks" headerText="Remarks" width="150"></e-grid-column>
+                                </e-grid-columns>
+                            </ejs-grid>
+                            <ejs-button id="hideToast"></ejs-button>
+
+                           @*<ejs-grid id="Grid1" dataSource="ViewBag.datasource" allowGrouping="true" allowPaging="true">
+                                <e-grid-aggregates>
+                                    <e-grid-aggregate>
+                                        <e-aggregate-columns>
+                                            <e-aggregate-column field="UnitsInStock" type="Sum" groupFooterTemplate="Total units: ${Sum}"></e-aggregate-column>
+                                            <e-aggregate-column field="Discontinued" type="Truecount" groupFooterTemplate="Discontinued: ${Truecount}"></e-aggregate-column>
+                                            <e-aggregate-column field="UnitsInStock" type="Max" groupCaptionTemplate="'Maximum: ${Max}"></e-aggregate-column>
+                                        </e-aggregate-columns>
+                                    </e-grid-aggregate>
+                                </e-grid-aggregates>
+                                <e-grid-groupsettings showDropArea="false" columns="@(new string[] { "CategoryName"})"></e-grid-groupsettings>
+                                <e-grid-pagesettings pageCount="5"></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="CategoryName" headerText="Category Name" width="160"></e-grid-column>
+                                    <e-grid-column field="ProductName" headerText="Product Name" width="170"></e-grid-column>
+                                    <e-grid-column field="QuantityPerUnit" headerText="Quantity Per Unit" textAlign="Right" width="170"></e-grid-column>
+                                    <e-grid-column field="UnitsInStock" headerText="Units In Stock" width="170"></e-grid-column>
+                                    <e-grid-column field="Discontinued" headerText="Discontinued" displayAsCheckBox="true" type="boolean" textAlign="Center" width="150"></e-grid-column>
+                                </e-grid-columns>
+                            </ejs-grid>*@
+
+                        </div>
+                        <!--Grid-->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+
+
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+
+
+
+<script>
+    
+    function loadSalaryDtls() {
+
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: "@(Url.Action("GetSalaryDtl", "HrPrSlryPrcDtl"))",
+            dataType: "json",
+            data: { eftYr: efYr, eftMnt: efMnt},
+            success: function (data) {
+            console.log(data);
+            grid.dataSource = data.data;
+            grid.hideSpinner();
+            },
+            error: function (xhr, err) {
+           
+            }
+        });
+    }
+</script>
+
+
+
+
+<!--Start Toast Start-->
+<script type="text/javascript">
+
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Salary Process completed successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'Executing Salary Process got failed.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose one or more employees', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose the Department', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Salary Re-Process completed successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Success!', content: 'Salary Verification Process completed successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Success!', content: 'Salary Complete Process completed successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    setTimeout(
+        () => {
+            toastObj.show({
+                target: document.body
+            });
+        }, 500);
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (e.toastContainer.childElementCount === 0) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+    function onBeforeOpen() {
+        btnEleHide.style.display = 'inline-block';
+    }
+</script>
+
+
+
+
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    #toast_types button {
+        margin: 5px;
+        min-width: 160px;
+        max-width: 160px;
+    }
+
+    .toast-icons {
+        font-family: 'Toast_icons' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toast_type .e-toast-icon.e-icons {
+        height: auto;
+        font-size: 30px;
+    }
+
+    .toast-icons.e-success::before {
+        content: "\e701";
+    }
+
+    .toast-icons.e-error::before {
+        content: "\e700";
+    }
+
+    .toast-icons.e-info::before {
+        content: "\e704";
+    }
+
+    .toast-icons.e-warning::before {
+        content: "\e703";
+    }
+</style>
+<!--End Toast End-->
+<!--Start button-->
+<style>
+    @@font-face {
+        font-family: 'btn-icon';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    .e-btn-sb-icon {
+        font-family: 'btn-icon' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    .e-download::before {
+        content: '\e706';
+    }
+
+    .e-play::before {
+        content: '\e700';
+    }
+
+    .e-pause::before {
+        content: '\e701';
+    }
+</style>
+<!--Start button-->

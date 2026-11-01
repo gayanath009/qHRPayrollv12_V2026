@@ -1,0 +1,87 @@
+@model qHRM.Areas.General.Models.OrgInfo
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+<style>
+    .org-form-group {
+        margin-bottom: 1.15rem;
+    }
+    .org-form-label {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #334155;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+    .org-form-control {
+        border-radius: 8px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        padding: 0.6rem 0.85rem !important;
+        font-size: 0.9rem !important;
+        transition: all 0.2s ease !important;
+        color: #1e293b !important;
+    }
+    .org-form-control:focus {
+        border-color: #540033 !important;
+        box-shadow: 0 0 0 3px rgba(84, 0, 51, 0.12) !important;
+        background-color: #ffffff !important;
+    }
+    .org-modal-footer-btns {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+</style>
+
+@using (Html.BeginForm("Edit", "OrgInfo"))
+{
+    @Html.AntiForgeryToken()
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div>
+        <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+        @Html.HiddenFor(model => model.OrgId)
+        @Html.HiddenFor(model => model.RecStat)
+        <input asp-for="exOrgCode" class="form-control form-control-sm" hidden />
+
+        <div class="org-form-group">
+            <label asp-for="OrgCode" class="org-form-label">
+                <i class="fas fa-barcode mr-1 text-muted"></i> Org Code <span class="text-danger">*</span>
+            </label>
+            <input asp-for="OrgCode" class="form-control org-form-control" autocomplete="off" />
+            <span asp-validation-for="OrgCode" class="text-danger small font-weight-bold"></span>
+        </div>
+
+        <div class="org-form-group">
+            <label asp-for="NameEng" class="org-form-label">
+                <i class="fas fa-building mr-1 text-muted"></i> Organisation Name <span class="text-danger">*</span>
+            </label>
+            <input asp-for="NameEng" class="form-control org-form-control" autocomplete="off" />
+            <span asp-validation-for="NameEng" class="text-danger small font-weight-bold"></span>
+        </div>
+
+        <div class="org-form-group">
+            <label asp-for="Desc" class="org-form-label">
+                <i class="fas fa-align-left mr-1 text-muted"></i> Description
+            </label>
+            <input asp-for="Desc" class="form-control org-form-control" autocomplete="off" />
+            <span asp-validation-for="Desc" class="text-danger small font-weight-bold"></span>
+        </div>
+
+        <div class="org-modal-footer-btns">
+            <button type="button" class="btn btn-light px-3 py-2 font-weight-bold" data-dismiss="modal" style="border-radius: 8px; font-size: 0.85rem; border: 1px solid #e2e8f0;">
+                <i class="fas fa-times mr-1"></i> Close
+            </button>
+            <button type="submit" class="btn px-4 py-2 font-weight-bold text-white shadow-sm" style="background: linear-gradient(135deg, #540033 0%, #750047 100%); border: none; border-radius: 8px; font-size: 0.85rem;">
+                <i class="fas fa-save mr-1"></i> Save Changes
+            </button>
+        </div>
+    </div>
+}

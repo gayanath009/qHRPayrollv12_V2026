@@ -1,0 +1,61 @@
+﻿@model qHRM.Areas.Attendance.Models.HrEmpAttdView
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<form asp-action="Edit" asp-controller="HrEmpAtndcSft">
+    <!-- enctype="multipart/form-data"-->
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            Are you sure to edit these time entries?
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.EfctvDate) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.EfctvDate)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.DisplayNameFor(model => model.FullName) :
+        </div>
+        <div class="form-group col-md-6">
+            @Html.DisplayFor(model => model.FullName)
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            @Html.HiddenFor(model => model.RecId)
+            <label asp-for="InTime" class="control-label"></label>
+
+        </div>
+        <div class="form-group col-md-6">
+            <input asp-for="InTime" class="form-control form-control-sm" />
+            <span asp-validation-for="InTime" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label asp-for="OutTime" class="control-label"></label>
+        </div>
+        <div class="form-group col-md-6">
+            <input asp-for="OutTime" class="form-control form-control-sm" />
+            <span asp-validation-for="OutTime" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">  
+        <div class="form-group col-md-12">
+            <div class="form-check">
+                <input type="checkbox" asp-for="OvrNghtStat" class="form-check-input" id="chkOverNight">
+                <label class="form-check-label">Next Day</label>
+            </div>
+        </div>
+    </div>
+    <div class="form-group">
+        <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+</form>
+<ejs-scripts></ejs-scripts>

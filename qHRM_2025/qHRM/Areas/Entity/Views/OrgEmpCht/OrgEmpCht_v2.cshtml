@@ -1,0 +1,1055 @@
+@model IEnumerable<qHRM.Areas.Entity.Models.OrgEmpCht>
+@using System.Text.Json
+
+@{
+    ViewData["Title"] = "Organization Chart";
+    var jsonData = JsonSerializer.Serialize(Model ?? Enumerable.Empty<qHRM.Areas.Entity.Models.OrgEmpCht>());
+    int currentEmpSysId = ViewBag.CurrentEmpSysId ?? 0;
+}
+
+<div class="container-fluid py-3 px-4" id="orgChartPageContainer">
+    <!-- Header & Breadcrumbs -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="font-weight-bold text-dark mb-1" style="color: #1e293b; font-size: 1.45rem;">
+                <i class="fas fa-sitemap mr-2" style="color: #540033;"></i>Organization Chart
+            </h3>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb p-0 bg-transparent mb-0" style="font-size: 0.82rem;">
+                    <li class="breadcrumb-item"><a href="/Home/Index" style="color: #540033;">Home</a></li>
+                    <li class="breadcrumb-item"><a href="#" class="text-muted">Entity</a></li>
+                    <li class="breadcrumb-item active text-dark font-weight-bold" aria-current="page">Organization Hierarchy</li>
+                </ol>
+            </nav>
+        </div>
+
+        <div class="d-flex align-items-center flex-wrap gap-2 mt-2 mt-md-0">
+            <a href="/Home/Index" class="btn btn-sm btn-light border" style="border-radius: 6px; font-size: 0.8rem;">
+                <i class="fas fa-arrow-left mr-1"></i> Back
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Card -->
+    <div class="card shadow-sm border-0" style="border-radius: 12px; overflow: hidden; background: #ffffff;">
+        
+        <!-- Toolbar -->
+        <div class="card-header bg-white border-bottom py-2 px-3 d-flex flex-wrap justify-content-between align-items-center" style="border-color: #f1f5f9 !important;">
+            
+            <!-- Left: Search Box -->
+            <div class="d-flex align-items-center my-1" style="min-width: 260px; max-width: 380px; flex: 1;">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light border-right-0" style="border-color: #e2e8f0; border-radius: 6px 0 0 6px;">
+                            <i class="fas fa-search text-muted" style="font-size: 0.8rem;"></i>
+                        </span>
+                    </div>
+                    <input type="text" id="orgSearchInput" class="form-control border-left-0" placeholder="Search employee or designation..." style="border-color: #e2e8f0; border-radius: 0 6px 6px 0; font-size: 0.82rem;">
+                </div>
+            </div>
+
+            <!-- Center/Right: View Options & Controls -->
+            <div class="d-flex align-items-center flex-wrap my-1 gap-1">
+                
+                <!-- View Mode: Tree vs List -->
+                <div class="btn-group btn-group-sm mr-2" role="group">
+                    <button type="button" class="btn btn-outline-secondary active" id="btnViewTree" title="Interactive Tree View" onclick="switchViewMode('tree')">
+                        <i class="fas fa-project-diagram mr-1"></i> Tree
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary" id="btnViewList" title="Directory Hierarchy View" onclick="switchViewMode('list')">
+                        <i class="fas fa-list-ul mr-1"></i> Directory
+                    </button>
+                </div>
+
+                <!-- Tree Expand / Collapse -->
+                <div class="btn-group btn-group-sm mr-2" role="group">
+                    <button type="button" class="btn btn-light border" title="Expand All Levels" onclick="expandAllNodes()">
+                        <i class="fas fa-expand-arrows-alt text-secondary"></i> Expand All
+                    </button>
+                    <button type="button" class="btn btn-light border" title="Collapse to Top Level" onclick="collapseAllNodes()">
+                        <i class="fas fa-compress-arrows-alt text-secondary"></i> Collapse All
+                    </button>
+                </div>
+
+                <!-- Zoom Controls (Tree mode only) -->
+                <div class="btn-group btn-group-sm mr-2" id="zoomControlsGroup" role="group">
+                    <button type="button" class="btn btn-light border" title="Zoom In" onclick="zoomIn()">
+                        <i class="fas fa-plus text-secondary"></i>
+                    </button>
+                    <button type="button" class="btn btn-light border" id="zoomLevelDisplay" style="min-width: 50px; font-weight: 600; font-size: 0.75rem;">
+                        100%
+                    </button>
+                    <button type="button" class="btn btn-light border" title="Zoom Out" onclick="zoomOut()">
+                        <i class="fas fa-minus text-secondary"></i>
+                    </button>
+                    <button type="button" class="btn btn-light border" title="Fit to Screen" onclick="fitToScreen()">
+                        <i class="fas fa-compress text-secondary"></i> Fit
+                    </button>
+                    <button type="button" class="btn btn-light border" title="Reset (100%)" onclick="resetZoom()">
+                        <i class="fas fa-redo-alt text-secondary"></i>
+                    </button>
+                </div>
+
+                <!-- Action Tools -->
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-light border" title="Print Org Chart" onclick="printOrgChart()">
+                        <i class="fas fa-print text-secondary"></i> Print
+                    </button>
+                    <button type="button" class="btn btn-light border" id="btnFullscreen" title="Toggle Fullscreen" onclick="toggleFullscreen()">
+                        <i class="fas fa-expand text-secondary"></i>
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Canvas Body (Tree View) -->
+        <div id="treeViewContainer" class="position-relative" style="height: 680px; width: 100%; overflow: hidden; background: #f8fafc; cursor: grab; user-select: none;">
+            
+            <!-- Grid Background Lines -->
+            <div class="org-grid-pattern" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; opacity: 0.6;"></div>
+
+            <!-- Draggable & Zoomable Viewport -->
+            <div id="orgChartViewport" style="position: absolute; top: 0; left: 0; transform-origin: 0 0; will-change: transform;">
+                <div id="orgTreeRoot" class="org-tree" style="padding: 60px 80px;">
+                    <!-- Dynamically Generated Tree Structure -->
+                </div>
+            </div>
+
+            <!-- Mini Floating Stats Overlay -->
+            <div style="position: absolute; bottom: 15px; left: 15px; z-index: 10; background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 14px; font-size: 0.78rem; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                <span class="text-muted mr-3"><i class="fas fa-users mr-1 text-primary" style="color: #540033 !important;"></i> Total: <strong id="lblTotalEmployees" class="text-dark">0</strong></span>
+                <span class="text-muted"><i class="fas fa-layer-group mr-1 text-secondary"></i> Max Levels: <strong id="lblMaxLevels" class="text-dark">0</strong></span>
+            </div>
+
+            <!-- Navigation Helper Tooltip -->
+            <div style="position: absolute; bottom: 15px; right: 15px; z-index: 10; background: rgba(255,255,255,0.92); backdrop-filter: blur(4px); border: 1px solid #e2e8f0; border-radius: 8px; padding: 6px 12px; font-size: 0.74rem; color: #64748b; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+                <i class="fas fa-mouse mr-1"></i> Drag to pan &bull; Scroll to zoom &bull; Click card for details
+            </div>
+
+        </div>
+
+        <!-- Directory / List View (Hidden by default) -->
+        <div id="listViewContainer" class="p-4 d-none" style="min-height: 500px; max-height: 680px; overflow-y: auto; background: #ffffff;">
+            <div class="row">
+                <div class="col-lg-12">
+                    <div id="orgListRoot">
+                        <!-- Dynamically populated collapsible list -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Employee Detail Modal / Drawer -->
+<!-- ========================================================================= -->
+<div class="modal fade" id="modalEmpDetail" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+        <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 20px 40px rgba(0,0,0,0.18); overflow: hidden;">
+            
+            <div class="modal-header py-3 px-4 text-white align-items-center" style="background: linear-gradient(135deg, #540033 0%, #7d0a4f 100%);">
+                <h5 class="modal-title font-weight-bold mb-0" style="font-size: 1.1rem;">
+                    <i class="fas fa-id-badge mr-2"></i>Employee Profile
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.9; outline: none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body p-4" style="background: #ffffff;">
+                
+                <!-- Profile Header -->
+                <div class="d-flex align-items-center mb-4 pb-3 border-bottom">
+                    <div id="modalEmpAvatar" class="mr-3" style="width: 72px; height: 72px; border-radius: 50%; overflow: hidden; box-shadow: 0 4px 12px rgba(84,0,51,0.2); flex-shrink: 0; background: #f1f5f9; display: flex; align-items: center; justify-content: center;">
+                        <!-- Avatar img or Initials -->
+                    </div>
+                    <div>
+                        <h5 class="font-weight-bold mb-1 text-dark" id="modalEmpName" style="font-size: 1.25rem;">—</h5>
+                        <div class="text-muted font-weight-500" id="modalEmpDesignation" style="font-size: 0.9rem; color: #540033 !important;">—</div>
+                        <span class="badge badge-light border text-muted mt-1" id="modalEmpIdBadge" style="font-size: 0.75rem;">ID: —</span>
+                    </div>
+                </div>
+
+                <!-- Hierarchy Info -->
+                <div class="mb-3">
+                    <label class="text-muted font-weight-bold small text-uppercase mb-1" style="font-size: 0.72rem; letter-spacing: 0.5px;">Reports To</label>
+                    <div id="modalManagerCard" class="p-2 border rounded d-flex align-items-center justify-content-between" style="background: #f8fafc; cursor: pointer;" onclick="focusOnManager()">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-tie mr-2" style="color: #540033;"></i>
+                            <div>
+                                <div class="font-weight-bold text-dark small" id="modalManagerName">None (Root / Top Level)</div>
+                                <div class="text-muted" style="font-size: 0.72rem;" id="modalManagerDesig"></div>
+                            </div>
+                        </div>
+                        <span class="badge badge-light border text-muted" id="modalManagerAction" style="font-size: 0.7rem;"><i class="fas fa-crosshairs mr-1"></i> Locate</span>
+                    </div>
+                </div>
+
+                <!-- Direct Subordinates -->
+                <div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <label class="text-muted font-weight-bold small text-uppercase mb-0" style="font-size: 0.72rem; letter-spacing: 0.5px;">Direct Subordinates</label>
+                        <span class="badge badge-pill badge-secondary" id="modalSubordinatesCount">0</span>
+                    </div>
+                    <div id="modalSubordinatesList" style="max-height: 180px; overflow-y: auto; border: 1px solid #f1f5f9; border-radius: 6px; padding: 4px;">
+                        <!-- Populated dynamically -->
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="modal-footer bg-light py-2 px-4 border-top d-flex justify-content-between">
+                <button type="button" class="btn btn-sm btn-outline-primary" style="color: #540033; border-color: #540033; border-radius: 6px;" onclick="centerOnModalEmployee()">
+                    <i class="fas fa-crosshairs mr-1"></i> Center in Tree
+                </button>
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="border-radius: 6px;">Close</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- Styles -->
+<!-- ========================================================================= -->
+<style>
+    /* Grid background */
+    .org-grid-pattern {
+        background-image: radial-gradient(#cbd5e1 1.2px, transparent 1.2px);
+        background-size: 24px 24px;
+    }
+
+    /* Tree structure container */
+    .org-tree {
+        display: inline-block;
+        white-space: nowrap;
+        text-align: center;
+        transition: transform 0.1s ease-out;
+    }
+
+    .org-tree ul {
+        padding-top: 26px;
+        position: relative;
+        transition: all 0.3s;
+        display: flex;
+        justify-content: center;
+        margin: 0;
+        padding-left: 0;
+        list-style-type: none;
+    }
+
+    .org-tree li {
+        float: left;
+        text-align: center;
+        list-style-type: none;
+        position: relative;
+        padding: 26px 12px 0 12px;
+        transition: all 0.3s;
+    }
+
+    /* Connector lines */
+    .org-tree li::before, .org-tree li::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 50%;
+        border-top: 2px solid #cbd5e1;
+        width: 50%;
+        height: 26px;
+        z-index: 1;
+    }
+
+    .org-tree li::after {
+        right: auto;
+        left: 50%;
+        border-left: 2px solid #cbd5e1;
+    }
+
+    .org-tree li:only-child::after, .org-tree li:only-child::before {
+        display: none;
+    }
+
+    .org-tree li:only-child {
+        padding-top: 0;
+    }
+
+    .org-tree li:first-child::before, .org-tree li:last-child::after {
+        border: 0 none;
+    }
+
+    .org-tree li:last-child::before {
+        border-right: 2px solid #cbd5e1;
+        border-radius: 0 8px 0 0;
+    }
+
+    .org-tree li:first-child::after {
+        border-radius: 8px 0 0 0;
+    }
+
+    .org-tree ul ul::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 50%;
+        border-left: 2px solid #cbd5e1;
+        width: 0;
+        height: 26px;
+        z-index: 1;
+    }
+
+    /* Node Card Styling */
+    .org-node-card {
+        display: inline-block;
+        width: 220px;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-top: 4px solid #540033;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+        padding: 14px 12px 10px 12px;
+        text-decoration: none;
+        position: relative;
+        z-index: 2;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        text-align: center;
+        white-space: normal;
+    }
+
+    .org-node-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(84, 0, 51, 0.15);
+        border-color: #540033;
+    }
+
+    .org-node-card.highlighted {
+        border-color: #f59e0b !important;
+        border-top-color: #f59e0b !important;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.35), 0 10px 20px rgba(0,0,0,0.12) !important;
+        transform: scale(1.05);
+    }
+
+    .org-node-card.current-user {
+        border-top-color: #2563eb !important;
+        background: #f8faff;
+    }
+
+    /* Avatar styling */
+    .org-node-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        margin: 0 auto 8px auto;
+        overflow: hidden;
+        border: 2px solid #ffffff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: 1rem;
+        color: #ffffff;
+        background: linear-gradient(135deg, #540033, #8a0c56);
+    }
+
+    .org-node-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Node details */
+    .org-node-name {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: #0f172a;
+        line-height: 1.25;
+        margin-bottom: 2px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    .org-node-desig {
+        font-size: 0.74rem;
+        color: #64748b;
+        line-height: 1.2;
+        margin-bottom: 8px;
+        min-height: 28px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+    }
+
+    /* Expand / Collapse toggle pill */
+    .org-node-toggle {
+        position: absolute;
+        bottom: -13px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 2px solid #540033;
+        color: #540033;
+        font-size: 0.7rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 5;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+
+    .org-node-toggle:hover {
+        background: #540033;
+        color: #ffffff;
+        transform: translateX(-50%) scale(1.15);
+    }
+
+    /* Subordinates counter tag */
+    .org-reports-badge {
+        font-size: 0.65rem;
+        font-weight: 600;
+        padding: 2px 7px;
+        border-radius: 12px;
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+        display: inline-block;
+    }
+
+    /* List view directory styling */
+    .list-tree-item {
+        border-left: 2px dashed #cbd5e1;
+        margin-left: 20px;
+        padding-left: 15px;
+        position: relative;
+    }
+    .list-tree-item::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: 0;
+        width: 12px;
+        height: 2px;
+        background: #cbd5e1;
+    }
+</style>
+
+<!-- ========================================================================= -->
+<!-- Scripts -->
+<!-- ========================================================================= -->
+@section Scripts {
+<script>
+    // Raw JSON data from controller
+    var rawOrgData = @Html.Raw(jsonData);
+    var currentUserId = "@currentEmpSysId";
+
+    // State Variables
+    var orgMap = {};
+    var rootNodes = [];
+    var currentScale = 1.0;
+    var panX = 0;
+    var panY = 0;
+    var isDragging = false;
+    var dragStartX = 0;
+    var dragStartY = 0;
+    var selectedEmpId = null;
+
+    // Avatar color palette generator
+    var colorGradients = [
+        ["#540033", "#8a0c56"],
+        ["#1e3a8a", "#3b82f6"],
+        ["#065f46", "#10b981"],
+        ["#854d0e", "#eab308"],
+        ["#4c1d95", "#8b5cf6"],
+        ["#831843", "#ec4899"],
+        ["#134e4a", "#14b8a6"],
+        ["#701a75", "#d946ef"]
+    ];
+
+    function getGradientForName(name) {
+        if (!name) return colorGradients[0];
+        var hash = 0;
+        for (var i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        var idx = Math.abs(hash) % colorGradients.length;
+        return colorGradients[idx];
+    }
+
+    function getInitials(name) {
+        if (!name) return "?";
+        var parts = name.trim().split(/\s+/);
+        if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    }
+
+    // Initialize on page load
+    $(function () {
+        buildOrgDataTree();
+        renderOrgTree();
+        renderOrgList();
+        setupPanAndZoom();
+        setupSearch();
+        updateStats();
+        
+        // Initial center
+        setTimeout(function() {
+            fitToScreen();
+        }, 150);
+    });
+
+    // Parse flat array into hierarchical tree model
+    function buildOrgDataTree() {
+        orgMap = {};
+        rootNodes = [];
+
+        if (!rawOrgData || rawOrgData.length === 0) return;
+
+        // Deduplicate rawOrgData by employee ID first
+        var uniqueEmps = [];
+        var seenEmpIds = new Set();
+        rawOrgData.forEach(function (emp) {
+            var id = String(emp.EmpId || emp.empId || "").trim();
+            if (id && !seenEmpIds.has(id)) {
+                seenEmpIds.add(id);
+                uniqueEmps.push(emp);
+            }
+        });
+
+        // Populate map
+        uniqueEmps.forEach(function (emp) {
+            var id = String(emp.EmpId || emp.empId || "").trim();
+            var rpt = String(emp.RptMngId || emp.rptMngId || "").trim();
+            if (rpt === "0" || rpt === "null" || rpt === "-1") rpt = "";
+
+            orgMap[id] = {
+                id: id,
+                name: emp.Name || emp.name || "Employee #" + id,
+                designation: emp.Designation || emp.designation || "Designation Not Specified",
+                rptMngId: rpt,
+                image: emp.Image || emp.image || "",
+                children: [],
+                collapsed: false,
+                level: 0
+            };
+        });
+
+        // Link parent-children (preserves sort order and strictly prevents duplicates)
+        uniqueEmps.forEach(function (emp) {
+            var id = String(emp.EmpId || emp.empId || "").trim();
+            var item = orgMap[id];
+            if (!item) return;
+
+            if (item.rptMngId && orgMap[item.rptMngId] && item.rptMngId !== id) {
+                var parent = orgMap[item.rptMngId];
+                if (!parent.children.some(function (c) { return c.id === id; })) {
+                    parent.children.push(item);
+                }
+            } else {
+                if (!rootNodes.some(function (r) { return r.id === id; })) {
+                    rootNodes.push(item);
+                }
+            }
+        });
+
+        // If multiple roots, or no root found, pick top-level with lowest rpt
+        if (rootNodes.length === 0 && Object.keys(orgMap).length > 0) {
+            var firstKey = Object.keys(orgMap)[0];
+            rootNodes.push(orgMap[firstKey]);
+        }
+
+        // Assign levels recursively
+        function assignLevels(node, lvl) {
+            node.level = lvl;
+            if (node.children) {
+                node.children.forEach(function (c) { assignLevels(c, lvl + 1); });
+            }
+        }
+        rootNodes.forEach(function(r) { assignLevels(r, 1); });
+    }
+
+    function getCleanImageUrl(rawPath) {
+        if (!rawPath || typeof rawPath !== 'string') return '';
+        var p = rawPath.trim();
+        if (!p || p.endsWith('user.png') || p.length < 5) return '';
+        if (p.startsWith('..')) {
+            p = p.substring(2);
+        }
+        if (!p.startsWith('/')) {
+            p = '/' + p;
+        }
+        return p;
+    }
+
+    // Render interactive tree
+    function renderOrgTree() {
+        var container = $("#orgTreeRoot");
+        container.empty();
+
+        if (rootNodes.length === 0) {
+            container.html('<div class="text-center text-muted py-5"><i class="fas fa-sitemap fa-3x mb-3 text-secondary"></i><p>No organization hierarchy data found.</p></div>');
+            return;
+        }
+
+        var treeHtml = '<ul>';
+        rootNodes.forEach(function (root) {
+            treeHtml += renderTreeNodeHtml(root);
+        });
+        treeHtml += '</ul>';
+
+        container.html(treeHtml);
+    }
+
+    function renderTreeNodeHtml(node) {
+        var hasChildren = node.children && node.children.length > 0;
+        var grad = getGradientForName(node.name);
+        var initials = getInitials(node.name);
+        var isCurrent = (String(node.id) === String(currentUserId));
+        var cleanImg = getCleanImageUrl(node.image);
+
+        var avatarHtml = cleanImg
+            ? `<img src="${cleanImg}" alt="${node.name}" onerror="this.onerror=null; this.parentElement.innerHTML='${initials}';">`
+            : `<span>${initials}</span>`;
+
+        var html = `
+            <li id="tree-node-li-${node.id}">
+                <div class="org-node-card ${isCurrent ? 'current-user' : ''}" id="org-card-${node.id}" onclick="openEmpDetailsModal('${node.id}')">
+                    <div class="org-node-avatar" style="background: linear-gradient(135deg, ${grad[0]}, ${grad[1]});">
+                        ${avatarHtml}
+                    </div>
+                    <div class="org-node-name" title="${node.name}">${node.name}</div>
+                    <div class="org-node-desig" title="${node.designation}">${node.designation}</div>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-1">
+                        <span class="text-muted small" style="font-size: 0.68rem;">#${node.id}</span>
+                        ${hasChildren ? `<span class="org-reports-badge"><i class="fas fa-users mr-1"></i>${node.children.length}</span>` : ''}
+                    </div>
+
+                    ${hasChildren ? `
+                        <div class="org-node-toggle" onclick="toggleNodeCollapse(event, '${node.id}')" title="${node.collapsed ? 'Expand Subordinates' : 'Collapse Subordinates'}">
+                            <i class="fas ${node.collapsed ? 'fa-plus' : 'fa-minus'}"></i>
+                        </div>
+                    ` : ''}
+                </div>
+        `;
+
+        if (hasChildren) {
+            html += `<ul id="tree-children-${node.id}" style="${node.collapsed ? 'display: none;' : ''}">`;
+            node.children.forEach(function (child) {
+                html += renderTreeNodeHtml(child);
+            });
+            html += '</ul>';
+        }
+
+        html += '</li>';
+        return html;
+    }
+
+    // Toggle Collapse / Expand single node
+    function toggleNodeCollapse(e, id) {
+        e.stopPropagation();
+        var node = orgMap[id];
+        if (!node) return;
+
+        node.collapsed = !node.collapsed;
+        var ul = $("#tree-children-" + id);
+        var toggleBtn = $(e.currentTarget).find("i");
+
+        if (node.collapsed) {
+            ul.slideUp(200);
+            toggleBtn.removeClass("fa-minus").addClass("fa-plus");
+        } else {
+            ul.slideDown(200);
+            toggleBtn.removeClass("fa-plus").addClass("fa-minus");
+        }
+    }
+
+    // Expand All Nodes
+    function expandAllNodes() {
+        Object.keys(orgMap).forEach(function (id) {
+            orgMap[id].collapsed = false;
+        });
+        $(".org-tree ul").show();
+        $(".org-node-toggle i").removeClass("fa-plus").addClass("fa-minus");
+    }
+
+    // Collapse All except top 1 level
+    function collapseAllNodes() {
+        Object.keys(orgMap).forEach(function (id) {
+            var node = orgMap[id];
+            if (node.level > 1) {
+                node.collapsed = true;
+            } else {
+                node.collapsed = false;
+            }
+        });
+        renderOrgTree();
+    }
+
+    // Render Directory / List View
+    function renderOrgList() {
+        var container = $("#orgListRoot");
+        container.empty();
+
+        if (rootNodes.length === 0) return;
+
+        function renderListBranch(node) {
+            var grad = getGradientForName(node.name);
+            var initials = getInitials(node.name);
+            var hasChildren = node.children && node.children.length > 0;
+            var cleanImg = getCleanImageUrl(node.image);
+
+            var avatarHtml = cleanImg
+                ? `<img src="${cleanImg}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='${initials}';">`
+                : initials;
+
+            var itemHtml = `
+                <div class="card mb-2 shadow-sm border" style="border-radius: 8px;">
+                    <div class="card-body p-2 d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center" style="cursor: pointer;" onclick="openEmpDetailsModal('${node.id}')">
+                            <div style="width: 38px; height: 38px; border-radius: 50%; background: linear-gradient(135deg, ${grad[0]}, ${grad[1]}); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.8rem; margin-right: 12px; flex-shrink: 0; overflow: hidden;">
+                                ${avatarHtml}
+                            </div>
+                            <div>
+                                <h6 class="font-weight-bold mb-0 text-dark" style="font-size: 0.88rem;">${node.name}</h6>
+                                <div class="text-muted small">${node.designation} &bull; <span class="text-secondary">ID: ${node.id}</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            ${hasChildren ? `<span class="badge badge-pill badge-light border text-muted px-2 py-1"><i class="fas fa-users mr-1"></i>${node.children.length} Reports</span>` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            if (hasChildren) {
+                itemHtml += '<div class="list-tree-item">';
+                node.children.forEach(function (child) {
+                    itemHtml += renderListBranch(child);
+                });
+                itemHtml += '</div>';
+            }
+
+            return itemHtml;
+        }
+
+        var fullListHtml = '';
+        rootNodes.forEach(function (root) {
+            fullListHtml += renderListBranch(root);
+        });
+        container.html(fullListHtml);
+    }
+
+    // View mode switcher
+    function switchViewMode(mode) {
+        if (mode === 'tree') {
+            $("#btnViewTree").addClass("active");
+            $("#btnViewList").removeClass("active");
+            $("#treeViewContainer").removeClass("d-none");
+            $("#listViewContainer").addClass("d-none");
+            $("#zoomControlsGroup").show();
+        } else {
+            $("#btnViewList").addClass("active");
+            $("#btnViewTree").removeClass("active");
+            $("#listViewContainer").removeClass("d-none");
+            $("#treeViewContainer").addClass("d-none");
+            $("#zoomControlsGroup").hide();
+        }
+    }
+
+    // Pan & Zoom Implementation
+    function setupPanAndZoom() {
+        var container = document.getElementById("treeViewContainer");
+        var viewport = document.getElementById("orgChartViewport");
+
+        container.addEventListener("mousedown", function (e) {
+            if (e.target.closest(".org-node-card") || e.target.closest(".org-node-toggle")) return;
+            isDragging = true;
+            dragStartX = e.clientX - panX;
+            dragStartY = e.clientY - panY;
+            container.style.cursor = "grabbing";
+        });
+
+        window.addEventListener("mousemove", function (e) {
+            if (!isDragging) return;
+            panX = e.clientX - dragStartX;
+            panY = e.clientY - dragStartY;
+            applyTransform();
+        });
+
+        window.addEventListener("mouseup", function () {
+            isDragging = false;
+            container.style.cursor = "grab";
+        });
+
+        // Wheel Zoom
+        container.addEventListener("wheel", function (e) {
+            e.preventDefault();
+            var zoomFactor = e.deltaY < 0 ? 1.12 : 0.88;
+            var newScale = currentScale * zoomFactor;
+            
+            // Constrain zoom between 25% and 250%
+            if (newScale >= 0.25 && newScale <= 2.5) {
+                var rect = container.getBoundingClientRect();
+                var mouseX = e.clientX - rect.left;
+                var mouseY = e.clientY - rect.top;
+
+                panX = mouseX - (mouseX - panX) * zoomFactor;
+                panY = mouseY - (mouseY - panY) * zoomFactor;
+                currentScale = newScale;
+                applyTransform();
+            }
+        }, { passive: false });
+    }
+
+    function applyTransform() {
+        var viewport = document.getElementById("orgChartViewport");
+        if (viewport) {
+            viewport.style.transform = `translate(${panX}px, ${panY}px) scale(${currentScale})`;
+            $("#zoomLevelDisplay").text(Math.round(currentScale * 100) + "%");
+        }
+    }
+
+    function zoomIn() {
+        if (currentScale < 2.5) {
+            currentScale = Math.min(2.5, currentScale * 1.2);
+            applyTransform();
+        }
+    }
+
+    function zoomOut() {
+        if (currentScale > 0.25) {
+            currentScale = Math.max(0.25, currentScale / 1.2);
+            applyTransform();
+        }
+    }
+
+    function resetZoom() {
+        currentScale = 1.0;
+        centerRootNode();
+    }
+
+    function fitToScreen() {
+        var container = document.getElementById("treeViewContainer");
+        var treeRoot = document.getElementById("orgTreeRoot");
+        if (!container || !treeRoot) return;
+
+        var contW = container.clientWidth;
+        var contH = container.clientHeight;
+        var treeW = treeRoot.scrollWidth;
+        var treeH = treeRoot.scrollHeight;
+
+        if (treeW === 0 || treeH === 0) return;
+
+        var scaleX = (contW - 60) / treeW;
+        var scaleY = (contH - 60) / treeH;
+        currentScale = Math.min(Math.max(Math.min(scaleX, scaleY), 0.35), 1.0);
+
+        panX = (contW - (treeW * currentScale)) / 2;
+        panY = 30;
+        applyTransform();
+    }
+
+    function centerRootNode() {
+        var container = document.getElementById("treeViewContainer");
+        var treeRoot = document.getElementById("orgTreeRoot");
+        if (!container || !treeRoot) return;
+
+        panX = (container.clientWidth - treeRoot.offsetWidth) / 2;
+        panY = 40;
+        applyTransform();
+    }
+
+    // Search Box Implementation
+    function setupSearch() {
+        $("#orgSearchInput").on("input", function () {
+            var q = $(this).val().toLowerCase().trim();
+            $(".org-node-card").removeClass("highlighted");
+
+            if (!q) return;
+
+            var matches = [];
+            Object.keys(orgMap).forEach(function (id) {
+                var emp = orgMap[id];
+                if (emp.name.toLowerCase().includes(q) || emp.designation.toLowerCase().includes(q) || emp.id.includes(q)) {
+                    matches.push(id);
+                }
+            });
+
+            if (matches.length > 0) {
+                matches.forEach(function (id) {
+                    // Expand parent path if collapsed
+                    expandPathToNode(id);
+                    $("#org-card-" + id).addClass("highlighted");
+                });
+
+                // Pan to first match
+                focusOnCard(matches[0]);
+            }
+        });
+    }
+
+    function expandPathToNode(id) {
+        var curr = orgMap[id];
+        while (curr && curr.rptMngId && orgMap[curr.rptMngId]) {
+            var parent = orgMap[curr.rptMngId];
+            parent.collapsed = false;
+            $("#tree-children-" + parent.id).show();
+            $("#org-card-" + parent.id).find(".org-node-toggle i").removeClass("fa-plus").addClass("fa-minus");
+            curr = parent;
+        }
+    }
+
+    function focusOnCard(id) {
+        var card = document.getElementById("org-card-" + id);
+        var container = document.getElementById("treeViewContainer");
+        if (!card || !container) return;
+
+        var cardRect = card.getBoundingClientRect();
+        var contRect = container.getBoundingClientRect();
+
+        // Calculate card center relative to orgChartViewport
+        var viewport = document.getElementById("orgChartViewport");
+        var viewRect = viewport.getBoundingClientRect();
+
+        var cardCenterLocalX = (cardRect.left + cardRect.width / 2 - viewRect.left) / currentScale;
+        var cardCenterLocalY = (cardRect.top + cardRect.height / 2 - viewRect.top) / currentScale;
+
+        panX = (contRect.width / 2) - (cardCenterLocalX * currentScale);
+        panY = (contRect.height / 2) - (cardCenterLocalY * currentScale);
+        applyTransform();
+    }
+
+    // Employee Detail Modal
+    function openEmpDetailsModal(id) {
+        selectedEmpId = id;
+        var node = orgMap[id];
+        if (!node) return;
+
+        var grad = getGradientForName(node.name);
+        var initials = getInitials(node.name);
+        var cleanImg = getCleanImageUrl(node.image);
+
+        $("#modalEmpName").text(node.name);
+        $("#modalEmpDesignation").text(node.designation);
+        $("#modalEmpIdBadge").text("Employee ID: " + node.id);
+
+        var avatarHtml = cleanImg
+            ? `<img src="${cleanImg}" style="width:100%;height:100%;object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='<span style=\\'font-size: 1.5rem; color:#fff; font-weight:bold;\\'>${initials}</span>';">`
+            : `<span style="font-size: 1.5rem; color:#fff; font-weight:bold;">${initials}</span>`;
+
+        $("#modalEmpAvatar").css("background", `linear-gradient(135deg, ${grad[0]}, ${grad[1]})`).html(avatarHtml);
+
+        // Manager Info
+        if (node.rptMngId && orgMap[node.rptMngId]) {
+            var mgr = orgMap[node.rptMngId];
+            $("#modalManagerName").text(mgr.name);
+            $("#modalManagerDesig").text(mgr.designation);
+            $("#modalManagerCard").show();
+        } else {
+            $("#modalManagerName").text("Top Leader / Board / None");
+            $("#modalManagerDesig").text("Reports directly to organization root");
+            $("#modalManagerCard").show();
+        }
+
+        // Subordinates list
+        var subsList = $("#modalSubordinatesList");
+        subsList.empty();
+        $("#modalSubordinatesCount").text(node.children ? node.children.length : 0);
+
+        if (node.children && node.children.length > 0) {
+            node.children.forEach(function (child) {
+                var cInitials = getInitials(child.name);
+                var cGrad = getGradientForName(child.name);
+                var cCleanImg = getCleanImageUrl(child.image);
+                var subAvatarHtml = cCleanImg
+                    ? `<img src="${cCleanImg}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;" onerror="this.onerror=null; this.parentElement.innerHTML='${cInitials}';">`
+                    : cInitials;
+
+                subsList.append(`
+                    <div class="d-flex align-items-center justify-content-between p-2 mb-1 border rounded bg-light" style="cursor: pointer;" onclick="switchToEmployee('${child.id}')">
+                        <div class="d-flex align-items-center">
+                            <div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg, ${cGrad[0]}, ${cGrad[1]});color:#fff;display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:bold;margin-right:8px;overflow:hidden;">
+                                ${subAvatarHtml}
+                            </div>
+                            <div>
+                                <div class="font-weight-bold text-dark" style="font-size: 0.82rem;">${child.name}</div>
+                                <div class="text-muted" style="font-size: 0.72rem;">${child.designation}</div>
+                            </div>
+                        </div>
+                        <i class="fas fa-chevron-right text-muted small"></i>
+                    </div>
+                `);
+            });
+        } else {
+            subsList.html('<div class="text-center text-muted py-2 small">No direct subordinates.</div>');
+        }
+
+        $("#modalEmpDetail").modal("show");
+    }
+
+    function switchToEmployee(id) {
+        $("#modalEmpDetail").modal("hide");
+        setTimeout(function () {
+            openEmpDetailsModal(id);
+            focusOnCard(id);
+        }, 200);
+    }
+
+    function focusOnManager() {
+        if (!selectedEmpId) return;
+        var node = orgMap[selectedEmpId];
+        if (node && node.rptMngId && orgMap[node.rptMngId]) {
+            switchToEmployee(node.rptMngId);
+        }
+    }
+
+    function centerOnModalEmployee() {
+        $("#modalEmpDetail").modal("hide");
+        if (selectedEmpId) {
+            expandPathToNode(selectedEmpId);
+            focusOnCard(selectedEmpId);
+            $("#org-card-" + selectedEmpId).addClass("highlighted");
+            setTimeout(function () {
+                $("#org-card-" + selectedEmpId).removeClass("highlighted");
+            }, 3000);
+        }
+    }
+
+    function updateStats() {
+        var total = Object.keys(orgMap).length;
+        var maxLvl = 0;
+        Object.keys(orgMap).forEach(function (id) {
+            if (orgMap[id].level > maxLvl) maxLvl = orgMap[id].level;
+        });
+        $("#lblTotalEmployees").text(total);
+        $("#lblMaxLevels").text(maxLvl);
+    }
+
+    function printOrgChart() {
+        window.print();
+    }
+
+    function toggleFullscreen() {
+        var elem = document.getElementById("treeViewContainer");
+        if (!document.fullscreenElement) {
+            elem.requestFullscreen().catch(err => {
+                alert(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    }
+</script>
+}

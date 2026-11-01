@@ -1,0 +1,103 @@
+@model qHRM.Areas.WorkShift.Models.HrWkRosterShift
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("CreateSft", "HrWkRoster"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <input id="txtRstId" asp-for="RstId" hidden />
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="RstId" class="control-label"></label>
+                <p>
+                    @Html.LabelFor(model => model.SchId, ((string)ViewBag.RstName))
+                </p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Day" class="control-label"></label>
+                <select asp-for="Day" id="dpDay" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstDays, "ElmntTxt", "ElmntTxt"))">
+                    <option value="">-- Select Day --</option>
+                </select>
+                <span asp-validation-for="Day" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="SftId" class="control-label"></label>
+                <select asp-for="SftId" id="dpSft" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstSft, "SftId", "ShtDtl"))">
+                    <option value="">-- Select Shift --</option>
+                </select>
+                <span asp-validation-for="SftId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="DescEng" class="control-label"></label>
+                <input asp-for="DescEng" class="form-control form-control-sm" />
+                <span asp-validation-for="DescEng" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script type="text/javascript">
+    function onDayChange() {
+        var dayVal = $('#dpDay').val();
+        var rstId = document.getElementById('txtRstId').value;
+        var $sft = $('#dpSft');
+
+        if (dayVal) {
+            $.ajax({
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                url: '/WorkShift/HrWkRoster/GetShiftByRstIdDay',
+                dataType: "json",
+                data: { rstId: rstId, day: dayVal, sftId: "0" },
+                success: function (data) {
+                    $sft.empty();
+                    $sft.append($('<option value="">-- Select Shift --</option>'));
+                    if (data && data.data) {
+                        $.each(data.data, function (i, item) {
+                            var id = item.sftId || item.SftId;
+                            var text = item.shtDtl || item.ShtDtl;
+                            $sft.append($('<option></option>').val(id).text(text));
+                        });
+                    }
+                    $sft.trigger('change.select2');
+                },
+                error: function (xhr, err) { }
+            });
+        }
+    }
+
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#dpDay').on('change', function () {
+            onDayChange();
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

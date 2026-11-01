@@ -1,0 +1,388 @@
+@model IEnumerable<qHRM.Areas.WorkShift.Models.HrWkShift>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+
+<style>
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .org-page-container {
+        padding: 0.75rem 0.5rem 1.5rem 0.5rem;
+    }
+
+    /* Compact Header Card */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: var(--clr-muted);
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+    .org-breadcrumb a {
+        color: var(--clr-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .org-breadcrumb a:hover {
+        color: var(--org-primary);
+    }
+
+    /* Create Button */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .org-btn-create:active {
+        transform: translateY(0);
+    }
+
+    /* Action Buttons in Grid */
+    .org-actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .org-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.15s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        font-size: 0.75rem;
+        padding: 0;
+        outline: none;
+    }
+
+    .org-action-edit {
+        background: #fdf2f8;
+        color: var(--org-primary);
+        border-color: #fbcfe8;
+    }
+
+    .org-action-edit:hover {
+        background: var(--org-primary);
+        color: #ffffff !important;
+        border-color: var(--org-primary);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);
+    }
+
+    .org-action-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .org-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+    }
+
+    /* Modern Modals */
+    .org-modal .modal-content {
+        border: 1px solid var(--clr-border) !important;
+        border-radius: var(--radius) !important;
+        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2) !important;
+        overflow: hidden;
+    }
+
+    .org-modal .modal-header {
+        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
+        color: #ffffff !important;
+        padding: 1rem 1.25rem !important;
+        border-bottom: none !important;
+    }
+
+    .org-modal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-modal .modal-header .close {
+        color: #ffffff !important;
+        opacity: 0.8 !important;
+        text-shadow: none !important;
+        transition: opacity 0.15s !important;
+        outline: none !important;
+    }
+
+    .org-modal .modal-header .close:hover {
+        opacity: 1 !important;
+    }
+
+    .org-modal-delete .modal-header {
+        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+    }
+</style>
+
+<div class="org-page-container">
+    <main>
+        <div class="container-fluid px-0">
+
+            <!-- COMPACT HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-business-time"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                                <h1 class="org-title">Work Shifts</h1>
+                                <span class="badge org-category-pill">WORK SHIFT</span>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#">Work Shift</a> / <span class="text-dark font-weight-medium">Shift Master</span>
+                                <span class="text-muted mx-1">&bull;</span>
+                                <span class="text-muted">Manage standard shifts, timing configurations, overnight rules, and rosters</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn org-btn-create" id="btnCreate" onclick="createFunc();">
+                            <i class="fas fa-plus-circle mr-1"></i> Add New Work Shift
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Grid Card -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick" load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="SftCode" headerText="Shift Code" width="110" />
+                                <e-grid-column field="NameEng" headerText="Shift Name" width="200" />
+                                <e-grid-column field="StTime" headerText="Start" width="110" />
+                                <e-grid-column field="EndTime" headerText="End" width="110" />
+                                <e-grid-column field="OvrNghtSft_Txt" headerText="Over Night" width="120" />
+                                <e-grid-column field="RstCount" headerText="Rosters" width="100" />
+                                <e-grid-column field="" headerText="Actions" template="#_actions" width="110" textAlign="Center" />
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                </div>
+            </div>
+
+            <!-- MODALS -->
+            <!--Create-->
+            <div class="modal fade org-modal" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateTitle" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalCreateTitle">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Work Shift
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-4" id="createModalBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Edit-->
+            <div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditTitle">
+                                <i class="fas fa-edit mr-2"></i> Edit Work Shift
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-4" id="editModalBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Delete-->
+            <div class="modal fade org-modal org-modal-delete" id="modalDelete" tabindex="-1" role="dialog" aria-labelledby="modalDeleteTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalDeleteTitle">
+                                <i class="fas fa-exclamation-triangle mr-2"></i> Delete Work Shift
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-4" id="deleteModalBody">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- JSRENDER ACTION TEMPLATES -->
+<script type="text/x-jsrender" id="_actions">
+    <div class="org-actions-wrapper">
+        <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${SftId})" title="Edit Shift">
+            <i class="fas fa-pen"></i>
+        </button>
+        <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${SftId}, ${RstCount})" title="Delete Shift">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </div>
+</script>
+
+<!-- Backward Compatibility Templates -->
+<script type="text/x-jsrender" id="_edit">
+    <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${SftId})" title="Edit">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${SftId}, ${RstCount})" title="Delete">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+</script>
+
+<!-- Scripts -->
+<script>
+    var createFunc = function () {
+        var url = "/WorkShift/HrWkShift/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        });
+    };
+
+    var editFunc = function (id) {
+        var url = "/WorkShift/HrWkShift/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    };
+
+    var deleteFunc = function (id, rstCnt) {
+        var url = "/WorkShift/HrWkShift/DeleteGet?id=" + id + "&RstCnt=" + rstCnt;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        });
+    };
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[2].format = { type: 'time', format: 'HH:mm' };
+        this.columns[3].format = { type: 'time', format: 'HH:mm' };
+    }
+</script>

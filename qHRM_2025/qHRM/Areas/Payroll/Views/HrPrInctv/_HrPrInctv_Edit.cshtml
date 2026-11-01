@@ -1,0 +1,110 @@
+@model qHRM.Areas.Payroll.Models.HrPrInctv
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrPrInctv", new { area = "Payroll" }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.InctvId)
+        @Html.HiddenFor(model => model.EmpSysId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <p>@ViewBag.EmpName</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="InctvTyp" class="control-label"></label>
+                <select asp-for="InctvTyp" id="drpInctvTypE" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstInctvTyp, "Indx", "ElmntTxt", Model?.InctvTyp))">
+                    <option value="">-- Select Incentive Type --</option>
+                </select>
+                <span asp-validation-for="InctvTyp" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="InctvMod" class="control-label"></label>
+                <select asp-for="InctvMod" id="drpInctvModE" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstInctvMod, "Indx", "ElmntTxt", Model?.InctvMod))">
+                    <option value="">-- Select Incentive Mode --</option>
+                </select>
+                <span asp-validation-for="InctvMod" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="InctvDate" class="control-label"></label>
+                <input asp-for="InctvDate" class="form-control form-control-sm" />
+                <span asp-validation-for="InctvDate" class="text-danger"></span>
+            </div>
+            <div class="form-group  col-md-3">
+                <label asp-for="EftYear" class="control-label"></label>
+                <select asp-for="EftYear" id="drpYears" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstYears, "Indx", "ElmntTxt", Model?.EftYear))">
+                    <option value="">-- Select Year --</option>
+                </select>
+                <span asp-validation-for="EftYear" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-3">
+                <label asp-for="EftMonth" class="control-label"></label>
+                <select asp-for="EftMonth" id="drpMonths" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstMonths, "Indx", "ElmntTxt", Model?.EftMonth))">
+                    <option value="">-- Select Month --</option>
+                </select>
+                <span asp-validation-for="EftMonth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Ref" class="control-label"></label>
+                <input asp-for="Ref" class="form-control form-control-sm" />
+                <span asp-validation-for="Ref" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="InctvAmt" class="control-label"></label>
+                <input asp-for="InctvAmt" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="InctvAmt" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="ShtRmk" class="control-label"></label>
+                <input asp-for="ShtRmk" class="form-control form-control-sm" />
+                <span asp-validation-for="ShtRmk" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Desc" class="control-label"></label>
+                <input asp-for="Desc" class="form-control form-control-sm" rows="2"/>
+                <span asp-validation-for="Desc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

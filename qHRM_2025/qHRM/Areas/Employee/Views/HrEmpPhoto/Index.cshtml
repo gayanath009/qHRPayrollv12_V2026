@@ -1,0 +1,174 @@
+@model qHRM.Areas.Employee.Models.HrEmpPhoto
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Photo</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")">Employee Information</a></li>
+                <li class="breadcrumb-item">Photo (@HttpContextAccessor.HttpContext.Session.GetString("EmpName"))</li>
+
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Start Tabs Start-->
+                    <partial name="~/Views/Shared/_EmpNavBar.cshtml" />
+                    <br />
+                    <!--End Tabs End-->
+                    <p>
+                        <div>
+                            @if (ViewBag.RecAdd == true)
+                            {
+                                <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                    Add New Photo
+                                </a>
+                            }
+                        </div>
+                    </p>
+
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )"
+                                  load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                                <e-grid-column field="Note" headerText="Note" width="100"></e-grid-column>
+                                <e-grid-column field="CrtDateTime" headerText="Created Date" width="100"></e-grid-column>                                
+                                @if (ViewBag.RecDelete == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_delete" width="60"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">
+                                        Create New Photo
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    @*<div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Photo</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>*@
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Photo</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_avatar">
+    <img style="width: 85px; height: 100px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${PhotoName ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+</script>
+<script type="text/x-jsrender" id="_download">
+    <a href="/attach/depndDocs/${DocName}" target="_blank" class="btn btn-sm btn-outline-primary btn-block">
+        <span class="glyphicon glyphicon-download"></span>
+    </a>
+</script>
+@*<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${PhtId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>*@
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${PhtId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+
+    var createFunc = function () {
+        var url = "/Employee/HrEmpPhoto/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    //var editFunc = function (id) {
+    //    var url = "/Employee/HrEmpPhoto/EditGet?id=" + id;
+    //    $("#editModalBody").load(url, function () {
+    //        $("#modalEdit").modal("show");
+    //    })
+    //}
+
+    var deleteFunc = function (id) {
+        var url = "/Employee/HrEmpPhoto/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+
+
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+
+<script>
+    //Date Range Search for Created Date//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[2].format = { type: 'date', format: 'dd/MM/yyyy' };
+    }
+    </script>

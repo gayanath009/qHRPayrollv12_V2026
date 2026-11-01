@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: workflow-sqlserver
+    environment:
+      - ACCEPT_EULA=Y
+      - MSSQL_SA_PASSWORD=YourPassword123!
+    ports:
+      - "1433:1433"
+
+  workflow-api:
+    image: workflow-api:latest
+    container_name: workflow-api
+    build:
+      context: .
+      dockerfile: WorkflowEngine.API/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=WorkflowEngineDb;User Id=sa;Password=YourPassword123!;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - JwtSettings__Secret=SuperSecretKeyForWorkflowEngineSecurityToken123!
+    depends_on:
+      - sqlserver
+
+  workflow-ui:
+    image: workflow-ui:latest
+    container_name: workflow-ui
+    build:
+      context: ./workflow-engine-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3000:80"
+    depends_on:
+      - workflow-api

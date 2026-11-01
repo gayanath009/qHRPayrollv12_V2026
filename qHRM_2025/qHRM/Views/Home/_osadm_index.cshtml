@@ -1,0 +1,855 @@
+@using Syncfusion.EJ2
+@using Microsoft.AspNetCore.Http;
+@using static qHRM.Areas.Employee.Data.EmployeeContext;
+@using static qHRM.Areas.Attendance.Data.AttnContext;
+@using qHRM.Areas.Leave.Models;
+@inject IHttpContextAccessor HttpContextAccessor
+
+@{
+    ViewData["Title"] = "Operations & Admin Dashboard";
+
+    int loggedEmpSysId = (int)(ViewBag.LoggedEmpSysId ?? HttpContextAccessor.HttpContext?.Session?.GetInt32("userEmpSysId") ?? 0);
+    string loggedUserName = HttpContextAccessor.HttpContext?.Session?.GetString("userFullName") ?? "Logged User";
+    int currentYear = DateTime.Today.Year;
+
+    var leaveSummary = ViewBag.EmpLeaveBalanceSummary as EmpLeaveBalanceSummaryViewModel;
+    var leaveBalances = leaveSummary?.LeaveBalances ?? (ViewBag.EmpLeaveBalances as List<EmpLeaveBalanceViewModel>) ?? new List<EmpLeaveBalanceViewModel>();
+    decimal totalInProg = leaveSummary?.TotalInProgress ?? leaveBalances.Sum(b => b.InProgress);
+    decimal totalUsed = leaveSummary?.TotalUsed ?? leaveBalances.Sum(b => b.Used);
+    decimal totalRemaining = leaveSummary?.TotalRemaining ?? leaveBalances.Sum(b => b.Remaining);
+    decimal totalEntitlement = leaveSummary?.TotalEntitlement ?? leaveBalances.Sum(b => b.Entitlement);
+}
+
+<style>
+    .hr-compact-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        transition: all 0.2s ease-in-out;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        min-height: 145px;
+        height: 100%;
+    }
+    .hr-compact-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
+        border-color: #cbd5e1;
+    }
+    .hr-card-accent-maroon { border-top: 3px solid #540033 !important; }
+    .hr-card-accent-blue   { border-top: 3px solid #2563eb !important; }
+    .hr-card-accent-teal   { border-top: 3px solid #0d9488 !important; }
+    .hr-card-accent-purple { border-top: 3px solid #7c3aed !important; }
+    .hr-card-accent-amber  { border-top: 3px solid #d97706 !important; }
+    .hr-card-accent-emerald{ border-top: 3px solid #059669 !important; }
+
+    .hr-compact-card .hr-card-header {
+        padding: 0.6rem 0.75rem;
+        background: #f8fafc;
+        border-bottom: 1px solid #f1f5f9;
+        font-weight: 700;
+        font-size: 0.82rem;
+        color: #1e293b;
+        text-align: center;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .hr-compact-card .hr-card-body {
+        padding: 0.75rem 0.5rem;
+        text-align: center;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .hr-compact-card .hr-icon-badge {
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 0.35rem;
+        transition: transform 0.2s ease;
+    }
+    .hr-compact-card:hover .hr-icon-badge {
+        transform: scale(1.1);
+    }
+    .hr-compact-card .hr-card-footer {
+        padding: 0.45rem 0.6rem;
+        background: #ffffff;
+        border-top: 1px solid #f1f5f9;
+        text-align: center;
+    }
+    .badge-pulse {
+        animation: pulseAnimation 2s infinite;
+    }
+    @@keyframes pulseAnimation {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.06); }
+        100% { transform: scale(1); }
+    }
+
+    .btn-brand-maroon-sm {
+        background: linear-gradient(135deg, #540033 0%, #760c4b 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 4px 14px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-brand-maroon-sm:hover {
+        background: linear-gradient(135deg, #3d0025 0%, #5e083b 100%);
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
+        color: #ffffff !important;
+        text-decoration: none;
+    }
+
+    #tbl7DaysAttendance thead th {
+        background-color: #540033 !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        font-size: 0.76rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-color: #540033 !important;
+        vertical-align: middle;
+        padding: 8px 10px;
+    }
+    #tbl7DaysAttendance tbody td {
+        vertical-align: middle;
+        padding: 7px 10px;
+        border-top: 1px solid #f1f5f9;
+    }
+    #tbl7DaysAttendance .badge {
+        font-size: 0.74rem;
+        font-weight: 600;
+        padding: 3px 10px;
+        border-radius: 12px;
+    }
+    #tbl7DaysAttendance .badge-danger {
+        background-color: #ef4444 !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-secondary {
+        background-color: #cbd5e1 !important;
+        color: #334155 !important;
+    }
+    #tbl7DaysAttendance .badge-success {
+        background-color: #22c55e !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-info {
+        background-color: #38bdf8 !important;
+        color: #ffffff !important;
+    }
+    #tbl7DaysAttendance .badge-warning {
+        background-color: #f59e0b !important;
+        color: #ffffff !important;
+    }
+
+    /* Leave Balances Component Styling */
+    .leave-pills .nav-link {
+        font-size: 0.88rem;
+        font-weight: 700;
+        padding: 0.5rem 1.2rem;
+        border-radius: 8px;
+        color: #540033;
+        background-color: transparent;
+        border: 1px solid transparent;
+        margin-right: 0.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .leave-pills .nav-link.active {
+        background-color: #540033 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.3);
+    }
+    .leave-pills .nav-link:hover:not(.active) {
+        background-color: #fdf2f8;
+        color: #540033;
+    }
+
+    .leave-table thead th {
+        background-color: #540033;
+        color: #ffffff;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: none;
+        padding: 0.75rem 0.85rem;
+        vertical-align: middle;
+    }
+    .leave-table tbody td {
+        vertical-align: middle;
+        padding: 0.75rem 0.85rem;
+        border-top: 1px solid #edf0f5;
+        font-size: 0.88rem;
+    }
+    .leave-table tbody tr:hover {
+        background-color: #fafbfc;
+    }
+    .badge-code {
+        background-color: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-weight: 700;
+        font-size: 0.78rem;
+    }
+    .badge-available-green {
+        background-color: #10b981;
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-block;
+        min-width: 80px;
+    }
+    .badge-available-coral {
+        background-color: #f97316;
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-block;
+        min-width: 80px;
+    }
+    .usage-progress-bar {
+        background-color: #e2e8f0;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        width: 120px;
+        margin: 0 auto;
+    }
+    .usage-progress-fill {
+        background-color: #540033;
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.4s ease;
+    }
+</style>
+
+<div class="container-fluid px-3 pt-3">
+    <div class="row">
+        <div class="col-12">
+            <!-- Main Hub Wrapper -->
+            <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                <div class="card-header bg-white py-3 d-flex align-items-center justify-content-between" style="border-bottom: 1px solid #e2e8f0; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-th-large mr-2" style="color: #540033; font-size: 1.1rem;"></i>
+                        <h5 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 1.05rem;">Operations & Administration Hub</h5>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        @if (ViewBag.userGrpId == 1 || HttpContextAccessor.HttpContext?.Session?.GetInt32("userGrpId") == 1)
+                        {
+                            <a asp-area="Config" asp-controller="SysConfig" asp-action="Index" class="btn btn-sm btn-outline-secondary mr-2" style="border-radius: 8px; font-size: 0.78rem;" title="System Settings">
+                                <i class="fas fa-cog mr-1"></i>Settings
+                            </a>
+                        }
+                        <span class="text-muted small"><i class="fas fa-user-circle mr-1 text-secondary"></i>@loggedUserName</span>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+
+                    <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                        <e-toast-position X="Center"></e-toast-position>
+                    </ejs-toast>
+
+                    <!-- Row of 4 Compact Overview Cards -->
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 mb-4">
+                      
+                      
+                        <!-- Card 2: Pending Leave Approvals -->
+                        <div class="col mb-3">
+                            <div class="hr-compact-card hr-card-accent-amber" style="cursor: pointer;" onclick="window.location.href='/Leave/HrLvRegister/Pending'">
+                                <div class="hr-card-header" title="Pending Leave Approvals">
+                                    <i class="fas fa-clock mr-1" style="color: #d97706;"></i> Leave Approvals
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #fffbeb; color: #d97706;">
+                                        <i class="fas fa-user-clock"></i>
+                                    </div>
+                                    @if ((ViewBag.PendingLeaveCount ?? 0) > 0)
+                                    {
+                                        <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 badge-pulse" style="font-size: 0.78rem;">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>@ViewBag.PendingLeaveCount Pending
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light border text-muted px-2 py-1" style="font-size: 0.78rem;">
+                                            0 Pending
+                                        </span>
+                                    }
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <a href="/Leave/HrLvRegister/Pending" class="btn-brand-maroon-sm px-3 py-1" style="font-size: 0.76rem;" onclick="event.stopPropagation();">
+                                        <i class="fas fa-check-circle mr-1"></i>Review
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 3: Attendance History -->
+                        <div class="col mb-3">
+                            <div class="hr-compact-card hr-card-accent-purple" style="cursor: pointer;" onclick="document.getElementById('secAttendanceHistory').scrollIntoView({ behavior: 'smooth' });">
+                                <div class="hr-card-header" title="Attendance History">
+                                    <i class="fas fa-calendar-week mr-1" style="color: #7c3aed;"></i> Attendance History
+                                </div>
+                                <div class="hr-card-body">
+                                    <div class="hr-icon-badge" style="background: #f5f3ff; color: #7c3aed;">
+                                        <i class="fas fa-chart-line"></i>
+                                    </div>
+                                    <span class="badge badge-light border text-muted small mt-1">Last 7 Days</span>
+                                </div>
+                                <div class="hr-card-footer d-flex justify-content-center">
+                                    <a href="#secAttendanceHistory" class="btn-brand-maroon-sm px-3 py-1" style="font-size: 0.76rem;" onclick="event.stopPropagation(); document.getElementById('secAttendanceHistory').scrollIntoView({ behavior: 'smooth' });">
+                                        <i class="fas fa-arrow-down mr-1"></i>View Stats
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                      
+                    </div>
+
+                    <!-- Component 1: Attendance Section (Last 7 Days - Hierarchy Driven) -->
+                    <div class="card shadow-sm mb-4" id="secAttendanceHistory" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ede9fe; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                                    <i class="fas fa-user-clock"></i>
+                                </div>
+                                <div>
+                                    <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                                        Attendance History <span class="badge badge-light border text-muted ml-1" style="font-size: 0.75rem; font-weight: 500;">Last 7 Days</span>
+                                    </h6>
+                                    <small class="text-muted" id="lblAttnDateRange">
+                                        @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).DateRangeText : "Recent 7 Days")
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap">
+                                <label class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-sitemap mr-1"></i>Employee:</label>
+                                <select id="ddlHierarchyEmp" class="form-control form-control-sm mr-2" style="min-width: 260px; max-width: 340px; border-radius: 8px; font-weight: 600; color: #334155;" onchange="onHierarchyEmpChange()">
+                                    @if (ViewBag.lstHierarchyEmployees != null)
+                                    {
+                                        foreach (var emp in (IEnumerable<HrEmpGen>)ViewBag.lstHierarchyEmployees)
+                                        {
+                                            <option value="@emp.ESysId" selected="@(emp.ESysId == loggedEmpSysId ? "selected" : null)">@emp.FulNme</option>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <option value="@loggedEmpSysId" selected>@loggedUserName</option>
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="onHierarchyEmpChange()" title="Reload Attendance" style="border-radius: 8px;">
+                                    <i class="fas fa-sync-alt" id="attnRefreshIcon"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                            <!-- 4 KPI Summary Pills -->
+                            <div class="row mb-3">
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #f0fdf4;">
+                                        <span class="text-muted small d-block">Present Days</span>
+                                        <span id="kpiAttnPresent" class="font-weight-bold text-success h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).PresentDays : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #fef2f2;">
+                                        <span class="text-muted small d-block">Absent Days</span>
+                                        <span id="kpiAttnAbsent" class="font-weight-bold text-danger h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).AbsentDays : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #fffbeb;">
+                                        <span class="text-muted small d-block">Late Arrivals</span>
+                                        <span id="kpiAttnLate" class="font-weight-bold text-warning h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).LateCount : 0)
+                                        </span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                                    <div class="p-2 text-center rounded border" style="background: #eff6ff;">
+                                        <span class="text-muted small d-block">Total Work Hours</span>
+                                        <span id="kpiAttnHours" class="font-weight-bold text-primary h5 mb-0">
+                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).TotalWorkHoursFormatted : "0h 00m")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 7-Day Attendance Table -->
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover table-striped mb-0 text-center" style="font-size: 0.85rem;" id="tbl7DaysAttendance">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th class="text-left pl-3">Day & Date</th>
+                                            <th>Check-In</th>
+                                            <th>Check-Out</th>
+                                            <th>Working Hours</th>
+                                            <th>Late (Mins)</th>
+                                            <th>Early Leave (Mins)</th>
+                                            <th>OT (Mins)</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbody7DaysAttendance">
+                                        @if (ViewBag.InitAttendanceSummary != null && ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days != null)
+                                        {
+                                            foreach (var day in ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days)
+                                            {
+                                                <tr>
+                                                    <td class="text-left pl-3 font-weight-bold text-dark">
+                                                        <span class="text-muted mr-1">@day.DayName,</span> @day.DateFormatted
+                                                    </td>
+                                                    <td>@day.InTime</td>
+                                                    <td>@day.OutTime</td>
+                                                    <td><span class="badge badge-light border">@day.WorkHours</span></td>
+                                                    <td>@(day.LateMinutes > 0 ? Html.Raw("<span class='text-warning font-weight-bold'>" + day.LateMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td>@(day.EarlyLeaveMinutes > 0 ? Html.Raw("<span class='text-danger'>" + day.EarlyLeaveMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td>@(day.OtMinutes > 0 ? Html.Raw("<span class='text-success font-weight-bold'>" + day.OtMinutes + "</span>") : Html.Raw("<span class='text-muted'>-</span>"))</td>
+                                                    <td><span class="badge @day.StatusClass px-2 py-1">@day.Status</span></td>
+                                                </tr>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <tr>
+                                                <td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Component 2: Leave Balance Component (ONLY for the Logged User) -->
+                    <div class="card shadow-sm mb-2" id="secLeaveBalance" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+                        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                                    <i class="fas fa-umbrella-beach"></i>
+                                </div>
+                                <div>
+                                    <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                                        My Leave Entitlement & Balance
+                                        <span class="badge badge-light border text-muted ml-1" style="font-size: 0.72rem; font-weight: 600;">Personal Account</span>
+                                    </h6>
+                                    <small class="text-muted">Viewing balance entitlement, in-progress requests, and transaction ledger for <strong>@loggedUserName</strong></small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap">
+                                <label for="selLeaveYear" class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-calendar-alt mr-1"></i>Year:</label>
+                                <select id="selLeaveYear" class="form-control form-control-sm mr-2" style="width: 100px; border-radius: 8px; font-weight: 600;" onchange="loadLoggedUserLeaveData();">
+                                    @for (int y = currentYear + 1; y >= currentYear - 1; y--)
+                                    {
+                                        if (y == currentYear)
+                                        {
+                                            <option value="@y" selected>@y</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@y">@y</option>
+                                        }
+                                    }
+                                </select>
+                                <button class="btn btn-sm btn-outline-secondary mr-2" onclick="loadLoggedUserLeaveData();" title="Refresh Leave Data" style="border-radius: 8px;">
+                                    <i class="fas fa-sync-alt" id="leaveRefreshIcon"></i>
+                                </button>
+                                <a href="/Leave/HrLvRegister/Index" class="btn-brand-maroon-sm" style="font-size: 0.78rem; padding: 4px 12px;">
+                                    <i class="fas fa-plus-circle mr-1"></i> Apply Leave
+                                </a>
+                            </div>
+                        </div>
+                        <div class="card-body p-3">
+                           
+                            
+
+                            <!-- Tabs for Balances and Ledger -->
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <ul class="nav nav-pills leave-pills" id="leaveTabPills" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="tab-current-balances" data-toggle="pill" href="#pane-current-balances" role="tab" aria-controls="pane-current-balances" aria-selected="true">
+                                            <i class="fas fa-th-large mr-1"></i> Current Balances
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="tab-transaction-ledger" data-toggle="pill" href="#pane-transaction-ledger" role="tab" aria-controls="pane-transaction-ledger" aria-selected="false" onclick="loadBalanceAuditIfNeeded();">
+                                            <i class="fas fa-history mr-1"></i> Balance Transaction Ledger
+                                        </a>
+                                    </li>
+                                </ul>
+                            </div>
+
+                            <!-- Tab Content -->
+                            <div class="tab-content" id="leaveTabContent">
+                                <!-- Pane 1: Current Balances Table -->
+                                <div class="tab-pane fade show active" id="pane-current-balances" role="tabpanel" aria-labelledby="tab-current-balances">
+                                    <div class="table-responsive rounded border bg-white">
+                                        <table class="table leave-table mb-0 text-center" id="tblCurrentBalances">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-left pl-3" style="width: 30%;">LEAVE TYPE</th>
+                                                    <th style="width: 10%;">CODE</th>
+                                                    <th style="width: 11%;">ENTITLEMENT</th>
+                                                    <th style="width: 11%;">IN PROGRESS</th>
+                                                    <th style="width: 12%;">USED / APPROVED</th>
+                                                    <th style="width: 14%;">AVAILABLE BALANCE</th>
+                                                    <th style="width: 12%;">USAGE PROGRESS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tblCurrentBalancesBody">
+                                                @if (leaveBalances != null && leaveBalances.Any())
+                                                {
+                                                    foreach (var b in leaveBalances)
+                                                    {
+                                                        int pct = b.Entitlement > 0 ? (int)Math.Min(100, Math.Round(((b.Used + b.InProgress) / b.Entitlement) * 100)) : 0;
+                                                        string availBadgeClass = b.Remaining > 3 ? "badge-available-green" : "badge-available-coral";
+                                                        string entDisplay = b.Entitlement > 0 ? b.Entitlement.ToString("0.##") : "--";
+
+                                                        <tr>
+                                                            <td class="text-left pl-3">
+                                                                <div class="font-weight-bold text-dark" style="font-size: 0.92rem;">@b.LeaveTypeName</div>
+                                                                @if (!string.IsNullOrEmpty(b.RuleNotice))
+                                                                {
+                                                                    <small class="text-muted d-block mt-1" style="line-height: 1.35;">@b.RuleNotice</small>
+                                                                }
+                                                            </td>
+                                                            <td>
+                                                                <span class="badge-code">@b.LeaveTypeCode</span>
+                                                            </td>
+                                                            <td class="font-weight-bold text-dark">
+                                                                @entDisplay
+                                                            </td>
+                                                            <td class="font-weight-bold" style="color: #2563eb; font-size: 0.95rem;">
+                                                                @(b.InProgress.ToString("0.##"))
+                                                            </td>
+                                                            <td class="font-weight-bold" style="color: #d97706; font-size: 0.95rem;">
+                                                                @(b.Used.ToString("0.##"))
+                                                            </td>
+                                                            <td>
+                                                                <span class="@availBadgeClass">
+                                                                    @(b.Remaining.ToString("0.##")) days
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div class="usage-progress-bar">
+                                                                    <div class="usage-progress-fill" style="width: @(pct)%;"></div>
+                                                                </div>
+                                                                <small class="text-muted d-block mt-1 font-weight-bold">@(pct)% utilized</small>
+                                                            </td>
+                                                        </tr>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <tr>
+                                                        <td colspan="7" class="text-center py-4 text-muted">
+                                                            <i class="fas fa-spinner fa-spin mr-1"></i> Loading employee leave balance history...
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Pane 2: Balance Transaction Ledger -->
+                                <div class="tab-pane fade" id="pane-transaction-ledger" role="tabpanel" aria-labelledby="tab-transaction-ledger">
+                                    <div class="table-responsive rounded border bg-white" style="max-height: 520px; overflow-y: auto;">
+                                        <table class="table leave-table mb-0" id="tblLedger">
+                                            <thead>
+                                                <tr>
+                                                    <th>DATE & TIME</th>
+                                                    <th>LEAVE TYPE</th>
+                                                    <th>TRANSACTION TYPE</th>
+                                                    <th class="text-center">CHANGE</th>
+                                                    <th class="text-center">BEFORE</th>
+                                                    <th class="text-center">AFTER</th>
+                                                    <th>REMARKS</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tblLedgerBody">
+                                                <tr>
+                                                    <td colspan="7" class="text-center py-4 text-muted">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Loading balance transaction ledger...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var loggedEmpSysId = @loggedEmpSysId;
+    var auditLedgerLoadedYear = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        // Automatically check if initial leave balances or attendance need dynamic loading
+        if ($("#tblCurrentBalancesBody tr").length <= 1 && $("#tblCurrentBalancesBody").text().indexOf("Loading") >= 0) {
+            loadLoggedUserLeaveData();
+        }
+    });
+
+    // --- 1. Attendance History (Hierarchy Driven) ---
+    function onHierarchyEmpChange() {
+        var empSysId = $("#ddlHierarchyEmp").val();
+        load7DaysAttendance(empSysId);
+    }
+
+    function load7DaysAttendance(empSysId) {
+        $("#attnRefreshIcon").addClass("fa-spin");
+        $.ajax({
+            type: "GET",
+            url: '/Home/GetEmployee7DayAttendance',
+            data: { empSysId: empSysId },
+            dataType: "json",
+            success: function (res) {
+                $("#attnRefreshIcon").removeClass("fa-spin");
+                if (res && res.ok && res.data) {
+                    var d = res.data;
+                    $("#lblAttnDateRange").text(d.dateRangeText || "Recent 7 Days");
+                    $("#kpiAttnPresent").text(d.presentDays);
+                    $("#kpiAttnAbsent").text(d.absentDays);
+                    $("#kpiAttnLate").text(d.lateCount);
+                    $("#kpiAttnHours").text(d.totalWorkHoursFormatted || "0h 00m");
+
+                    var tbody = $("#tbody7DaysAttendance");
+                    tbody.empty();
+                    if (d.days && d.days.length > 0) {
+                        $.each(d.days, function (i, day) {
+                            var lateHtml = day.lateMinutes > 0 ? ('<span class="text-warning font-weight-bold">' + day.lateMinutes + '</span>') : '<span class="text-muted">-</span>';
+                            var earlyHtml = day.earlyLeaveMinutes > 0 ? ('<span class="text-danger">' + day.earlyLeaveMinutes + '</span>') : '<span class="text-muted">-</span>';
+                            var otHtml = day.otMinutes > 0 ? ('<span class="text-success font-weight-bold">' + day.otMinutes + '</span>') : '<span class="text-muted">-</span>';
+
+                            var row = '<tr>' +
+                                '<td class="text-left pl-3 font-weight-bold text-dark"><span class="text-muted mr-1">' + escapeHtml(day.dayName) + ',</span> ' + escapeHtml(day.dateFormatted) + '</td>' +
+                                '<td>' + escapeHtml(day.inTime || '--') + '</td>' +
+                                '<td>' + escapeHtml(day.outTime || '--') + '</td>' +
+                                '<td><span class="badge badge-light border">' + escapeHtml(day.workHours || '--') + '</span></td>' +
+                                '<td>' + lateHtml + '</td>' +
+                                '<td>' + earlyHtml + '</td>' +
+                                '<td>' + otHtml + '</td>' +
+                                '<td><span class="badge ' + (day.statusClass || 'badge-secondary') + ' px-2 py-1">' + escapeHtml(day.status || 'Unknown') + '</span></td>' +
+                                '</tr>';
+                            tbody.append(row);
+                        });
+                    } else {
+                        tbody.append('<tr><td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td></tr>');
+                    }
+                }
+            },
+            error: function () {
+                $("#attnRefreshIcon").removeClass("fa-spin");
+            }
+        });
+    }
+
+    // --- 2. Leave Balance for Logged User Only ---
+    function loadLoggedUserLeaveData() {
+        var year = document.getElementById("selLeaveYear") ? document.getElementById("selLeaveYear").value : new Date().getFullYear();
+        $("#leaveRefreshIcon").addClass("fa-spin");
+
+        // 1. Fetch Balances
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetEmployeeBalances",
+            data: { empSysId: loggedEmpSysId, year: year },
+            dataType: "json",
+            success: function (res) {
+                $("#leaveRefreshIcon").removeClass("fa-spin");
+                if (res && res.success && res.data) {
+                    renderCurrentBalances(res.data);
+                }
+            },
+            error: function (xhr, status, error) {
+                $("#leaveRefreshIcon").removeClass("fa-spin");
+                console.warn("Error fetching balances via AJAX: " + error);
+            }
+        });
+
+        // 2. Refresh Ledger if it is currently displayed
+        if ($("#pane-transaction-ledger").hasClass("show") || $("#pane-transaction-ledger").hasClass("active")) {
+            loadBalanceAudit(year);
+        } else {
+            auditLedgerLoadedYear = null;
+        }
+    }
+
+    function loadBalanceAuditIfNeeded() {
+        var year = document.getElementById("selLeaveYear") ? document.getElementById("selLeaveYear").value : new Date().getFullYear();
+        if (auditLedgerLoadedYear !== year) {
+            loadBalanceAudit(year);
+        }
+    }
+
+    function loadBalanceAudit(year) {
+        var tbody = document.getElementById('tblLedgerBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Loading balance transaction ledger...</td></tr>';
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetBalanceAudit",
+            data: { empSysId: loggedEmpSysId, year: year },
+            dataType: "json",
+            success: function (res) {
+                if (res && res.success && res.data) {
+                    auditLedgerLoadedYear = year;
+                    renderTransactionLedger(res.data);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.warn("Error fetching audit ledger: " + error);
+            }
+        });
+    }
+
+    function renderCurrentBalances(data) {
+        var inProg = (data.totalInProgress !== undefined) ? data.totalInProgress : (data.TotalInProgress !== undefined ? data.TotalInProgress : 0);
+        var used = (data.totalUsed !== undefined) ? data.totalUsed : (data.TotalUsed !== undefined ? data.TotalUsed : 0);
+        var rem = (data.totalRemaining !== undefined) ? data.totalRemaining : (data.TotalRemaining !== undefined ? data.TotalRemaining : 0);
+        var ent = (data.totalEntitlement !== undefined) ? data.totalEntitlement : (data.TotalEntitlement !== undefined ? data.TotalEntitlement : 0);
+
+        $('#txtTotalEntitlement').text(ent + ' days');
+        $('#txtTotalInProgress').text(inProg + ' days');
+        $('#txtTotalUsed').text(used + ' days');
+        $('#txtTotalRemaining').text(rem + ' days');
+
+        var list = data.leaveBalances || data.LeaveBalances || data.balances || data.Balances || [];
+        var tbody = document.getElementById('tblCurrentBalancesBody');
+        if (!tbody) return;
+
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No leave balance records available for this period.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function (b) {
+            var ltName = b.leaveTypeName || b.LeaveTypeName || '-';
+            var ltCode = b.leaveTypeCode || b.LeaveTypeCode || '-';
+            var itemEnt = (b.entitlement !== undefined) ? b.entitlement : (b.Entitlement !== undefined ? b.Entitlement : 0);
+            var itemInProg = (b.inProgress !== undefined) ? b.inProgress : (b.InProgress !== undefined ? b.InProgress : 0);
+            var itemUsed = (b.used !== undefined) ? b.used : (b.Used !== undefined ? b.Used : 0);
+            var itemRem = (b.remaining !== undefined) ? b.remaining : (b.Remaining !== undefined ? b.Remaining : 0);
+            var ruleNotice = b.ruleNotice || b.RuleNotice || '';
+
+            var pct = itemEnt > 0 ? Math.min(100, Math.round(((itemUsed + itemInProg) / itemEnt) * 100)) : 0;
+            var badgeClass = itemRem > 3 ? 'badge-available-green' : 'badge-available-coral';
+            var entDisplay = itemEnt > 0 ? itemEnt : '--';
+
+            html += '<tr>' +
+                '<td class="text-left pl-3">' +
+                    '<div class="font-weight-bold text-dark" style="font-size: 0.92rem;">' + escapeHtml(ltName) + '</div>' +
+                    (ruleNotice ? '<small class="text-muted d-block mt-1" style="line-height: 1.35;">' + escapeHtml(ruleNotice) + '</small>' : '') +
+                '</td>' +
+                '<td><span class="badge-code">' + escapeHtml(ltCode) + '</span></td>' +
+                '<td class="font-weight-bold text-dark">' + entDisplay + '</td>' +
+                '<td class="font-weight-bold" style="color: #2563eb; font-size: 0.95rem;">' + itemInProg + '</td>' +
+                '<td class="font-weight-bold" style="color: #d97706; font-size: 0.95rem;">' + itemUsed + '</td>' +
+                '<td><span class="' + badgeClass + '">' + itemRem + ' days</span></td>' +
+                '<td>' +
+                    '<div class="usage-progress-bar">' +
+                        '<div class="usage-progress-fill" style="width: ' + pct + '%;"></div>' +
+                    '</div>' +
+                    '<small class="text-muted d-block mt-1 font-weight-bold">' + pct + '% utilized</small>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderTransactionLedger(list) {
+        var tbody = document.getElementById('tblLedgerBody');
+        if (!tbody) return;
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No balance transactions recorded yet for this period.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function (tx) {
+            var delta = (tx.days !== undefined) ? tx.days : (tx.Days !== undefined ? tx.Days : (tx.deltaDays !== undefined ? tx.deltaDays : 0));
+            var dtDisplay = tx.dateFormatted || tx.DateFormatted || tx.transactionDateDisplay || tx.TransactionDateDisplay || '-';
+            var ltName = tx.leaveTypeName || tx.LeaveTypeName || '-';
+            var trnType = tx.transactionType || tx.TransactionType || tx.trnType || tx.TrnType || '-';
+            var balBf = (tx.balanceBefore !== undefined) ? tx.balanceBefore : (tx.BalanceBefore !== undefined ? tx.BalanceBefore : 0);
+            var balAf = (tx.balanceAfter !== undefined) ? tx.balanceAfter : (tx.BalanceAfter !== undefined ? tx.BalanceAfter : 0);
+            var rmks = tx.remarks || tx.Remarks || '-';
+
+            var deltaBadge = delta >= 0
+                ? '<span class="badge badge-success px-2 py-1 font-weight-bold">+' + delta + '</span>'
+                : '<span class="badge badge-danger px-2 py-1 font-weight-bold">' + delta + '</span>';
+
+            html += '<tr>' +
+                '<td class="text-muted" style="font-size: 0.85rem;">' + escapeHtml(dtDisplay) + '</td>' +
+                '<td class="font-weight-bold text-dark">' + escapeHtml(ltName) + '</td>' +
+                '<td><span class="badge badge-light border text-dark font-weight-bold">' + escapeHtml(trnType) + '</span></td>' +
+                '<td class="text-center">' + deltaBadge + '</td>' +
+                '<td class="text-center font-weight-bold text-secondary">' + balBf + '</td>' +
+                '<td class="text-center font-weight-bold text-dark">' + balAf + '</td>' +
+                '<td class="text-muted" style="font-size: 0.88rem;">' + escapeHtml(rmks) + '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.toString().replace(/[&<>"']/g, function (m) { return map[m]; });
+    }
+
+    // Toast helpers
+    var toastObj;
+    function created() {
+        toastObj = this;
+    }
+    function onclose(e) {}
+    function onBeforeOpen() {}
+</script>

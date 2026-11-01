@@ -1,0 +1,149 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Pending Leave Load</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Leave</a></li>
+                <li class="breadcrumb-item">Pending Leave Load</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        <div>
+                            @using (Html.BeginForm("UploadLeaves", "LvLdMpng", FormMethod.Post))
+                            {
+                                <input type="submit" class="btn btn-sm btn-outline-primary" value="Upload Leaves" text-transform:capitalize" />
+                            }
+                            @*<a href="#" class="btn btn-sm btn-primary" id="btnLoad" onclick="createFunc();">
+            Load Leaves
+        </a>*@
+                        </div>
+                    </p>
+
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="LvGrid" width="auto" dataSource="ViewBag.LvMpngs" allowPaging="true" allowFiltering="true" allowSorting="true"
+                                  allowExcelExport="true" allowResizing="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )" load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="IncidentNo" headerText="Incident No" width="50"></e-grid-column>
+                                <e-grid-column field="Qid" headerText="QID" width="70"></e-grid-column>
+                                <e-grid-column field="EmpName" headerText="Name" width="120"></e-grid-column>
+                                <e-grid-column field="Lvtype" headerText="Leave Type" width="75"></e-grid-column>
+                                <e-grid-column field="LvtypeSub" headerText="Leave Type Sub" width="75"></e-grid-column>
+                                <e-grid-column field="LvtypeSubPay" headerText="Leave Type Sub Pay" width="75"></e-grid-column>
+                                <e-grid-column field="LvStartDate" headerText="Start Date" width="50"></e-grid-column>
+                                <e-grid-column field="LvEndDate" headerText="End Date" width="50"></e-grid-column>
+                                <e-grid-column field="Status" headerText="Status" width="50"></e-grid-column>
+                                <e-grid-column field="MpdLvTyp" headerText="Mapped Type" width="50"></e-grid-column>
+                                <e-grid-column field="MpdEmpName" headerText="Mapped Name" width="120"></e-grid-column>
+                                <e-grid-column field="MpdSts" headerText="Mapped Status" width="70"></e-grid-column>
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+<script>
+    //Date Range Search for StDate And EndDate//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[6].format = { type: 'date', format: 'dd/MM/yyyy' };
+        this.columns[7].format = { type: 'date', format: 'dd/MM/yyyy' };
+
+
+
+        this.columns[6].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
+                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('StDate', 'equal', startDate) : grid.filterByColumn('StDate', 'greaterthan', startDate);
+
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+        this.columns[7].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
+                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('EndDate', 'equal', startDate) : grid.filterByColumn('EndDate', 'greaterthan', startDate);
+
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+    }
+</script>
+
+
+@*<script>
+    function rowDataBound(args) {
+        if (args.data.LvTyp === "Annual") {
+            btnRjnDiv.style.display="none";
+        }
+    }
+</script>*@

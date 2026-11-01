@@ -1,0 +1,71 @@
+﻿@model qHRM.Areas.Payroll.Models.HrPrStfLoan
+@using (Html.BeginForm("Cancel", "HrPrStfLoan"))
+{
+    @Html.HiddenFor(model => model.StfLnId)
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <p>@ViewBag.EmpName</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="LnTypId" class="control-label"></label>
+                <p>@ViewBag.LnTyp</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="LnCode" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.LnCode)</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="IssuDate" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.IssuDate)</p>
+            </div>
+            <div class="form-group  col-md-3">
+                <label asp-for="EftYear" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.EftYear)</p>
+            </div>
+            <div class="form-group col-md-3">
+                <label asp-for="EftMonth" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.EftMonth)</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="FlAmt" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.FlAmt)</p>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="Instl" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.Instl)</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="InstlAmt" class="control-label"></label>
+                <p>@Html.DisplayFor(model => model.InstlAmt)</p>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            @if (ViewBag.RecDelete == true)
+            {
+                <input type="submit" value="Cancel" class="btn btn-sm btn-primary btn-block" />
+            }
+                <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+            </div>
+    </div>
+}

@@ -1,0 +1,114 @@
+@model qHRM.Areas.Employee.Models.HrEmpJobAssign
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrEmpJobAssign"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.JbAsngId)
+        @Html.HiddenFor(model => model.CrtDateTime)
+        @Html.HiddenFor(model => model.CrtId)
+        @Html.HiddenFor(model => model.StDate)
+        @Html.HiddenFor(model => model.WkStat)
+    </div>
+    <div class="card-body">
+        <input asp-for="EmpSysId" class="form-control" hidden />
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label class="control-label">Employee ID</label>
+                <input class="form-control form-control-sm" value="@ViewBag.EmpId" readonly />
+            </div>
+            <div class="form-group col-md-6">
+                <label class="control-label">Name</label>
+                <input class="form-control form-control-sm" value="@ViewBag.EmpName" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="StDate" class="control-label"></label>                
+                <input asp-for="StDate" class="form-control form-control-sm" disabled />
+                <span asp-validation-for="StDate" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EmpTypId" class="control-label"></label>
+                <select asp-for="EmpTypId" id="drpEmpTyp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmpTyp, "Indx", "ElmntTxt", Model?.EmpTypId))">
+                    <option value="">-- Select Employement Type --</option>
+                </select>
+                <span asp-validation-for="EmpTypId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="DeptId" class="control-label"></label>
+                <select asp-for="DeptId" id="drpDept" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstDept, "DeptId", "DeptName", Model?.DeptId))">
+                    <option value="">-- Select Department --</option>
+                </select>
+                <span asp-validation-for="DeptId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="DesigId" class="control-label"></label>
+                <select asp-for="DesigId" id="drpDesig" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstDesig, "DesigId", "DesigName", Model?.DesigId))">
+                    <option value="">-- Select Designation --</option>
+                </select>
+                <span asp-validation-for="DesigId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="RptMngId" class="control-label"></label>
+                <select asp-for="RptMngId" id="drpRptMng" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstRptMng, "EmpSysId", "EmpDesc", Model?.RptMngId))">
+                    <option value="">-- Select Reporting Manager --</option>
+                </select>
+                <span asp-validation-for="RptMngId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="OfcPhone" class="control-label"></label>
+                <input asp-for="OfcPhone" class="form-control form-control-sm" />
+                <span asp-validation-for="OfcPhone" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="OfcEmail" class="control-label"></label>
+                <input asp-for="OfcEmail" class="form-control form-control-sm" />
+                <span asp-validation-for="OfcEmail" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+            </div>
+        </div>
+        <div class="form-group">
+            @if (ViewBag.RecEdit == true)
+            {
+                <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

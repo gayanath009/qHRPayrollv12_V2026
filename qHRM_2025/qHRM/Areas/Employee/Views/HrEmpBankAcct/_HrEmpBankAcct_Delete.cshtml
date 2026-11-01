@@ -1,0 +1,24 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpBankAcct
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("Delete", "HrEmpBankAcct"))
+{<div>
+    @Html.HiddenFor(model => model.AcctId)
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.AcctNo) : @Html.DisplayFor(model => model.AcctNo)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.AcctName) : @Html.DisplayFor(model => model.AcctName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.AcctType) : @Html.DisplayFor(model => model.AcctType)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.BankName) : @Html.DisplayFor(model => model.BankName)
+    </div>
+    @if (ViewBag.RecDelete == true)
+    {
+        <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    }
+    <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+</div>
+}

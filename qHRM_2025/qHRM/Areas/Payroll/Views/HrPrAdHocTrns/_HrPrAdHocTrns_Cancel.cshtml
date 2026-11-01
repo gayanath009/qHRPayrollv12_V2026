@@ -1,0 +1,58 @@
+@model qHRM.Areas.Payroll.Models.HrPrAdHocTrns
+<h5>Are you sure you want to cancel this?</h5>
+@using (Html.BeginForm("Cancel", "HrPrAdHocTrns", new { area = "Payroll" }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <div>
+    @Html.HiddenFor(model => model.TrnId)
+
+     <div class="card-body">
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="EmpSysId" class="control-label"></label>
+                 <p>@ViewBag.EmpName</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="TrnTypId" class="control-label"></label>
+                 <p>@ViewBag.TrnTyp</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-6">
+                 <label asp-for="TrnDate" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.TrnDate)</p>
+             </div>
+             <div class="form-group  col-md-6">
+                 <label asp-for="EftMonth" class="control-label"></label>
+                 <p>@ViewBag.EftMonth</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="TrnAmt" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.TrnAmt)</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="Ref" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.Ref)</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="Desc" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.Desc)</p>
+             </div>
+         </div>
+         <div class="form-group"></div>
+
+         <div class="form-group">
+             <input type="submit" value="Cancel" class="btn btn-sm btn-primary btn-block" />
+             <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+         </div>
+     </div>
+</div>
+}

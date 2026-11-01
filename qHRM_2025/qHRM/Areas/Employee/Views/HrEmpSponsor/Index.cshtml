@@ -1,0 +1,309 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpSponsor
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Sponsorship Details</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")">Employee Information</a></li>
+                <li class="breadcrumb-item active">Sponsorship Details (@HttpContextAccessor.HttpContext.Session.GetString("EmpName"))</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div id="tabs">
+                        <!--Start Tabs Start-->
+                        <partial name="~/Views/Shared/_EmpNavBar.cshtml" />
+                        <br />
+                        <!--End Tabs End-->
+                        <p>
+                            <div>
+                                @if (ViewBag.RecAdd == true)
+                                {
+                                    <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                        Add New Sponsor Record
+                                    </a>
+                                }
+                            </div>
+                        </p>
+                        <!--Grid-->
+                        <div class="control-section">
+                            <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true"
+                                      allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="SpnsrType" headerText="Sponsorship Type" width="50"></e-grid-column>
+                                    <e-grid-column field="RltnType" headerText="Relationship" width="50"></e-grid-column>
+                                    <e-grid-column field="LbrCard" headerText="Labor Card" width="100"></e-grid-column>
+                                    <e-grid-column field="CmpDtl" headerText="Company" width="100"></e-grid-column>
+                                    <e-grid-column field="EraNo" headerText="Secondment" width="50"></e-grid-column>
+                                    <e-grid-column field="StDate" headerText="From" width="50" format='yMd'></e-grid-column>
+                                    <e-grid-column field="EndDate" headerText="To" width="50" format='yMd'></e-grid-column>
+                                    <e-grid-column field="Note" headerText="Note" width="100"></e-grid-column>
+
+                                    @if (ViewBag.RecEdit == true)
+                                    {
+                                        <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                    }
+                                    @if (ViewBag.RecDelete == true)
+                                    {
+                                        <e-grid-column field="" headerText="" template="#_delete" width="60"></e-grid-column>
+                                    }
+                                </e-grid-columns>
+                            </ejs-grid>
+                        </div>
+                        <!--Grid-->
+                        <!--Create-->
+                        <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLongTitle">
+                                            Create New Sponsorship Record
+                                        </h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body" id="createModalBody">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--Create-->
+                        <!--Edit-->
+                        <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                            <div class="modal-dialog modal-lg" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLongTitle">Edit Sponsorship Record</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body" id="editModalBody">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--Edit-->
+                        <!--Delete-->
+                        <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                            <div class="modal-dialog" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Delete Sponsorship Record</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body" id="deleteModalBody">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--Delete-->
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${SpnsrId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${SpnsrId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/Employee/HrEmpSponsor/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+
+    var editFunc = function (id) {
+        var url = "/Employee/HrEmpSponsor/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+
+    var deleteFunc = function (id) {
+        var url = "/Employee/HrEmpSponsor/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+@*<script>
+    //Date Range Search for Created Date//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[5].format = { type: 'date', format: 'dd/MM/yyyy' };
+
+        this.columns[5].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                grid.filterSettings.columns = [
+                                    { "value": e.value[0], "operator": "greaterthan", "field": 'OpndDate' },
+                                    { "value": e.value[1], "operator": "lessthan", "field": 'OpndDate' }]
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+
+
+    }
+</script>*@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@*@{
+        ViewData["Title"] = "Index";
+    }
+
+    <h1>Index</h1>
+
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.SpnsrType)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RltnType)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LbrCard)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.CmpDtl)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EraNo)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ExpDate)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Note)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RecStat)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.CrtDateTime)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EmpSys)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.SpnsrType)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.RltnType)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.LbrCard)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.CmpDtl)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.EraNo)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ExpDate)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Note)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.RecStat)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.CrtDateTime)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.EmpSys.AdId)
+                    </td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@item.SpnsrId">Edit</a> |
+                        <a asp-action="Details" asp-route-id="@item.SpnsrId">Details</a> |
+                        <a asp-action="Delete" asp-route-id="@item.SpnsrId">Delete</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>*@

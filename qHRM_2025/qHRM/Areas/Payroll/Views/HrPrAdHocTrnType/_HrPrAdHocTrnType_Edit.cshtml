@@ -1,0 +1,56 @@
+﻿@model qHRM.Areas.Payroll.Models.HrPrAdHocTrnType
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrPrAdHocTrnType"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.TrnTypId)
+        @Html.HiddenFor(model => model.EntId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <input id="slctdTrnType" asp-for="TrnType" hidden="hidden" />
+                <input id="rdoPayment" type="radio" class="form-check-input" asp-for="TrnType" value="PAY" name="optradio" checked onclick="setTrnType();">Payments
+                <br /><br />
+                <input id="rdoReduct" type="radio" class="form-check-input" asp-for="TrnType" value="DEDUCT" name="optradio" onclick="setTrnType();">Reduction
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="TrnTypTxt" class="control-label"></label>
+                <input asp-for="TrnTypTxt" class="form-control form-control-sm" />
+                <span asp-validation-for="TrnTypTxt" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Desc" class="control-label"></label>
+                <input asp-for="Desc" class="form-control form-control-sm" />
+                <span asp-validation-for="Desc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<script>
+    function setTrnType() {
+        if ($('#rdoPayment').prop('checked')) {
+            $("#slctdTrnType").val('PAY');
+        }
+        else if ($('#chkBarcode').prop('checked')) {
+            $("#slctdTrnType").val('DEDUCT');
+        }
+    }
+</script>
+<ejs-scripts></ejs-scripts>

@@ -1,0 +1,181 @@
+﻿@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrLvSlry>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">OT Rates</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Leave Salary Encashment/</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+
+                    <p>
+                        <div>
+                            <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                Create New
+                            </a>
+                            @if (ViewBag.Rec_Add == true)
+                            {
+
+                            }
+                        </div>
+                    </p>
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="CrtDateTime" headerText="Processed Date" width="60"></e-grid-column>
+                                <e-grid-column field="EmpSysId" headerText="Employee ID" width="60"></e-grid-column>
+                                <e-grid-column field="EmpSysId" headerText="Employee Name" width="110"></e-grid-column>
+                                <e-grid-column field="FrmDt" headerText="From Date" width="60"></e-grid-column>
+                                <e-grid-column field="ToDt" headerText="To Date" width="60"></e-grid-column>
+                                <e-grid-column field="StatTxt" headerText="Status" width="60"></e-grid-column>
+                                <e-grid-column field="ErndLvCnt" headerText="Earned Leaves" width="60"></e-grid-column>
+                                <e-grid-column field="LvSlry" headerText="Earned Leaves" width="60"></e-grid-column>
+                                <e-grid-column field="LstMntSlry" headerText="Leave Month Salary" width="60"></e-grid-column>
+                                <e-grid-column field="LvSlry" headerText="Earned Leaves" width="60"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_info" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_edit" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_delete" width="50"></e-grid-column>
+
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                                @if (ViewBag.Rec_Delete == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Calculate Leave Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Info-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Leave Encashment Details Card</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="infoModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Info-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Update Leave Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Leave Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${LvSlryId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${LvSlryId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/Payroll/HrPrLvSlry/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var infoFunc = function (lvSlryId) {
+        var url = "/Payroll/HrPrLvSlry/InfoGet?lvSlryId=" + lvSlryId;
+        $("#infoModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var editFunc = function (lvSlryId) {
+        var url = "/Payroll/HrPrLvSlry/EditGet?lvSlryId=" + lvSlryId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var deleteFunc = function (lvSlryId) {
+        var url = "/Payroll/HrPrLvSlry/DeleteGet?id=" + lvSlryId;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+</script>

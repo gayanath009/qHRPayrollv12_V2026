@@ -1,0 +1,288 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<style>
+    /* ============================================================
+       PAGE HEADER & CREATE BUTTON - ORGINFO STYLE (#540033)
+       ============================================================ */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: #fdf2f8;
+        color: #540033;
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fbcfe8;
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    /* Create Button */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+        text-decoration: none !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+</style>
+<div>
+    <main>
+        <div class="container-fluid px-0">
+            <!-- COMPACT HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-user-lock"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                                <h1 class="org-title">System Users</h1>
+                                <span class="badge org-category-pill">SYSADMIN</span>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#">System Administration</a> / <span class="text-dark font-weight-medium">System Users</span>
+                                <span class="text-muted mx-1">&bull;</span>
+                                <span class="text-muted">User accounts, credentials, and access management</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn org-btn-create" id="btnCreate" onclick="createFunc();">
+                            <i class="fas fa-plus-circle mr-1"></i> Create New
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Grid-->
+                    <div>
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowSorting="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport", "PdfExport" } )">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+
+                            <e-grid-columns>
+                                <e-grid-column field="Usr_Name" headerText="User Name" width="125"></e-grid-column>
+                                <e-grid-column field="Grp_Name" headerText="Group Name" width="125"></e-grid-column>
+                                <e-grid-column field="Full_Name" headerText="Employee Name" width="150"></e-grid-column>
+                                <e-grid-column field="email" headerText="Email" width="150"></e-grid-column>
+                                <e-grid-column field="Remarks" headerText="Remarks" width="150"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_edit" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_pwd" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_delete" width="50"></e-grid-column>
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                                @if (ViewBag.Rec_Delete == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div id="modalCreate" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Create User</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div id="modalEdit" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit User</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Change Pwd-->
+                    <div id="modalPwd" class="modal fade bd-example-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Change Password</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="pwdModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Change Pwd-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete User</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${Usr_Id})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+
+<script type="text/x-jsrender" id="_pwd">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="pwdFunc(${Usr_Id})">
+        <span class="glyphicon glyphicon-asterisk"></span>
+    </a>
+</script>
+
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${Usr_Id})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/SysAdmin/AdmUser/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (id) {
+        var url = "/SysAdmin/AdmUser/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var pwdFunc = function (id) {
+        var url = "/SysAdmin/AdmUser/ChangePasswordGet?id=" + id;
+        $("#pwdModalBody").load(url, function () {
+            $("#modalPwd").modal("show");
+        })
+    }
+
+    var deleteFunc = function (id) {
+        var url = "/SysAdmin/AdmUser/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_pdfexport') {
+            gridObj.pdfExport(getPdfExportProperties());
+        }
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport(getExcelExportProperties());
+        }
+    }
+</script>
+

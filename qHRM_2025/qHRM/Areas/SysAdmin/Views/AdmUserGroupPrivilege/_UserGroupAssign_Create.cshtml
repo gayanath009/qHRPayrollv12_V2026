@@ -1,0 +1,190 @@
+﻿@model qHRM.Areas.SysAdmin.Models.mvUserGroupAssign
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+
+<div class="dl-horizontal">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-group">
+        <h5 class="list-group-item-text">User Group</h5>
+        <select class="form-control form-control-sm" id="drpdownUserGroup"
+                asp-items="@(new SelectList(Model.lstUsrGroup,"GrpId", "Name"))"></select>
+    </div>
+
+    <div class="form-group">
+        <table class="table table-sm table-bordered">
+            <thead class="e-de-table-header-div">
+                <tr class="col-10">                                        
+                    <th scope="col" colspan="2"><h5 class="list-group-item-text">Privileges</h5></th>
+                    <th scope="col">View</th>
+                    <th scope="col">Add</th>
+                    <th scope="col">Edit</th>
+                    <th scope="col">Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var itemP in Model.lstParent_Priv)
+                {
+                    int x = 1;
+                    var _childcount_lvl_1 = Model.lstChild_Priv_1.Where(x => x.ParentId == itemP.PrvId).Count();
+
+                    <tr class="bg-gray-500">
+                        <td colspan="6">@itemP.NameEng</td>
+                        
+                    </tr>
+
+                    if (_childcount_lvl_1 > 0)
+                    {
+                        var _childmenu_lvl_1 = Model.lstChild_Priv_1.Where(x => x.ParentId == itemP.PrvId).ToList();
+                        x += 1;
+                        @foreach (var itmC_lvl_1 in _childmenu_lvl_1)
+                        {
+                            <tr class="col-10">
+                               
+                                <td colspan="2">@itmC_lvl_1.NameEng</td>
+                                <td>
+                                    <input id="chk@(itmC_lvl_1.PrvId)"
+                                           type="checkbox"
+                                           name="chkview"
+                                           value="@itmC_lvl_1.PrvId"/>
+                                </td>
+                                <td>
+                                    <input id="chk@(itmC_lvl_1.PrvId)"
+                                           type="checkbox"
+                                           name="chkadd"
+                                           value="@itmC_lvl_1.PrvId" />
+                                </td>
+                                <td>
+                                    <input id="chk@(itmC_lvl_1.PrvId)"
+                                           type="checkbox"
+                                           name="chkedit"
+                                           value="@itmC_lvl_1.PrvId" />
+                                </td>
+                                <td>
+                                    <input id="chk@(itmC_lvl_1.PrvId)"
+                                           type="checkbox"
+                                           name="chkdelete"
+                                           value="@itmC_lvl_1.PrvId" />
+                                </td>
+                            </tr>
+
+                            <!--Start of Level 02-->
+                            int y = 1;
+                            var _childcount_lvl_2 = Model.lstChild_Priv_2.Where(x => x.ParentId == itmC_lvl_1.PrvId).Count();
+
+                            if (_childcount_lvl_2 > 0)
+                            {
+                                var _childmenu_lvl_2 = Model.lstChild_Priv_2.Where(x => x.ParentId == itmC_lvl_1.PrvId).ToList();
+                                y += 1;
+                                @foreach (var itmC_lvl_2 in _childmenu_lvl_2)
+                                {
+                                    <tr class="col-10 bg-light">
+                                        <td></td>                                        
+                                        <td>@itmC_lvl_2.NameEng</td>
+                                        <td>
+                                            <input id="chk@(itmC_lvl_2.PrvId)"
+                                                   type="checkbox"
+                                                   name="chkview"
+                                                   value="@itmC_lvl_2.PrvId"/>
+                                        </td>
+                                        <td>
+                                            <input id="chk@(itmC_lvl_2.PrvId)"
+                                                   type="checkbox"
+                                                   name="chkadd"
+                                                   value="@itmC_lvl_2.PrvId" />
+                                        </td>
+                                        <td>
+                                            <input id="chk@(itmC_lvl_2.PrvId)"
+                                                   type="checkbox"
+                                                   name="chkedit"
+                                                   value="@itmC_lvl_2.PrvId" />
+                                        </td>
+                                        <td>
+                                            <input id="chk@(itmC_lvl_2.PrvId)"
+                                                   type="checkbox"
+                                                   name="chkdelete"
+                                                   value="@itmC_lvl_2.PrvId" />
+                                        </td>
+                                    </tr>
+
+                                }
+                            }
+
+                            <!--End of Level 02-->
+
+                        }
+                    }
+                }
+
+
+
+
+            </tbody>
+        </table>
+    </div>
+
+    <div class="form-group">
+        <input type="button" id="Create" value="Create" class="btn btn-sm btn-primary btn-block"><br />
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        $('#Create').on('click', function () {
+
+            var lstview = [];
+            var lstadd = [];
+            var lstedit = [];
+            var lstdelete = [];
+
+            var drpUG = $('#drpdownUserGroup').val();
+           
+
+            $("input[name='chkview']:checked").each(function () {
+                lstview.push($(this).val());
+            });
+
+            $("input[name='chkadd']:checked").each(function () {
+                lstadd.push($(this).val());
+            });
+
+            $("input[name='chkedit']:checked").each(function () {
+                lstedit.push($(this).val());
+            });
+
+            $("input[name='chkdelete']:checked").each(function () {
+                lstdelete.push($(this).val());
+            });
+
+            $.ajax({
+                url: "/SysAdmin/AdmUserGroupPrivilege/Create",
+                type: "POST",
+                data: {
+                    drpUserGroup: drpUG,
+                    listView: lstview,
+                    listAdd: lstadd,
+                    listEdit: lstedit,
+                    listDelete: lstdelete
+                },
+                dataType: "json",
+                traditional: true,
+                success: function (data) {
+                    location.href = '/SysAdmin/AdmUserGroupPrivilege/Index';
+                }, error: function () {
+                    location.href = '/SysAdmin/AdmUserGroupPrivilege/Index';
+                }
+
+            });
+        });
+    });
+</script>
+
+
+
+
+
+
+
+

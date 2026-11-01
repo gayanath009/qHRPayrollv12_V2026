@@ -1,0 +1,649 @@
+@model qHRM.Areas.Leave.Models.HrLvRegister
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+@using (Html.BeginForm("Create", "HrLvRegister", FormMethod.Post, new { enctype = "multipart/form-data", id = "formCreateLeave" }))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.LvId)
+        
+        <!-- Employee & Leave Type Row -->
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="EmpSysId" class="control-label font-weight-bold"></label>
+                @if (ViewBag.IsRestrictedUser == true || (ViewBag.ShowAllEmployees != true && ViewBag.IsOutsourceAdmin != true && ViewBag.CanSelectEmployee != true))
+                {
+                    <select class="form-control form-control-sm" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                        @if (ViewBag.lstEmp != null)
+                        {
+                            foreach (var item in (IEnumerable<dynamic>)ViewBag.lstEmp)
+                            {
+                                <option value="@item.ESysId" selected>@item.FulNme</option>
+                            }
+                        }
+                    </select>
+                    <input type="hidden" asp-for="EmpSysId" id="drpEmployee" />
+                }
+                else
+                {
+                    <select asp-for="EmpSysId" id="drpEmployee" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.EmpSysId))" onchange="onEmployeeChanged();">
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                }
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="LvTypId" class="control-label font-weight-bold"></label>
+                <select asp-for="LvTypId" id="drpLvTyp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstLvTyp, "LvTypId", "NameEng"))" onchange="fetchLeaveBalance(); checkLeaveOverlap();">
+                    <option value="">-- Select Leave Type --</option>
+                </select>
+                <span asp-validation-for="LvTypId" class="text-danger"></span>
+            </div>
+        </div>
+
+        <!-- Available Balance Info Banner -->
+        <div id="balanceInfoPanel" class="alert alert-info py-2 px-3 mb-3" style="display:none; font-size: 0.88rem; border-left: 4px solid #17a2b8;">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="fas fa-wallet mr-1 text-info"></i>
+                    <strong>Available Balance: </strong>
+                    <span id="txtAvblBalance" class="badge badge-success px-2 py-1" style="font-size: 0.95rem;">0 day(s)</span>
+                </div>
+                <div class="text-muted" style="font-size: 0.82rem;">
+                    <span>Entitled / Accrued: <b id="txtEntitledDays" class="text-dark">0</b> | In Progress: <b id="txtInProgressDays" class="text-primary font-weight-bold">0</b> | Used: <b id="txtUsedDays" class="text-danger">0</b></span>
+                </div>
+            </div>
+
+            <!-- Annual Leave Service Restriction Banner -->
+            <div id="annualRestrictionPanel" class="alert alert-danger py-2 px-3 mt-2 mb-1" style="display:none; font-size: 0.85rem; border-left: 4px solid #dc3545; background-color: #fff5f5;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-ban mr-2 text-danger" style="font-size: 1.25rem;"></i>
+                    <div>
+                        <strong class="text-danger">Leave Policy Restriction: </strong>
+                        <span id="annualRestrictionMsg" class="text-dark font-weight-bold">Employees who have not completed 1 year within the company cannot apply for Annual Leave.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Annual Leave Accrual Card -->
+            <div id="annualAccrualPanel" class="mt-2 p-2 rounded" style="display:none; background: #e8f4fd; border: 1px dashed #2196f3; font-size: 0.84rem;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <span class="font-weight-bold text-primary"><i class="fas fa-calendar-check mr-1"></i> Annual Leave Details</span>
+                </div>
+                <div class="text-dark mb-1" id="txtAccrualFormula"></div>
+                <div class="d-flex justify-content-between text-muted" style="font-size: 0.78rem;">
+                    <span><i class="fas fa-calendar-alt mr-1"></i> Current Service Cycle: <b id="txtServiceCycle">--</b></span>
+                    <span><i class="fas fa-sync-alt mr-1"></i> Next Reset Date: <b id="txtNextReset" style="color: #1e7e34; font-weight: 700;">--</b></span>
+                </div>
+                <div class="mt-2 pt-1 border-top" style="font-size: 0.77rem; line-height: 1.45;">
+                    <div class="text-secondary"><i class="fas fa-shield-alt mr-1 text-primary"></i> <b>Leave Policy:</b> 30 days annual quota; eligible only after completing 1 full year of continuous service.</div>
+                    <div class="text-primary font-weight-bold"><i class="fas fa-clock mr-1"></i> <b>Advance Notice:</b> Annual Leave must be applied at least 15 days in advance.</div>
+                </div>
+            </div>
+
+            <div id="balanceWarning" class="text-danger mt-2 font-weight-bold" style="display:none;">
+                <i class="fas fa-exclamation-triangle mr-1"></i> <span id="balanceWarningText">Insufficient balance for this leave type!</span>
+            </div>
+        </div>
+
+        <!-- Sick Leave Notice Banner -->
+        <div id="sickLeaveNotice" class="alert alert-warning py-2 px-3 mb-3" style="display:none; font-size: 0.86rem; border-left: 4px solid #ffc107;">
+            <i class="fas fa-info-circle mr-1 text-warning"></i>
+            <strong>Sick Leave Policy: </strong> First 14 days are fully paid, followed by 28 days at half pay (Resets every Jan 1st).
+        </div>
+
+        <!-- Medical Certificate Attachment (Mandatory for Sick Leave) -->
+        <div class="form-group" id="secMedCert" style="display:none;">
+            <label class="control-label font-weight-bold text-danger">
+                <i class="fas fa-file-medical mr-1"></i> Medical Certificate <span class="badge badge-danger">Required for Sick Leave</span>
+            </label>
+            <input type="file" name="medCertFile" id="medCertFile" class="form-control-file border p-1 rounded" accept=".pdf,.png,.jpg,.jpeg" />
+            <small class="form-text text-muted">Upload Doctor's Medical Certificate (.pdf, .png, .jpg, max 10MB).</small>
+            <span id="medCertError" class="text-danger" style="display:none; font-size: 0.85rem;">Medical Certificate attachment is mandatory for Sick Leave.</span>
+        </div>
+
+        <!-- Outsourced Employer Approval Document (Mandatory for Outsource Staff applying for Annual Leave) -->
+        <div class="form-group" id="secOutsourceApproval" style="display:none;">
+            <label class="control-label font-weight-bold" style="color: #b45309;">
+                <i class="fas fa-file-contract mr-1"></i> Outsourcing Employer Approval Document <span class="badge badge-warning text-dark font-weight-bold">Required for Outsource Staff</span>
+            </label>
+            <input type="file" name="outsourceApprovalFile" id="outsourceApprovalFile" class="form-control-file border p-1 rounded" accept=".pdf,.png,.jpg,.jpeg" />
+            <small class="form-text text-muted">Upload official written approval from your outsourcing employer (.pdf, .png, .jpg, max 10MB).</small>
+            <span id="outsourceApprovalError" class="text-danger" style="display:none; font-size: 0.85rem;"><i class="fas fa-exclamation-circle mr-1"></i>Approval document from outsourcing employer is mandatory for Annual Leave.</span>
+        </div>
+
+        <!-- Eligible Days & Requested Days Row -->
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="CurrAvblDays" class="control-label font-weight-bold"></label>
+                <input asp-for="CurrAvblDays" id="numCurrAvblDays" class="form-control form-control-sm font-weight-bold text-success" readonly />
+                <span asp-validation-for="CurrAvblDays" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="Days" class="control-label font-weight-bold"></label>
+                <input id="lvDays" asp-for="Days" class="form-control form-control-sm font-weight-bold text-primary" readonly />
+                <span asp-validation-for="Days" class="text-danger"></span>
+                <span id="daysValidationError" class="text-danger" style="display:none; font-size: 0.85rem;"></span>
+            </div>
+        </div>
+
+        <!-- Overlapping Leave Warning Banner -->
+        <div id="overlapWarningPanel" class="alert alert-danger py-2 px-3 mb-3" style="display:none; font-size: 0.86rem; border-left: 4px solid #dc3545;">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-calendar-times mr-2 text-danger" style="font-size: 1.1rem;"></i>
+                <div>
+                    <strong>Date Conflict: </strong>
+                    <span id="overlapWarningMsg">You already have a leave within the selected date range.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dates Row -->
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="StDate" class="control-label font-weight-bold"></label>
+                <input id="lvStDate" asp-for="StDate" value="@ViewBag.Today" type="date" class="form-control form-control-sm" onchange="onDateChanged()" />
+                <span asp-validation-for="StDate" class="text-danger"></span>
+                <span id="annualDateError" class="text-danger" style="display:none; font-size: 0.82rem; font-weight: 600;"></span>
+                <small id="annualAdvanceNotice" class="form-text text-info" style="display:none;"><i class="fas fa-info-circle mr-1"></i> Annual Leave requires at least 15 days advance notice.</small>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EndDate" class="control-label font-weight-bold"></label>
+                <input id="lvEndDate" asp-for="EndDate" value="@ViewBag.Today" type="date" class="form-control form-control-sm" onchange="caculateDays()" />
+                <span asp-validation-for="EndDate" class="text-danger"></span>
+                <span id="overlapDateError" class="text-danger font-weight-bold" style="display:none; font-size: 0.82rem;"></span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Note" class="control-label font-weight-bold"></label>
+            <input asp-for="Note" class="form-control form-control-sm" placeholder="Optional notes/reason..." />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+
+        <div class="form-row mt-3">
+            <div class="col-md-6 mb-2">
+                @if (ViewBag.RecAdd == true)
+                {
+                    <input type="submit" id="btnSubmitLeave" value="Create Leave" class="btn btn-sm btn-primary btn-block" />
+                }
+            </div>
+            <div class="col-md-6 mb-2">
+                <input type="button" value="Back" class="btn btn-sm btn-outline-secondary btn-block" data-dismiss="modal" />
+            </div>
+        </div>
+    </div>
+}
+
+<script>
+    var currentLeaveRuleInfo = {
+        isSick: false,
+        isCasual: false,
+        isEmergency: false,
+        isHajj: false,
+        isMaternity: false,
+        isAnnual: false,
+        isOutsource: false,
+        hasCompletedOneYear: true,
+        oneYearCompletionDate: null,
+        isServiceRestricted: false,
+        restrictionReason: "",
+        availableBalance: 0,
+        entitlement: 0,
+        inProgress: 0,
+        used: 0
+    };
+
+    var hasLeaveOverlap = false;
+
+    function checkLeaveOverlap() {
+        var empSysId = $('#drpEmployee').val();
+        var stDate = $('#lvStDate').val();
+        var endDate = $('#lvEndDate').val();
+        var lvId = $('#LvId').val() || 0;
+        var lvTypId = $('#drpLvTyp').val() || 0;
+
+        if (!empSysId || !stDate || !endDate) {
+            hasLeaveOverlap = false;
+            $('#overlapWarningPanel').slideUp();
+            $('#overlapDateError').hide();
+            return;
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/CheckLeaveOverlap",
+            data: { empSysId: empSysId, stDate: stDate, endDate: endDate, lvId: lvId, lvTypId: lvTypId },
+            dataType: "json",
+            success: function (res) {
+                if (res && res.hasOverlap) {
+                    hasLeaveOverlap = true;
+                    var msg = res.message || "You already have a leave within the selected date range.";
+                    $('#overlapWarningMsg').text(msg);
+                    $('#overlapWarningPanel').slideDown();
+                    $('#overlapDateError').text(msg).show();
+                    $('#btnSubmitLeave').prop('disabled', true);
+                } else {
+                    hasLeaveOverlap = false;
+                    $('#overlapWarningPanel').slideUp();
+                    $('#overlapDateError').hide();
+                    validateLeaveConstraints();
+                }
+            },
+            error: function () { }
+        });
+    }
+
+    function onDateChanged() {
+        caculateDays();
+        // If Annual Leave is selected, dynamically recalculate accrual as of the start date
+        if ($('#drpLvTyp').val()) {
+            fetchLeaveBalance();
+        }
+        checkLeaveOverlap();
+    }
+
+    function caculateDays() {
+        var start = $('#lvStDate').val();
+        var end = $('#lvEndDate').val();
+        if (!start || !end) return;
+        var startDay = new Date(start);
+        var endDay = new Date(end);
+        var millisecondsPerDay = 1000 * 60 * 60 * 24;
+
+        var millisBetween = endDay.getTime() - startDay.getTime();
+        var days = millisBetween / millisecondsPerDay;
+        var calDays = Math.floor(days) + 1;
+        if (calDays > 0) {
+            $('#lvDays').val(calDays);
+        } else { 
+            $('#lvDays').val(0); 
+        }
+        checkLeaveOverlap();
+        validateLeaveConstraints();
+    }
+
+    function onEmployeeChanged() {
+        var empSysId = $('#drpEmployee').val();
+        if (!empSysId) {
+            $('#drpLvTyp').html('<option value="">-- Select Leave Type --</option>');
+            fetchLeaveBalance();
+            return;
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetEmployeeEligibleLeaveTypes",
+            data: { empSysId: empSysId },
+            dataType: "json",
+            success: function (res) {
+                if (res.success && res.data) {
+                    var curVal = $('#drpLvTyp').val();
+                    var html = '<option value="">-- Select Leave Type --</option>';
+                    var hasCurVal = false;
+                    res.data.forEach(function (lt) {
+                        var id = lt.lvTypId || lt.LvTypId;
+                        var name = lt.nameEng || lt.NameEng;
+                        var isRestricted = lt.isRestricted || false;
+                        if (id == curVal) hasCurVal = true;
+                        if (isRestricted) {
+                            html += '<option value="' + id + '" data-restricted="true">' + name + ' (Service < 1 Yr - Not Eligible)</option>';
+                        } else {
+                            html += '<option value="' + id + '">' + name + '</option>';
+                        }
+                    });
+                    $('#drpLvTyp').html(html);
+                    if (hasCurVal) {
+                        $('#drpLvTyp').val(curVal);
+                    } else {
+                        $('#drpLvTyp').val('');
+                    }
+                    try { $('#drpLvTyp').trigger('change.select2'); } catch(e) {}
+                }
+                fetchLeaveBalance();
+                checkLeaveOverlap();
+            },
+            error: function () {
+                fetchLeaveBalance();
+                checkLeaveOverlap();
+            }
+        });
+    }
+
+    function fetchLeaveBalance() {
+        var empSysId = $('#drpEmployee').val();
+        var lvTypId = $('#drpLvTyp').val();
+        var stDate = $('#lvStDate').val();
+
+        if (!empSysId || !lvTypId) {
+            $('#balanceInfoPanel').hide();
+            $('#sickLeaveNotice').hide();
+            $('#secMedCert').hide();
+            $('#secOutsourceApproval').hide();
+            $('#outsourceApprovalError').hide();
+            $('#annualAccrualPanel').hide();
+            $('#numCurrAvblDays').val(0);
+            return;
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetAvailableBalance",
+            data: { empSysId: empSysId, lvTypId: lvTypId, stDate: stDate },
+            dataType: "json",
+            success: function (res) {
+                var isSuccess = res.success !== undefined ? res.success : res.Success;
+                if (isSuccess) {
+                    var avbl = res.availableBalance !== undefined ? res.availableBalance : (res.AvailableBalance !== undefined ? res.AvailableBalance : 0);
+                    var ent = res.entitlement !== undefined ? res.entitlement : (res.Entitlement !== undefined ? res.Entitlement : 0);
+                    var inProg = res.inProgress !== undefined ? res.inProgress : (res.InProgress !== undefined ? res.InProgress : 0);
+                    var used = res.used !== undefined ? res.used : (res.Used !== undefined ? res.Used : 0);
+                    var isSick = res.isSick !== undefined ? res.isSick : res.IsSick;
+                    var isEmg = res.isEmergency !== undefined ? res.isEmergency : res.IsEmergency;
+                    var isHaj = res.isHajj !== undefined ? res.isHajj : res.IsHajj;
+                    var isAnnual = res.isAnnual !== undefined ? res.isAnnual : res.IsAnnual;
+                    var isOutsource = res.isOutsource !== undefined ? res.isOutsource : (res.IsOutsource || false);
+                    var isAccrualBased = res.isAccrualBased !== undefined ? res.isAccrualBased : false;
+                    var hasCompletedOneYear = res.hasCompletedOneYear !== undefined ? res.hasCompletedOneYear : true;
+                    var oneYearCompletionDate = res.oneYearCompletionDate || null;
+                    var isServiceRestricted = res.isServiceRestricted !== undefined ? res.isServiceRestricted : false;
+                    var restrictionReason = res.restrictionReason || "";
+
+                    currentLeaveRuleInfo = {
+                        availableBalance: avbl,
+                        entitlement: ent,
+                        inProgress: inProg,
+                        used: used,
+                        isSick: isSick,
+                        isEmergency: isEmg,
+                        isHajj: isHaj,
+                        isAnnual: isAnnual,
+                        isOutsource: isOutsource,
+                        hasCompletedOneYear: hasCompletedOneYear,
+                        oneYearCompletionDate: oneYearCompletionDate,
+                        isServiceRestricted: isServiceRestricted,
+                        restrictionReason: restrictionReason,
+                        currentCycleRemaining: res.currentCycleRemaining,
+                        nextCycleRemaining: res.nextCycleRemaining,
+                        currentCycleResetDate: res.currentCycleResetDate,
+                        currentCycleResetDateIso: res.currentCycleResetDateIso,
+                        nextResetDate: res.nextResetDate,
+                        nextResetDateIso: res.nextResetDateIso
+                    };
+
+                    $('#numCurrAvblDays').val(avbl);
+                    $('#txtAvblBalance').text(avbl + ' day(s)');
+                    if (isAnnual && (!hasCompletedOneYear || isServiceRestricted)) {
+                        $('#txtAvblBalance').removeClass('badge-success').addClass('badge-secondary');
+                    } else {
+                        $('#txtAvblBalance').removeClass('badge-secondary').addClass('badge-success');
+                    }
+                    $('#txtEntitledDays').text(ent);
+                    $('#txtInProgressDays').text(inProg);
+                    $('#txtUsedDays').text(used);
+                    $('#balanceInfoPanel').slideDown();
+
+                    if (isAnnual || isAccrualBased) {
+                        $('#annualAccrualPanel').slideDown();
+                        $('#annualAdvanceNotice').slideDown();
+                        $('#txtAccrualFormula').text(res.accrualFormulaText || 'Accumulating dynamically at 2.5 days per month.');
+                        $('#txtServiceCycle').text((res.servicePeriodStart || '--') + ' to ' + (res.servicePeriodEnd || '--'));
+                        $('#txtNextReset').text(res.nextResetDate || '--');
+
+                        if (!hasCompletedOneYear || isServiceRestricted) {
+                            var restMsg = restrictionReason || ("Service Requirement Not Met: Employee has not completed 1 year within the company. Annual Leave can only be applied after " + (oneYearCompletionDate || res.nextResetDate) + ".");
+                            $('#annualRestrictionMsg').text(restMsg);
+                            $('#annualRestrictionPanel').slideDown();
+                            $('#annualDateError').text(restMsg).show();
+                            $('#btnSubmitLeave').prop('disabled', true);
+                        } else {
+                            $('#annualRestrictionPanel').slideUp();
+                            $('#annualDateError').hide();
+                        }
+                    } else {
+                        $('#annualAccrualPanel').slideUp();
+                        $('#annualAdvanceNotice').slideUp();
+                        $('#annualRestrictionPanel').slideUp();
+                        $('#annualDateError').hide();
+                    }
+
+                    if (isSick) {
+                        $('#sickLeaveNotice').slideDown();
+                        $('#secMedCert').slideDown();
+                        $('#medCertFile').prop('required', true);
+                    } else {
+                        $('#sickLeaveNotice').slideUp();
+                        $('#secMedCert').slideUp();
+                        $('#medCertFile').prop('required', false);
+                        $('#medCertError').hide();
+                    }
+
+                    if (isAnnual && isOutsource) {
+                        $('#secOutsourceApproval').slideDown();
+                        $('#outsourceApprovalFile').prop('required', true);
+                    } else {
+                        $('#secOutsourceApproval').slideUp();
+                        $('#outsourceApprovalFile').prop('required', false);
+                        $('#outsourceApprovalError').hide();
+                    }
+
+                    validateLeaveConstraints();
+                }
+            },
+            error: function () {
+                console.warn("Could not retrieve leave balance.");
+            }
+        });
+    }
+
+    function validateLeaveConstraints() {
+        var reqDays = parseInt($('#lvDays').val()) || 0;
+        var valid = true;
+        var errMsg = "";
+
+        // 1. Annual Leave Rules: 1-Year Service Requirement, 15-day advance notice & Service Cycle Balance Enforcement
+        if (currentLeaveRuleInfo.isAnnual) {
+            // Service Year Completion Check
+            if (!currentLeaveRuleInfo.hasCompletedOneYear || currentLeaveRuleInfo.isServiceRestricted) {
+                valid = false;
+                errMsg = currentLeaveRuleInfo.restrictionReason || ("Annual Leave Policy Restriction: Employees who have not completed 1 year within the company cannot apply for Annual Leave (Eligible from " + (currentLeaveRuleInfo.oneYearCompletionDate || currentLeaveRuleInfo.nextResetDate) + ").");
+                $('#annualDateError').text(errMsg).show();
+                $('#annualRestrictionPanel').slideDown();
+                $('#daysValidationError').text(errMsg).show();
+                $('#balanceWarningText').text(errMsg);
+                $('#balanceWarning').show();
+                $('#btnSubmitLeave').prop('disabled', true);
+                return false;
+            } else {
+                $('#annualRestrictionPanel').slideUp();
+            }
+
+            var startVal = $('#lvStDate').val();
+            var endVal = $('#lvEndDate').val();
+            if (startVal) {
+                var startParts = startVal.split('-');
+                if (startParts.length === 3) {
+                    var stDate = new Date(parseInt(startParts[0]), parseInt(startParts[1]) - 1, parseInt(startParts[2]));
+                    stDate.setHours(0, 0, 0, 0);
+                    var today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    var minAllowed = new Date(today);
+                    minAllowed.setDate(minAllowed.getDate() + 15);
+
+                    if (stDate < minAllowed) {
+                        valid = false;
+                        var dd = String(minAllowed.getDate()).padStart(2, '0');
+                        var mm = String(minAllowed.getMonth() + 1).padStart(2, '0');
+                        var yyyy = minAllowed.getFullYear();
+                        var minFormatted = dd + '/' + mm + '/' + yyyy;
+                        errMsg = "Annual Leave must be applied at least 15 days in advance (Earliest eligible start date: " + minFormatted + ").";
+                        $('#annualDateError').text(errMsg).show();
+                    } else {
+                        $('#annualDateError').hide();
+                    }
+                }
+            }
+
+            // Check Cycle Reset Boundary if leave dates span across reset date
+            if (valid && startVal && endVal && currentLeaveRuleInfo.currentCycleResetDateIso) {
+                var rParts = currentLeaveRuleInfo.currentCycleResetDateIso.split('-');
+                if (rParts.length === 3) {
+                    var resetD = new Date(parseInt(rParts[0]), parseInt(rParts[1]) - 1, parseInt(rParts[2]));
+                    resetD.setHours(0, 0, 0, 0);
+                    var sParts = startVal.split('-');
+                    var eParts = endVal.split('-');
+                    var sDate = new Date(parseInt(sParts[0]), parseInt(sParts[1]) - 1, parseInt(sParts[2]));
+                    var eDate = new Date(parseInt(eParts[0]), parseInt(eParts[1]) - 1, parseInt(eParts[2]));
+                    sDate.setHours(0, 0, 0, 0);
+                    eDate.setHours(0, 0, 0, 0);
+
+                    var msDay = 1000 * 60 * 60 * 24;
+                    var currRem = currentLeaveRuleInfo.currentCycleRemaining !== undefined ? currentLeaveRuleInfo.currentCycleRemaining : currentLeaveRuleInfo.availableBalance;
+                    var nextRem = currentLeaveRuleInfo.nextCycleRemaining !== undefined ? currentLeaveRuleInfo.nextCycleRemaining : 30;
+
+                    if (sDate < resetD && eDate >= resetD) {
+                        var daysBeforeReset = Math.floor((resetD.getTime() - sDate.getTime()) / msDay);
+                        var daysAfterReset = Math.floor((eDate.getTime() - resetD.getTime()) / msDay) + 1;
+
+                        if (daysBeforeReset > currRem) {
+                            valid = false;
+                            errMsg = "Requested leave requires " + daysBeforeReset + " day(s) before reset date (" + currentLeaveRuleInfo.currentCycleResetDate + "), but only " + currRem + " day(s) remain in your current cycle.";
+                        } else if (daysAfterReset > nextRem) {
+                            valid = false;
+                            errMsg = "Requested leave requires " + daysAfterReset + " day(s) after reset date (" + currentLeaveRuleInfo.currentCycleResetDate + "), but only " + nextRem + " day(s) are available in your next cycle.";
+                        }
+                    } else if (sDate < resetD) {
+                        if (reqDays > currRem) {
+                            valid = false;
+                            errMsg = "Requested leave (" + reqDays + " day(s)) exceeds remaining balance (" + currRem + " day(s)) available until reset date " + currentLeaveRuleInfo.currentCycleResetDate + ".";
+                        }
+                    } else {
+                        // After reset date
+                        if (reqDays > nextRem) {
+                            valid = false;
+                            errMsg = "Requested leave (" + reqDays + " day(s)) exceeds available balance (" + nextRem + " day(s)) for the next cycle.";
+                        }
+                    }
+                }
+            }
+        } else {
+            $('#annualDateError').hide();
+        }
+
+        if (valid && reqDays <= 0) {
+            $('#daysValidationError').hide();
+            $('#balanceWarning').hide();
+            $('#btnSubmitLeave').prop('disabled', false);
+            return true;
+        }
+
+        if (valid && !currentLeaveRuleInfo.isAnnual && reqDays > currentLeaveRuleInfo.availableBalance) {
+            valid = false;
+            errMsg = "Requested leave (" + reqDays + " day(s)) exceeds available balance (" + currentLeaveRuleInfo.availableBalance + " day(s) remaining after active/in-progress applications).";
+        } else if (valid && currentLeaveRuleInfo.isEmergency && reqDays > 30) {
+            valid = false;
+            errMsg = "Emergency Leave is restricted to a maximum of 30 days per application.";
+        } else if (valid && currentLeaveRuleInfo.isHajj && reqDays > 14) {
+            valid = false;
+            errMsg = "Hajj Leave is restricted to a maximum of 14 days.";
+        }
+
+        if (valid && hasLeaveOverlap) {
+            valid = false;
+            errMsg = $('#overlapWarningMsg').text() || "You already have a leave within the selected date range.";
+        }
+
+        if (!valid) {
+            $('#daysValidationError').text(errMsg).show();
+            $('#balanceWarningText').text(errMsg);
+            $('#balanceWarning').show();
+            $('#btnSubmitLeave').prop('disabled', true);
+        } else {
+            $('#daysValidationError').hide();
+            $('#balanceWarning').hide();
+            $('#btnSubmitLeave').prop('disabled', false);
+        }
+
+        return valid;
+    }
+
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+
+        if ($('#drpEmployee').val()) {
+            onEmployeeChanged();
+        }
+
+        var isSubmittingLeave = false;
+        $('#formCreateLeave').on('submit', function (e) {
+            if (isSubmittingLeave) {
+                e.preventDefault();
+                return false;
+            }
+
+            if (currentLeaveRuleInfo.isAnnual && (!currentLeaveRuleInfo.hasCompletedOneYear || currentLeaveRuleInfo.isServiceRestricted)) {
+                var restMsg = currentLeaveRuleInfo.restrictionReason || "Annual Leave Policy Restriction: Employees who have not completed 1 year within the company cannot apply for Annual Leave.";
+                $('#annualDateError').text(restMsg).show();
+                $('#annualRestrictionPanel').slideDown();
+                $('#daysValidationError').text(restMsg).show();
+                e.preventDefault();
+                return false;
+            }
+
+            if (currentLeaveRuleInfo.isSick) {
+                var fileInput = document.getElementById('medCertFile');
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    $('#medCertError').show();
+                    e.preventDefault();
+                    return false;
+                } else {
+                    $('#medCertError').hide();
+                }
+            }
+
+            if (currentLeaveRuleInfo.isAnnual && currentLeaveRuleInfo.isOutsource) {
+                var osInput = document.getElementById('outsourceApprovalFile');
+                if (!osInput || !osInput.files || osInput.files.length === 0) {
+                    $('#outsourceApprovalError').show();
+                    $('#secOutsourceApproval').slideDown();
+                    e.preventDefault();
+                    return false;
+                } else {
+                    $('#outsourceApprovalError').hide();
+                }
+            }
+
+            if (hasLeaveOverlap) {
+                $('#overlapWarningPanel').slideDown();
+                $('#overlapDateError').show();
+                e.preventDefault();
+                return false;
+            }
+
+            if (!validateLeaveConstraints()) {
+                e.preventDefault();
+                return false;
+            }
+
+            isSubmittingLeave = true;
+            var $btn = $('#btnSubmitLeave');
+            $btn.prop('disabled', true).val('Creating Leave...');
+            return true;
+        });
+    });
+</script>

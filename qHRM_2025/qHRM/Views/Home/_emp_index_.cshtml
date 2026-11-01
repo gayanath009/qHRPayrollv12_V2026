@@ -1,0 +1,480 @@
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+@{
+    int empSysId = HttpContextAccessor.HttpContext?.Session?.GetInt32("userEmpSysId") ?? 0;
+    string usrName = HttpContextAccessor.HttpContext?.Session?.GetString("userFullName") ?? "Employee";
+    int currentYear = DateTime.Today.Year;
+
+    var summary = ViewBag.EmpLeaveBalanceSummary as qHRM.Areas.Leave.Models.EmpLeaveBalanceSummaryViewModel;
+    var balances = summary?.LeaveBalances ?? (ViewBag.EmpLeaveBalances as List<qHRM.Areas.Leave.Models.EmpLeaveBalanceViewModel>) ?? new List<qHRM.Areas.Leave.Models.EmpLeaveBalanceViewModel>();
+    decimal totalInProg = summary?.TotalInProgress ?? balances.Sum(b => b.InProgress);
+    decimal totalUsed = summary?.TotalUsed ?? balances.Sum(b => b.Used);
+}
+
+<style>
+    .leave-dashboard-wrapper {
+        padding: 1.25rem 1rem 2.5rem 1rem;
+        background-color: #f8f9fc;
+        min-height: 85vh;
+        font-family: inherit;
+    }
+
+    /* Leave Balances Component Styling matching Outsource Admin */
+    .leave-pills .nav-link {
+        font-size: 0.88rem;
+        font-weight: 700;
+        padding: 0.5rem 1.2rem;
+        border-radius: 8px;
+        color: #540033;
+        background-color: transparent;
+        border: 1px solid transparent;
+        margin-right: 0.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .leave-pills .nav-link.active {
+        background-color: #540033 !important;
+        color: #ffffff !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.3);
+    }
+    .leave-pills .nav-link:hover:not(.active) {
+        background-color: #fdf2f8;
+        color: #540033;
+    }
+
+    .leave-table thead th {
+        background-color: #540033;
+        color: #ffffff;
+        font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        border: none;
+        padding: 0.75rem 0.85rem;
+        vertical-align: middle;
+    }
+    .leave-table tbody td {
+        vertical-align: middle;
+        padding: 0.75rem 0.85rem;
+        border-top: 1px solid #edf0f5;
+        font-size: 0.88rem;
+    }
+    .leave-table tbody tr:hover {
+        background-color: #fafbfc;
+    }
+    .badge-code {
+        background-color: #ffffff;
+        color: #334155;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 0.25rem 0.5rem;
+        font-weight: 700;
+        font-size: 0.78rem;
+    }
+    .badge-available-green {
+        background-color: #10b981;
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-block;
+        min-width: 80px;
+    }
+    .badge-available-coral {
+        background-color: #f97316;
+        color: #ffffff;
+        border-radius: 20px;
+        padding: 0.35rem 0.9rem;
+        font-size: 0.85rem;
+        font-weight: 700;
+        display: inline-block;
+        min-width: 80px;
+    }
+    .usage-progress-bar {
+        background-color: #e2e8f0;
+        height: 8px;
+        border-radius: 4px;
+        overflow: hidden;
+        width: 120px;
+        margin: 0 auto;
+    }
+    .usage-progress-fill {
+        background-color: #540033;
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.4s ease;
+    }
+
+    .btn-brand-maroon-sm {
+        background: linear-gradient(135deg, #540033 0%, #760c4b 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.78rem;
+        padding: 5px 14px;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+    }
+    .btn-brand-maroon-sm:hover {
+        background: linear-gradient(135deg, #3d0025 0%, #5e083b 100%);
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
+        color: #ffffff !important;
+        text-decoration: none;
+    }
+</style>
+
+<div class="leave-dashboard-wrapper">
+    <div class="container-fluid px-3 pt-2">
+        
+        <!-- Leave Balance Component Card -->
+        <div class="card shadow-sm mb-4" id="secLeaveBalance" style="border: 1px solid #e2e8f0; border-radius: 12px;">
+            <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                <div class="d-flex align-items-center mb-2 mb-md-0">
+                    <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ecfdf5; color: #059669; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                        <i class="fas fa-umbrella-beach"></i>
+                    </div>
+                    <div>
+                        <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                            My Leave Entitlement & Balance
+                            <span class="badge badge-light border text-muted ml-1" style="font-size: 0.72rem; font-weight: 600;">Personal Account</span>
+                        </h6>
+                        <small class="text-muted">Viewing balance entitlement, in-progress requests, and transaction ledger for <strong>@usrName</strong></small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center flex-wrap">
+                    @if (ViewBag.ShowAllEmployees == true && ViewBag.lstEmp != null)
+                    {
+                        <label for="selLeaveEmp" class="mr-2 mb-0 small font-weight-bold text-muted">Employee:</label>
+                        <select id="selLeaveEmp" class="form-control form-control-sm mr-3" style="min-width: 180px; border-radius: 8px; font-weight: 600;" onchange="loadEmployeeLeaveData();">
+                            @foreach (var emp in (IEnumerable<dynamic>)ViewBag.lstEmp)
+                            {
+                                if (emp.ESysId == empSysId)
+                                {
+                                    <option value="@emp.ESysId" selected>@emp.FulNme</option>
+                                }
+                                else
+                                {
+                                    <option value="@emp.ESysId">@emp.FulNme</option>
+                                }
+                            }
+                        </select>
+                    }
+                    else
+                    {
+                        <input type="hidden" id="selLeaveEmp" value="@empSysId" />
+                    }
+                    <label for="selLeaveYear" class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-calendar-alt mr-1"></i>Year:</label>
+                    <select id="selLeaveYear" class="form-control form-control-sm mr-2" style="width: 100px; border-radius: 8px; font-weight: 600;" onchange="loadEmployeeLeaveData();">
+                        @for (int y = currentYear + 1; y >= currentYear - 1; y--)
+                        {
+                            if (y == currentYear)
+                            {
+                                <option value="@y" selected>@y</option>
+                            }
+                            else
+                            {
+                                <option value="@y">@y</option>
+                            }
+                        }
+                    </select>
+                    <button class="btn btn-sm btn-outline-secondary mr-2" onclick="loadEmployeeLeaveData();" title="Refresh Leave Data" style="border-radius: 8px;">
+                        <i class="fas fa-sync-alt" id="leaveRefreshIcon"></i>
+                    </button>
+                    <a href="/Leave/HrLvRegister/Index" class="btn-brand-maroon-sm">
+                        <i class="fas fa-plus-circle mr-1"></i> Apply Leave
+                    </a>
+                </div>
+            </div>
+
+            <div class="card-body p-3">
+                <!-- Tabs for Balances and Ledger -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <ul class="nav nav-pills leave-pills" id="leaveTabPills" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="tab-current-balances" data-toggle="pill" href="#pane-current-balances" role="tab" aria-controls="pane-current-balances" aria-selected="true">
+                                <i class="fas fa-th-large mr-1"></i> Current Balances
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="tab-transaction-ledger" data-toggle="pill" href="#pane-transaction-ledger" role="tab" aria-controls="pane-transaction-ledger" aria-selected="false" onclick="loadBalanceAuditIfNeeded();">
+                                <i class="fas fa-history mr-1"></i> Balance Transaction Ledger
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="tab-content" id="leaveTabContent">
+                    <!-- Pane 1: Current Balances Table -->
+                    <div class="tab-pane fade show active" id="pane-current-balances" role="tabpanel" aria-labelledby="tab-current-balances">
+                        <div class="table-responsive rounded border bg-white">
+                            <table class="table leave-table mb-0 text-center" id="tblCurrentBalances">
+                                <thead>
+                                    <tr>
+                                        <th class="text-left pl-3" style="width: 30%;">LEAVE TYPE</th>
+                                        <th style="width: 10%;">CODE</th>
+                                        <th style="width: 11%;">ENTITLEMENT</th>
+                                        <th style="width: 11%;">IN PROGRESS</th>
+                                        <th style="width: 12%;">USED / APPROVED</th>
+                                        <th style="width: 14%;">AVAILABLE BALANCE</th>
+                                        <th style="width: 12%;">USAGE PROGRESS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblCurrentBalancesBody">
+                                    @if (balances != null && balances.Any())
+                                    {
+                                        foreach (var b in balances)
+                                        {
+                                            int pct = b.Entitlement > 0 ? (int)Math.Min(100, Math.Round(((b.Used + b.InProgress) / b.Entitlement) * 100)) : 0;
+                                            string availBadgeClass = b.Remaining > 3 ? "badge-available-green" : "badge-available-coral";
+                                            string entDisplay = b.Entitlement > 0 ? b.Entitlement.ToString("0.##") : "--";
+
+                                            <tr>
+                                                <td class="text-left pl-3">
+                                                    <div class="font-weight-bold text-dark" style="font-size: 0.92rem;">@b.LeaveTypeName</div>
+                                                    @if (!string.IsNullOrEmpty(b.RuleNotice))
+                                                    {
+                                                        <small class="text-muted d-block mt-1" style="line-height: 1.35;">@b.RuleNotice</small>
+                                                    }
+                                                </td>
+                                                <td>
+                                                    <span class="badge-code">@b.LeaveTypeCode</span>
+                                                </td>
+                                                <td class="font-weight-bold text-dark">
+                                                    @entDisplay
+                                                </td>
+                                                <td class="font-weight-bold" style="color: #2563eb; font-size: 0.95rem;">
+                                                    @(b.InProgress.ToString("0.##"))
+                                                </td>
+                                                <td class="font-weight-bold" style="color: #d97706; font-size: 0.95rem;">
+                                                    @(b.Used.ToString("0.##"))
+                                                </td>
+                                                <td>
+                                                    <span class="@availBadgeClass">
+                                                        @(b.Remaining.ToString("0.##")) days
+                                                    </span>
+                                                </td>
+                                                <td>
+                                                    <div class="usage-progress-bar">
+                                                        <div class="usage-progress-fill" style="width: @(pct)%;"></div>
+                                                    </div>
+                                                    <small class="text-muted d-block mt-1 font-weight-bold">@(pct)% utilized</small>
+                                                </td>
+                                            </tr>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <tr>
+                                            <td colspan="7" class="text-center py-4 text-muted">
+                                                <i class="fas fa-spinner fa-spin mr-1"></i> Loading employee leave balance history...
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Pane 2: Balance Transaction Ledger -->
+                    <div class="tab-pane fade" id="pane-transaction-ledger" role="tabpanel" aria-labelledby="tab-transaction-ledger">
+                        <div class="table-responsive rounded border bg-white" style="max-height: 520px; overflow-y: auto;">
+                            <table class="table leave-table mb-0" id="tblLedger">
+                                <thead>
+                                    <tr>
+                                        <th>DATE & TIME</th>
+                                        <th>LEAVE TYPE</th>
+                                        <th>TRANSACTION TYPE</th>
+                                        <th class="text-center">CHANGE</th>
+                                        <th class="text-center">BEFORE</th>
+                                        <th class="text-center">AFTER</th>
+                                        <th>REMARKS</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tblLedgerBody">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="fas fa-spinner fa-spin mr-1"></i> Loading balance transaction ledger...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    var currentEmpSysId = @empSysId;
+    var auditLedgerLoadedYear = null;
+
+    document.addEventListener("DOMContentLoaded", function () {
+        if ($("#tblCurrentBalancesBody tr").length <= 1 && $("#tblCurrentBalancesBody").text().indexOf("Loading") >= 0) {
+            loadEmployeeLeaveData();
+        }
+    });
+
+    function loadEmployeeLeaveData() {
+        var year = document.getElementById("selLeaveYear") ? document.getElementById("selLeaveYear").value : new Date().getFullYear();
+        var targetEmpId = (document.getElementById("selLeaveEmp") ? parseInt(document.getElementById("selLeaveEmp").value) : 0) || currentEmpSysId;
+        $("#leaveRefreshIcon").addClass("fa-spin");
+
+        // 1. Fetch Balances
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetEmployeeBalances",
+            data: { empSysId: targetEmpId, year: year },
+            dataType: "json",
+            success: function (res) {
+                $("#leaveRefreshIcon").removeClass("fa-spin");
+                if (res && res.success && res.data) {
+                    renderCurrentBalances(res.data);
+                }
+            },
+            error: function (xhr, status, error) {
+                $("#leaveRefreshIcon").removeClass("fa-spin");
+                console.warn("Error fetching balances via AJAX: " + error);
+            }
+        });
+
+        // 2. Refresh Ledger if it is currently displayed
+        if ($("#pane-transaction-ledger").hasClass("show") || $("#pane-transaction-ledger").hasClass("active")) {
+            loadBalanceAudit(year);
+        } else {
+            auditLedgerLoadedYear = null;
+        }
+    }
+
+    function loadBalanceAuditIfNeeded() {
+        var year = document.getElementById("selLeaveYear") ? document.getElementById("selLeaveYear").value : new Date().getFullYear();
+        if (auditLedgerLoadedYear !== year) {
+            loadBalanceAudit(year);
+        }
+    }
+
+    function loadBalanceAudit(year) {
+        var targetEmpId = (document.getElementById("selLeaveEmp") ? parseInt(document.getElementById("selLeaveEmp").value) : 0) || currentEmpSysId;
+        var tbody = document.getElementById('tblLedgerBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Loading balance transaction ledger...</td></tr>';
+        }
+
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetBalanceAudit",
+            data: { empSysId: targetEmpId, year: year },
+            dataType: "json",
+            success: function (res) {
+                if (res && res.success && res.data) {
+                    auditLedgerLoadedYear = year;
+                    renderTransactionLedger(res.data);
+                }
+            },
+            error: function (xhr, status, error) {
+                console.warn("Error fetching audit ledger: " + error);
+            }
+        });
+    }
+
+    function renderCurrentBalances(data) {
+        var list = data.leaveBalances || data.LeaveBalances || data.balances || data.Balances || [];
+        var tbody = document.getElementById('tblCurrentBalancesBody');
+        if (!tbody) return;
+
+        if (list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No leave balance records available for this period.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function (b) {
+            var ltName = b.leaveTypeName || b.LeaveTypeName || '-';
+            var ltCode = b.leaveTypeCode || b.LeaveTypeCode || '-';
+            var ent = (b.entitlement !== undefined) ? b.entitlement : (b.Entitlement !== undefined ? b.Entitlement : 0);
+            var itemInProg = (b.inProgress !== undefined) ? b.inProgress : (b.InProgress !== undefined ? b.InProgress : 0);
+            var itemUsed = (b.used !== undefined) ? b.used : (b.Used !== undefined ? b.Used : 0);
+            var rem = (b.remaining !== undefined) ? b.remaining : (b.Remaining !== undefined ? b.Remaining : 0);
+            var ruleNotice = b.ruleNotice || b.RuleNotice || '';
+
+            var pct = ent > 0 ? Math.min(100, Math.round(((itemUsed + itemInProg) / ent) * 100)) : 0;
+            var badgeClass = rem > 3 ? 'badge-available-green' : 'badge-available-coral';
+            var entDisplay = ent > 0 ? ent : '--';
+
+            html += '<tr>' +
+                '<td class="text-left pl-3">' +
+                    '<div class="font-weight-bold text-dark" style="font-size: 0.92rem;">' + escapeHtml(ltName) + '</div>' +
+                    (ruleNotice ? '<small class="text-muted d-block mt-1" style="line-height: 1.35;">' + escapeHtml(ruleNotice) + '</small>' : '') +
+                '</td>' +
+                '<td><span class="badge-code">' + escapeHtml(ltCode) + '</span></td>' +
+                '<td class="font-weight-bold text-dark">' + entDisplay + '</td>' +
+                '<td class="font-weight-bold" style="color: #2563eb; font-size: 0.95rem;">' + itemInProg + '</td>' +
+                '<td class="font-weight-bold" style="color: #d97706; font-size: 0.95rem;">' + itemUsed + '</td>' +
+                '<td><span class="' + badgeClass + '">' + rem + ' days</span></td>' +
+                '<td>' +
+                    '<div class="usage-progress-bar">' +
+                        '<div class="usage-progress-fill" style="width: ' + pct + '%;"></div>' +
+                    '</div>' +
+                    '<small class="text-muted d-block mt-1 font-weight-bold">' + pct + '% utilized</small>' +
+                '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function renderTransactionLedger(list) {
+        var tbody = document.getElementById('tblLedgerBody');
+        if (!tbody) return;
+
+        if (!list || list.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center py-4 text-muted">No balance transactions recorded yet for this period.</td></tr>';
+            return;
+        }
+
+        var html = '';
+        list.forEach(function (tx) {
+            var delta = (tx.days !== undefined) ? tx.days : (tx.Days !== undefined ? tx.Days : (tx.deltaDays !== undefined ? tx.deltaDays : 0));
+            var dtDisplay = tx.dateFormatted || tx.DateFormatted || tx.transactionDateDisplay || tx.TransactionDateDisplay || '-';
+            var ltName = tx.leaveTypeName || tx.LeaveTypeName || '-';
+            var trnType = tx.transactionType || tx.TransactionType || tx.trnType || tx.TrnType || '-';
+            var balBf = (tx.balanceBefore !== undefined) ? tx.balanceBefore : (tx.BalanceBefore !== undefined ? tx.BalanceBefore : 0);
+            var balAf = (tx.balanceAfter !== undefined) ? tx.balanceAfter : (tx.BalanceAfter !== undefined ? tx.BalanceAfter : 0);
+            var rmks = tx.remarks || tx.Remarks || '-';
+
+            var deltaBadge = delta >= 0
+                ? '<span class="badge badge-success px-2 py-1 font-weight-bold">+' + delta + '</span>'
+                : '<span class="badge badge-danger px-2 py-1 font-weight-bold">' + delta + '</span>';
+
+            html += '<tr>' +
+                '<td class="text-muted" style="font-size: 0.85rem;">' + escapeHtml(dtDisplay) + '</td>' +
+                '<td class="font-weight-bold text-dark">' + escapeHtml(ltName) + '</td>' +
+                '<td><span class="badge badge-light border text-dark font-weight-bold">' + escapeHtml(trnType) + '</span></td>' +
+                '<td class="text-center">' + deltaBadge + '</td>' +
+                '<td class="text-center font-weight-bold text-secondary">' + balBf + '</td>' +
+                '<td class="text-center font-weight-bold text-dark">' + balAf + '</td>' +
+                '<td class="text-muted" style="font-size: 0.88rem;">' + escapeHtml(rmks) + '</td>' +
+            '</tr>';
+        });
+
+        tbody.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.toString().replace(/[&<>"']/g, function (m) { return map[m]; });
+    }
+</script>

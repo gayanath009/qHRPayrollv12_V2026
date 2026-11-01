@@ -1,0 +1,30 @@
+﻿@model qHRM.Areas.General.Models.OrgCountry
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "OrgCountry"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.CrtId)
+        <div class="form-group">
+            <label asp-for="CntryNameEng" class="control-label"></label>
+            <input asp-for="CntryNameEng" class="form-control form-control-sm" />
+            <span asp-validation-for="CntryNameEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Note" class="control-label"></label>
+            <input asp-for="Note" class="form-control form-control-sm" />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<ejs-scripts></ejs-scripts>

@@ -1,0 +1,248 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpResidInfo
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Residense Info</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")">Employee Information</a></li>
+                <li class="breadcrumb-item active">Residense Info (@HttpContextAccessor.HttpContext.Session.GetString("EmpName"))</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Start Tabs Start-->
+                    <partial name="~/Views/Shared/_EmpNavBar.cshtml" />
+                    <br />
+                    <!--End Tabs End-->
+                    <p>
+                        <div>
+
+                            @if (ViewBag.RecAdd == true)
+                            {
+                                <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                    Add New Residence Details
+                                </a>
+                            }
+                        </div>
+                    </p>
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )"
+                                  load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="ResidType" headerText="Type" width="150"></e-grid-column>
+                                <e-grid-column field="PropNo" headerText="Villa No" width="125"></e-grid-column>
+                                <e-grid-column field="BldNo" headerText="Building No" width="120"></e-grid-column>
+                                <e-grid-column field="Strt" headerText="Street" width="125"></e-grid-column>
+                                <e-grid-column field="Area" headerText="Area" width="125"></e-grid-column>
+                                <e-grid-column field="TelNo" headerText="Telephone" width="125"></e-grid-column>
+                                <e-grid-column field="MobNo" headerText="Mobile" width="125"></e-grid-column>
+                                <e-grid-column field="InDate" headerText="Move-in Date" width="125"></e-grid-column>
+                                <e-grid-column field="OutDate" headerText="Move-out Date" width="125"></e-grid-column>
+
+                                @if (ViewBag.RecEdit == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                }
+                                @if (ViewBag.RecDelete == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_delete" width="60"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">
+                                        Add New Residence Detail
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Residence Detail</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Dependant Details</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+
+
+
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${ResidId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${ResidId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+
+
+    var createFunc = function () {
+        var url = "/Employee/HrEmpResidInfo/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (id) {
+        var url = "/Employee/HrEmpResidInfo/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+
+    var deleteFunc = function (id) {
+        var url = "/Employee/HrEmpResidInfo/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+
+
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+
+<script>
+    //Date Range Search for Created Date//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[7].format = { type: 'date', format: 'dd/MM/yyyy' };
+        this.columns[8].format = { type: 'date', format: 'dd/MM/yyyy' };
+        
+
+
+
+        this.columns[7].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                grid.filterSettings.columns = [
+                                    { "value": e.value[0], "operator": "greaterthan", "field": 'Dob' },
+                                    { "value": e.value[1], "operator": "lessthan", "field": 'Dob' }]
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+
+        this.columns[8].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                grid.filterSettings.columns = [
+                                    { "value": e.value[0], "operator": "greaterthan", "field": 'Pmt_Exp_Date' },
+                                    { "value": e.value[1], "operator": "lessthan", "field": 'Pmt_Exp_Date' }]
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+
+        
+    }
+</script>

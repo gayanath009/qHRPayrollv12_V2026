@@ -1,0 +1,44 @@
+@model qHRM.Areas.Leave.Models.HrLvRegister
+
+<form asp-action="Delete" asp-controller="HrLvRegister" asp-area="Leave" method="post">
+    @Html.AntiForgeryToken()
+    <div class="p-2">
+        <h6 class="text-danger font-weight-bold mb-3">
+            <i class="fas fa-exclamation-triangle mr-2"></i>Are you sure you want to remove this leave record?
+        </h6>
+
+        <input type="hidden" asp-for="LvId" />
+        <input type="hidden" asp-for="StDate" />
+        <input type="hidden" asp-for="EndDate" />
+        <input type="hidden" asp-for="EmpSysId" />
+
+        <div class="card bg-light border-0 mb-3">
+            <div class="card-body py-2 px-3">
+                <div class="row">
+                    <div class="col-sm-6 mb-2">
+                        <small class="text-muted d-block">Start Date</small>
+                        <strong>@(Model.StDate.ToString("yyyy-MM-dd"))</strong>
+                    </div>
+                    <div class="col-sm-6 mb-2">
+                        <small class="text-muted d-block">End Date</small>
+                        <strong>@(Model.EndDate.ToString("yyyy-MM-dd"))</strong>
+                    </div>
+                    <div class="col-sm-6">
+                        <small class="text-muted d-block">Total Days</small>
+                        <strong class="text-primary">@Model.Days day(s)</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary mr-2" data-dismiss="modal">Cancel</button>
+            @if (ViewBag.RecDelete == true)
+            {
+                <button type="submit" class="btn btn-sm btn-danger px-3">
+                    <i class="fas fa-trash mr-1"></i> Delete
+                </button>
+            }
+        </div>
+    </div>
+</form>

@@ -1,0 +1,1038 @@
+@model qHRM.Areas.Payroll.Models.HrPrSlryPrcHdr
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@using Microsoft.AspNetCore.Http;
+@Html.AntiForgeryToken()
+<script src="~/lib/jquery/dist/jquery.js"></script>
+
+<style>
+    
+
+    :root {
+        /* Light theme variables */
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-surface2: #f1f5f9;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-accent: #6366f1;
+        --clr-accent2: #8b5cf6;
+        --clr-success: #16a34a;
+        --clr-warning: #f59e0b;
+        --clr-danger: #ef4444;
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 6px 24px rgba(2,6,23,0.06);
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .slry-wrap { font-family: 'Inter', sans-serif; padding: 0; }
+
+    /* ─── Compact Header Card (OrgInfo Style) ─── */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border, #e2e8f0);
+        padding: 0.75rem 1.25rem;
+        margin: 0.75rem 2rem 1.25rem 2rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: #fdf2f8;
+        color: #540033;
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fbcfe8;
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    /* ─── Stat Cards ─── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 2rem; }
+    .stat-card { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.1rem 1.25rem; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(99,102,241,0.35); }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius: var(--radius) var(--radius) 0 0; }
+    .stat-card.sc-indigo::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.sc-green::before  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.sc-red::before    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.sc-amber::before  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card.sc-cyan::before   { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+    .stat-card-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); }
+    .stat-card-val   { font-size: 1.35rem; font-weight: 700; color: var(--clr-text); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+    .stat-card-sub   { font-size: 0.7rem; color: var(--clr-muted); margin-top: 0.2rem; }
+
+    /* ─── Main panel layout ─── */
+    .slry-main { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; padding: 0 2rem 2rem; }
+    @@media (max-width: 1100px) { .slry-main { grid-template-columns: 1fr; } }
+
+    /* ─── Control Panel ─── */
+    .ctrl-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow-sm); }
+    .ctrl-panel-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--clr-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+    .ctrl-panel-title::after { content: ''; flex: 1; height: 1px; background: var(--clr-border); }
+
+    .ctrl-group { margin-bottom: 1.1rem; }
+    .ctrl-label  { font-size: 0.72rem; font-weight: 600; color: var(--clr-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.35rem; }
+    .ctrl-select { width: 100%; background: var(--clr-surface2); border: 1px solid var(--clr-border); color: var(--clr-text); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.85rem; outline: none; transition: border-color 0.2s; font-family: 'Inter', sans-serif; }
+    .ctrl-select:focus { border-color: var(--clr-accent); }
+    .ctrl-select option { background: var(--clr-surface2); }
+
+    /* ─── Action Buttons ─── */
+    .ctrl-divider { height: 1px; background: var(--clr-border); margin: 1.25rem 0; }
+    .action-btn { width: 100%; border: none; border-radius: var(--radius-sm); padding: 0.65rem 1rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.65rem; font-family: 'Inter', sans-serif; letter-spacing: 0.01em; text-decoration: none; }
+    .action-btn:disabled { opacity: 0.92; cursor: not-allowed; box-shadow: none !important; filter: saturate(0.95); }
+    .action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .btn-process  { background: linear-gradient(135deg, #990049, #b80058); color: #fff; box-shadow: 0 2px 12px rgba(153,0,73,0.4); }
+    .btn-process:hover:not(:disabled)  { box-shadow: 0 4px 20px rgba(153,0,73,0.6); transform: translateY(-1px); color: #fff; }
+    .btn-verify   { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; box-shadow: 0 2px 12px rgba(6,182,212,0.35); }
+    .btn-verify:hover:not(:disabled)   { box-shadow: 0 4px 20px rgba(6,182,212,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-complete { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 2px 12px rgba(34,197,94,0.35); }
+    .btn-complete:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(34,197,94,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-wps      { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; box-shadow: 0 2px 12px rgba(2,132,199,0.35); }
+    .btn-wps:hover:not(:disabled)      { box-shadow: 0 4px 20px rgba(2,132,199,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-repro    { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,0.35); }
+    .btn-repro:hover:not(:disabled)    { box-shadow: 0 4px 20px rgba(99,102,241,0.55); transform: translateY(-1px); color: #fff; }
+
+    /* ─── Status Badge ─── */
+    .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0.3rem 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .sb-idle     { background: rgba(148,163,184,0.12); color: #94a3b8; }     .sb-idle .dot     { background: #94a3b8; }
+    .sb-process  { background: rgba(99,102,241,0.15); color: #818cf8; }      .sb-process .dot  { background: #818cf8; animation: pulse-dot 1.5s infinite; }
+    .sb-verified { background: rgba(6,182,212,0.15);  color: #22d3ee; }      .sb-verified .dot { background: #22d3ee; }
+    .sb-complete { background: rgba(34,197,94,0.15);  color: #4ade80; }      .sb-complete .dot { background: #4ade80; }
+    @@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ─── Re-process collapsible ─── */
+    .repro-toggle { display: flex; align-items: center; gap: 0.5rem; cursor: pointer; color: var(--clr-muted); font-size: 0.78rem; font-weight: 600; user-select: none; margin-top: 0.75rem; }
+    .repro-toggle input { accent-color: var(--clr-accent); width: 16px; height: 16px; cursor: pointer; }
+    .repro-panel { margin-top: 0.9rem; padding: 1rem; background: var(--clr-surface2); border: 1px solid var(--clr-border); border-radius: var(--radius-sm); display: none; }
+    .repro-panel.open { display: block; animation: fadeIn 0.2s ease; }
+    @@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+    .radio-group { display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 0.75rem; }
+    .radio-opt { display: flex; align-items: center; gap: 0.5rem; font-size: 0.8rem; color: var(--clr-text); cursor: pointer; }
+    .radio-opt input { accent-color: var(--clr-accent); cursor: pointer; }
+
+    /* ─── Grid panel ─── */
+    .grid-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .grid-panel-hdr { padding: 1rem 1.25rem; border-bottom: 1px solid var(--clr-border); display: flex; align-items: center; justify-content: space-between; }
+    .grid-panel-hdr h3 { font-size: 0.85rem; font-weight: 700; color: var(--clr-text); margin: 0; }
+    .grid-inner { padding: 1rem; }
+
+    /* ─── Syncfusion grid light-theme overrides ─── */
+    .e-grid { background: transparent !important; border: none !important; }
+    .e-grid .e-headercell { background: #f8fafc !important; color: var(--clr-muted) !important; font-size: 0.72rem !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-rowcell { background: transparent !important; border-color: var(--clr-border) !important; color: var(--clr-text) !important; font-size: 0.8rem !important; }
+    .e-grid .e-altrow .e-rowcell { background: #f8fafc !important; }
+    .e-grid .e-row:hover .e-rowcell { background: rgba(99,102,241,0.06) !important; }
+    .e-grid .e-footer-content, .e-grid .e-summarycell { background: #f1f5f9 !important; color: var(--clr-muted) !important; font-size: 0.75rem !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-summarycell a { color: var(--clr-accent) !important; text-decoration: none !important; }
+    .e-grid .e-summarycell a:hover { color: var(--clr-accent2) !important; }
+    .e-grid .e-pager { background: #f8fafc !important; border-color: var(--clr-border) !important; color: var(--clr-muted) !important; }
+    .e-grid .e-toolbar { background: #f8fafc !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-toolbar .e-tbar-btn { background: var(--clr-surface) !important; color: var(--clr-text) !important; border: 1px solid var(--clr-border) !important; border-radius: 6px !important; }
+
+    /* ─── Modal overrides ─── */
+    .modal-content { background: var(--clr-surface) !important; border: 1px solid var(--clr-border) !important; border-radius: var(--radius) !important; color: var(--clr-text) !important; }
+    .modal-header { border-bottom: 1px solid var(--clr-border) !important; }
+    .modal-footer { border-top: 1px solid var(--clr-border) !important; }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--clr-text); }
+    .close { color: var(--clr-muted) !important; opacity: 1 !important; }
+
+    /* ─── Confirm modal pill ─── */
+    .confirm-icon { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem; }
+    .confirm-icon svg { width: 26px; height: 26px; }
+    .ci-process  { background: rgba(153,0,73,0.18); color: #990049; }
+    .ci-verify   { background: rgba(6,182,212,0.18);  color: #22d3ee; }
+    .ci-complete { background: rgba(34,197,94,0.18);  color: #4ade80; }
+
+    .underline { text-decoration: underline; }
+</style>
+
+<div class="slry-wrap">
+
+    <!-- COMPACT HERO HEADER -->
+    <div class="org-hero-card">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <div class="org-icon-badge mr-3">
+                    <i class="fas fa-calculator"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <h1 class="org-title">Salary Process</h1>
+                        <span class="badge org-category-pill">PAYROLL</span>
+                    </div>
+                    <div class="org-breadcrumb">
+                        <a href="#" class="text-secondary font-weight-bold">Payroll</a> / <span class="text-dark font-weight-medium">Salary Process</span>
+                        <span class="text-muted mx-1">&bull;</span>
+                        <span class="text-muted">Monthly payroll calculation, verification, and WPS generation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+        <div class="stat-card sc-indigo">
+            <div class="stat-card-label">Processed</div>
+            <div class="stat-card-val" id="statCount">—</div>
+            <div class="stat-card-sub">Employees</div>
+        </div>
+        <div class="stat-card sc-green">
+            <div class="stat-card-label">Total Gross</div>
+            <div class="stat-card-val" id="statGross">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-red">
+            <div class="stat-card-label">Total Deductions</div>
+            <div class="stat-card-val" id="statDed">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-amber">
+            <div class="stat-card-label">Net Payable</div>
+            <div class="stat-card-val" id="statNet">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-cyan">
+            <div class="stat-card-label">Status</div>
+            <div style="margin-top:0.3rem" id="statStatus">
+                <span class="status-badge sb-idle"><span class="dot"></span>Idle</span>
+            </div>
+            <div class="stat-card-sub" id="statPeriod">—</div>
+        </div>
+    </div>
+
+    <!-- Main layout -->
+    <div class="slry-main">
+
+        <!-- ─── Control Panel ─── -->
+        <div class="ctrl-panel">
+            <div class="ctrl-panel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.892 3.433-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.474l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+                Process Controls
+            </div>
+
+            <!-- Period -->
+            <div class="ctrl-group">
+                <div class="ctrl-label">Period</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <select id="drpYear" class="ctrl-select" asp-items="@(new SelectList(ViewBag.lstYear ?? new List<object>(), "value", "text"))" onchange="loadSalaryStat(); loadSalryHeader();">
+                    </select>
+                    <select id="drpMonth" class="ctrl-select" asp-items="@(new SelectList(ViewBag.lstMonth ?? new List<object>(), "value", "text"))" onchange="loadSalaryStat(); loadSalryHeader();">
+                    </select>
+                </div>
+                <input id="crntStat" type="hidden" value="0" />
+            </div>
+
+            <!-- Staff Type -->
+            <div class="ctrl-group">
+                <div class="ctrl-label">Employee Category</div>
+                <select id="drpStaffTyp" class="ctrl-select">
+                    <option value="OUTSRC">Outsource Staff Only</option>                    
+                    <option value="IN_HOUSE">In-house Staff Only</option>
+                    <option value="ALL">All Staff</option>
+                </select>
+            </div>
+
+            <div class="ctrl-divider"></div>
+
+            <!-- Action buttons -->
+            <button type="button" id="btnPrc" class="action-btn btn-process" data-toggle="modal" data-target="#modalProcess" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                Run Salary Process
+            </button>
+
+            <button type="button" id="btnVrfy" class="action-btn btn-verify" data-toggle="modal" data-target="#modalVerify" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+                Verify
+            </button>
+
+            <button type="button" id="btnCmpltd" class="action-btn btn-complete" data-toggle="modal" data-target="#modalComplete" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>
+                Complete
+            </button>
+
+            <button type="button" id="btnWps" class="action-btn btn-wps" onclick="runWPSProcess();" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                Generate WPS
+            </button>
+
+            <!-- Action 5: Salary Re-Process -->
+            <button type="button" id="btnToggleReProcess" class="action-btn btn-repro" onclick="toggleReProcessPanel();" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+                Salary Re-Process
+            </button>
+            <input type="checkbox" id="chkReProcess" style="display:none;" />
+
+            <div id="dvReProcess" class="repro-panel">
+                <div class="ctrl-label" style="margin-bottom:0.6rem;">Re-process Scope</div>
+                <div class="radio-group">
+                    <label class="radio-opt">
+                        <input type="radio" name="gridRadios" id="chkCatEmp" checked onclick="showReProcessOptions();">
+                        Employee Category
+                    </label>
+                    <label class="radio-opt">
+                        <input type="radio" name="gridRadios" id="chkSlctdEmp" onclick="showReProcessOptions();">
+                        Individual Employee
+                    </label>
+                    <label class="radio-opt">
+                        <input type="radio" name="gridRadios" id="chkSlctdDpt" onclick="showReProcessOptions();">
+                        Department
+                    </label>
+                </div>
+                <div id="dvReProcCat" style="margin-bottom:0.5rem;">
+                    <select id="drpReProcCat" class="ctrl-select">
+                      <option value="OUTSRC">Outsource Staff Only</option>                    
+                      <option value="IN_HOUSE">In-house Staff Only</option>
+                      <option value="ALL">All Staff</option>
+                    </select>
+                </div>
+                <div id="dvEmp" style="display:none; margin-bottom:0.5rem;">
+                    <select id="drpEmployee" class="ctrl-select select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmployee ?? new List<object>(), "ESysId", "FulNme"))">
+                        <option value="">-- Select Employee --</option>
+                    </select>
+                </div>
+                <div id="dvDpt" style="display:none; margin-bottom:0.5rem;">
+                    <select id="drpDpt" class="ctrl-select select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstDepartment ?? new List<object>(), "DeptId", "DeptName"))">
+                        <option value="">-- Select Department --</option>
+                    </select>
+                </div>
+                <button type="button" id="btnReProcess" class="action-btn btn-repro" onclick="runSalaryReProcess();" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
+                    Run Re-Process
+                </button>
+            </div>
+        </div>
+
+        <!-- ─── Grid Panel ─── -->
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>Salary Details</h3>
+                <div id="gridStatusBadge"><span class="status-badge sb-idle"><span class="dot"></span>No data loaded</span></div>
+            </div>
+            <div class="grid-inner">
+                <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                    <e-toast-position X="Center"></e-toast-position>
+                </ejs-toast>
+
+                <ejs-grid id="Grid" width="auto" allowSorting="true" allowPaging="true" allowGrouping="true" allowFiltering="true" allowResizing="true"
+                          allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                    <e-grid-aggregates>
+                        <e-grid-aggregate>
+                            <e-aggregate-columns>
+                                <e-aggregate-column field="BasicSalary" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,101)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="HouseRent" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,102)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="Transport" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,103)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="Position" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,104)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="ProjectAllowance" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,105)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="Incentives" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,106)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="Mobile" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,107)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="Overtime" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,108)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="SpcAllowance" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,119)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="MedicalAllowance" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,109)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="OthrAlwnc" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,110)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="OthrPmt" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,111)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="AirTcktFee" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="AnlLvEnchmnt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="GrossSalary" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,112)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="SalaryAdvance" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,113)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="StaffLoans" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,114)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="NoPay" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,115)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="OthrRcvryAmt" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,116)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="TotalDeductions" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,117)'>QR. ${Sum}</a>"></e-aggregate-column>
+                                <e-aggregate-column field="NtSlry" type="Sum" format="N2" footerTemplate="<a href='#' onclick='SlrySummary(this,118)'>QR. ${Sum}</a>"></e-aggregate-column>
+                            </e-aggregate-columns>
+                        </e-grid-aggregate>
+                    </e-grid-aggregates>
+
+                    <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                    <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                    <e-grid-columns>
+                        <e-grid-column field="" type="checkbox" width="60" allowFiltering="false" allowSorting="false"></e-grid-column>
+                        <e-grid-column field="Index" headerText="Ref." width="80" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Department" headerText="Department" width="150" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Emp_Id" headerText="Employee ID" width="100" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Full_Name" headerText="Name" width="150" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Designation" headerText="Designation" width="150" minWidth="10"></e-grid-column>
+                        <e-grid-column field="BasicSalary" headerText="Basic" width="140" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Allowances" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "HouseRent", Width = "130", HeaderText = "HRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"},
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "Transport", Width = "130", HeaderText = "TRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "Position", Width = "130", HeaderText = "Position", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "ProjectAllowance", Width = "140", HeaderText = "Proj. Allow.", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "Incentives", Width = "130", HeaderText = "Incentives", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "Mobile", Width = "120", HeaderText = "Mobile", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "Overtime", Width = "120", HeaderText = "Overtime", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10", Template="#overtime" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "SpcAllowance", Width = "140", HeaderText = "Special Allow.", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "MedicalAllowance", Width = "140", HeaderText = "Medical Allow.", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrAlwnc", Width = "130", HeaderText = "Othr Allow.", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "AirTcktFee", Width = "130", HeaderText = "Air Ticket", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "AnlLvEnchmnt", Width = "140", HeaderText = "Lv Encashment", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" }
+                                       } )">
+                        </e-grid-column>
+                        <e-grid-column field="OthrPmt" headerText="Othr Adjstmnt (QR.)" width="150" format="N2" textAlign="Right" template="#tmpOthrPymnt"></e-grid-column>
+                        <e-grid-column field="GrossSalary" headerText="Gross Salary" width="140" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Deductions" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "SalaryAdvance", Width = "140", HeaderText = "Salary Advance", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "StaffLoans", Width = "130", HeaderText = "Staff Loans", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "NoPay", Width = "120", HeaderText = "NoPay", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10", Template="#nopay" }
+                                       } )">
+                        </e-grid-column>
+                        <e-grid-column field="OthrRcvryAmt" headerText="Othr Deductions (QR.)" width="155" format="N2" textAlign="Right" template="#tmpOthrRcvryAmt"></e-grid-column>
+                        <e-grid-column field="TotalDeductions" headerText="Total Deductions" width="145" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Net Salary" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "NtSlry", Width = "140", HeaderText = "Net Salary", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "PmtModTxt", Width = "120", HeaderText = "Pay Mode", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Left, MinWidth="10" },
+                                           new Syncfusion.EJ2.Grids.GridColumn { Field = "BnkAcct", Width = "140", HeaderText = "Bank Acct", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Left, MinWidth="10" }
+                                       } )">
+                        </e-grid-column>
+                        <e-grid-column field="Remarks" headerText="Remarks" width="250"></e-grid-column>
+                        <e-grid-column field="" headerText="" template="#rmks" width="75"></e-grid-column>
+                    </e-grid-columns>
+                </ejs-grid>
+                <ejs-button id="hideToast"></ejs-button>
+                <input id="txtPrcId" class="form-control form-control-sm" type="hidden" value="@ViewBag.PrcId" />
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ──────────────────── MODALS ──────────────────── -->
+
+<!-- Other Payments -->
+<div class="modal fade" id="modalOthrPymnt" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Other Payments / Deductions</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="othrPymntModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Overtime -->
+<div class="modal fade" id="modalOvertime" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Overtime</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="overtimeModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- NoPay -->
+<div class="modal fade" id="modalNopay" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">No Pay</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="nopayModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Process Confirmation -->
+<div class="modal fade" id="modalProcess" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="text-align:center; padding-bottom:1rem;">
+            <div class="modal-header" style="border:none; justify-content:flex-end;">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div class="confirm-icon ci-process">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M11.596 8.697l-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/></svg>
+                </div>
+                <h5 style="color:var(--clr-text); margin-bottom:0.5rem;">Run Salary Process</h5>
+                <p style="color:var(--clr-muted); font-size:0.85rem;">Are you sure you want to run the salary process for the selected period and employee category?</p>
+            </div>
+            <div class="modal-footer" style="border:none; justify-content:center; gap:0.75rem;">
+                <button type="button" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:var(--clr-surface2); color:var(--clr-muted); border:1px solid var(--clr-border);" data-dismiss="modal">Cancel</button>
+                <ejs-progressbutton id="btnProcess" spinSettings="ViewBag.spinRight" content="Run Process" cssClass="btn btn-sm btn-primary" duration="ViewBag.isDuration" created="btnProcCreated"></ejs-progressbutton>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Verify Confirmation -->
+<div class="modal fade" id="modalVerify" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="text-align:center; padding-bottom:1rem;">
+            <div class="modal-header" style="border:none; justify-content:flex-end;">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div class="confirm-icon ci-verify">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+                </div>
+                <h5 style="color:var(--clr-text); margin-bottom:0.5rem;">Verify Salary</h5>
+                <p style="color:var(--clr-muted); font-size:0.85rem;">Are you sure you want to verify the salary process?</p>
+            </div>
+            <div class="modal-footer" style="border:none; justify-content:center; gap:0.75rem;">
+                <button type="button" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:var(--clr-surface2); color:var(--clr-muted); border:1px solid var(--clr-border);" data-dismiss="modal">Cancel</button>
+                <button type="button" class="action-btn btn-verify" style="width:auto; padding: 0.55rem 1.5rem;" onclick="runVerifyProcess();">Verify</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Complete Confirmation -->
+<div class="modal fade" id="modalComplete" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="text-align:center; padding-bottom:1rem;">
+            <div class="modal-header" style="border:none; justify-content:flex-end;">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div class="confirm-icon ci-complete">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>
+                </div>
+                <h5 style="color:var(--clr-text); margin-bottom:0.5rem;">Complete Salary Process</h5>
+                <p style="color:var(--clr-muted); font-size:0.85rem;">This will mark the salary process as complete and generate all pay slips. Continue?</p>
+            </div>
+            <div class="modal-footer" style="border:none; justify-content:center; gap:0.75rem;">
+                <button type="button" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:var(--clr-surface2); color:var(--clr-muted); border:1px solid var(--clr-border);" data-dismiss="modal">Cancel</button>
+                <button type="button" class="action-btn btn-complete" style="width:auto; padding: 0.55rem 1.5rem;" onclick="runCmpltProcess();">Complete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Salary Summary -->
+<div class="modal fade" id="modalSummary" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="summaryTitle">Summary</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="summaryModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Remarks -->
+<div class="modal fade" id="modalRmks" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Remarks</h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" id="rmksModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ──────────── TEMPLATES ──────────── -->
+<script id="tmpOthrPymnt" type="text/x-template">
+    <a rel='tag' href="#" class="underline" onclick="showOthrPmt(${Emp_Sys_Id},1)">${OthrPmt}</a>
+</script>
+<script id="tmpOthrRcvryAmt" type="text/x-template">
+    <a rel='tag' href="#" class="underline" onclick="showOthrPmt(${Emp_Sys_Id},2)">${OthrRcvryAmt}</a>
+</script>
+<script id="overtime" type="text/x-template">
+    <a rel='tag' href="#" class="underline" onclick="showOvertime(${Emp_Sys_Id},1)">${Overtime}</a>
+</script>
+<script id="nopay" type="text/x-template">
+    <a rel='tag' href="#" class="underline" onclick="showOvertime(${Emp_Sys_Id},2)">${NoPay}</a>
+</script>
+<script type="text/x-jsrender" id="rmks">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="showRemarks(${PrcPsvRecId},${PrcId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+
+<!-- ──────────── SCRIPTS ──────────── -->
+<script>
+    // ──── Stat Cards helpers ────
+    function fmtNum(n) {
+        if (n == null || isNaN(n)) return '—';
+        return n.toLocaleString('en-QA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function updateStats(data) {
+        if (!data || !data.length) {
+            ['statCount','statGross','statDed','statNet'].forEach(id => document.getElementById(id).textContent = '—');
+            return;
+        }
+        document.getElementById('statCount').textContent = data.length;
+        document.getElementById('statGross').textContent = fmtNum(data.reduce((a, x) => a + (x.GrossSalary || 0), 0));
+        document.getElementById('statDed').textContent   = fmtNum(data.reduce((a, x) => a + (x.TotalDeductions || 0), 0));
+        document.getElementById('statNet').textContent   = fmtNum(data.reduce((a, x) => a + (x.NtSlry || 0), 0));
+    }
+
+    function setStatusBadge(stat, period) {
+        var badges = {
+            0: '<span class="status-badge sb-idle"><span class="dot"></span>Idle</span>',
+            1: '<span class="status-badge sb-process"><span class="dot"></span>Processed</span>',
+            2: '<span class="status-badge sb-verified"><span class="dot"></span>Verified</span>',
+            3: '<span class="status-badge sb-complete"><span class="dot"></span>Completed</span>'
+        };
+        var b = badges[stat] || badges[0];
+        document.getElementById('statStatus').innerHTML = b;
+        document.getElementById('gridStatusBadge').innerHTML = b;
+        document.getElementById('statPeriod').textContent = period || '—';
+    }
+
+    // ──── Summary Modal ────
+    var SlrySummary = function (args, field) {
+        var eftYr  = $("#drpYear").val();
+        var eftMnt = $("#drpMonth").val();
+        var url    = "/Payroll/HrPrSlryPrcDtl/GetSlrySummary";
+        $("#summaryModalBody").load(url, { field: field, eftYr: eftYr, eftMn: eftMnt }, function () {
+            $("#modalSummary").modal("show");
+        });
+    };
+
+    var showOthrPmt = function (empSysId, typ) {
+        var eftYr  = $("#drpYear").val();
+        var eftMnt = $("#drpMonth").val();
+        var url    = "/Payroll/HrPrSlryPrcDtl/GetAdHocTrnsByEmpId";
+        $("#othrPymntModalBody").load(url, { empSysId: empSysId, eftYr: eftYr, eftMn: eftMnt, typ: typ }, function () {
+            $("#modalOthrPymnt").modal("show");
+        });
+    };
+
+    var showOvertime = function (empSysId, field) {
+        var eftYr  = $("#drpYear").val();
+        var eftMnt = $("#drpMonth").val();
+        var url    = "/Payroll/HrPrSlryPrcDtl/GetOTNoPayByEmpId";
+        if (field == 1) {
+            $("#overtimeModalBody").load(url, { field: '_overtime', empSysId: empSysId, eftYr: eftYr, eftMn: eftMnt }, function () {
+                $("#modalOvertime").modal("show");
+            });
+        } else {
+            $("#nopayModalBody").load(url, { field: '_nopay', empSysId: empSysId, eftYr: eftYr, eftMn: eftMnt }, function () {
+                $("#modalNopay").modal("show");
+            });
+        }
+    };
+
+    var showRemarks = function (PrcPsvRecId, PrcId) {
+        var eftYr  = $("#drpYear").val();
+        var eftMnt = $("#drpMonth").val();
+        var url    = "/Payroll/HrPrSlryPrcDtl/GetRemarks";
+        $("#rmksModalBody").load(url, { PrcPsvRecId: PrcPsvRecId, PrcId: PrcId, eftYr: eftYr, eftMnt: eftMnt }, function () {
+            $("#modalRmks").modal("show");
+        });
+    };
+</script>
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') { gridObj.excelExport(); }
+    }
+</script>
+
+<script>
+    function toggleReProcessPanel() {
+        var btn = document.getElementById("btnToggleReProcess");
+        if (btn && btn.hasAttribute("disabled")) return;
+        var div = document.getElementById("dvReProcess");
+        if (div.classList.contains('open')) {
+            div.classList.remove('open');
+            var chk = document.getElementById("chkReProcess");
+            if (chk) chk.checked = false;
+        } else {
+            div.classList.add('open');
+            var chk = document.getElementById("chkReProcess");
+            if (chk) chk.checked = true;
+            var dvReProcCat = document.getElementById("dvReProcCat");
+            if (dvReProcCat) dvReProcCat.style.display = "block";
+            document.getElementById("dvEmp").style.display = "none";
+            document.getElementById("dvDpt").style.display = "none";
+            var chkCat = document.getElementById("chkCatEmp");
+            if (chkCat) chkCat.checked = true;
+        }
+    }
+
+    function showReProcess() {
+        var chk  = document.getElementById("chkReProcess");
+        var div  = document.getElementById("dvReProcess");
+        if (chk && chk.checked) {
+            div.classList.add('open');
+            var dvReProcCat = document.getElementById("dvReProcCat");
+            if (dvReProcCat) dvReProcCat.style.display = "block";
+            document.getElementById("dvEmp").style.display = "none";
+            document.getElementById("dvDpt").style.display = "none";
+            var chkCat = document.getElementById("chkCatEmp");
+            if (chkCat) chkCat.checked = true;
+        } else {
+            div.classList.remove('open');
+        }
+    }
+
+    function showReProcessOptions() {
+        var dvReProcCat = document.getElementById("dvReProcCat");
+        var dvEmp = document.getElementById("dvEmp");
+        var dvDpt = document.getElementById("dvDpt");
+        if (dvReProcCat) dvReProcCat.style.display = document.getElementById("chkCatEmp").checked ? "block" : "none";
+        if (dvEmp) dvEmp.style.display = document.getElementById("chkSlctdEmp").checked ? "block" : "none";
+        if (dvDpt) dvDpt.style.display = document.getElementById("chkSlctdDpt").checked ? "block" : "none";
+    }
+</script>
+
+<script>
+    $(document).ready(function () {
+        $('.select2-dropdown').select2({ theme: 'bootstrap4', width: '100%' });
+        loadSalaryStat();
+    });
+
+    function getMonthName(m) {
+        return ["", "January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"][parseInt(m)] || m;
+    }
+
+    // ──── Status Check ────
+    function loadSalaryStat() {
+        var efMnt = $("#drpMonth").val();
+        var efYr  = $("#drpYear").val();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("IsPrcStarted", "HrPrSlryPrcDtl"))",
+            data: { eftYr: efYr, eftMnt: efMnt }, dataType: "json",
+            success: function (slrydata) {
+                if (slrydata.data == 0) {
+                    $("#chkReProcess").attr("disabled", true);
+                    $("#btnToggleReProcess").attr("disabled", true);
+                    $("#btnPrc").removeAttr("disabled");
+                } else {
+                    $("#chkReProcess").removeAttr("disabled");
+                    $("#btnToggleReProcess").removeAttr("disabled");
+                    $("#btnPrc").attr("disabled", true);
+                }
+                $.ajax({
+                    type: "GET", url: "@(Url.Action("IsPrcVerified", "HrPrSlryPrcDtl"))",
+                    data: { eftYr: efYr, eftMnt: efMnt }, dataType: "json",
+                    success: function (data) {
+                        $("#crntStat").val(data.data);
+                        var period = getMonthName(efMnt) + " " + efYr;
+                        setStatusBadge(data.data || 0, period);
+                        if (data.data == 0) {
+                            $("#btnPrc").removeAttr("disabled");
+                            ["btnReProcess","btnToggleReProcess","btnVrfy","btnCmpltd","btnWps"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.setAttribute("disabled","");
+                            });
+                        } else if (data.data == 1) {
+                            ["btnReProcess","btnToggleReProcess","btnVrfy"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.removeAttribute("disabled");
+                            });
+                            ["btnCmpltd","btnWps"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.setAttribute("disabled","");
+                            });
+                            loadSalryHeader();
+                        } else if (data.data == 2) {
+                            ["btnReProcess","btnToggleReProcess","btnVrfy"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.setAttribute("disabled","");
+                            });
+                            ["btnCmpltd","btnWps"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.removeAttribute("disabled");
+                            });
+                            loadSalryHeader();
+                        } else if (data.data == 3) {
+                            ["btnReProcess","btnToggleReProcess","btnVrfy","btnCmpltd"].forEach(id => {
+                                var el = document.getElementById(id);
+                                if (el) el.setAttribute("disabled","");
+                            });
+                            document.getElementById("btnWps").removeAttribute("disabled");
+                        }
+                    }
+                });
+            }
+        });
+    }
+
+    function loadSalryHeader() {
+        var efMnt = $("#drpMonth").val();
+        var efYr  = $("#drpYear").val();
+        var grid  = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("GetLstSlryPrcHdr", "HrPrSlryPrcDtl"))",
+            dataType: "json",
+            success: function (hdr) {
+                $.ajax({
+                    type: "GET", url: "@(Url.Action("GetSalaryDtl", "HrPrSlryPrcDtl"))",
+                    data: { prcId: hdr.data, eftYr: efYr, eftMnt: efMnt }, dataType: "json",
+                    success: function (data) {
+                        grid.dataSource = data.data;
+                        grid.hideSpinner();
+                        updateStats(data.data);
+                    },
+                    error: function () { grid.hideSpinner(); }
+                });
+            },
+            error: function () { grid.hideSpinner(); }
+        });
+    }
+
+    // ──── Run Process ────
+    function runSalaryProcess() {
+        var efMnt    = $("#drpMonth").val();
+        var efYr     = $("#drpYear").val();
+        var staffTyp = $("#drpStaffTyp").val();
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("StrtPrc", "HrPrSlryPrcDtl"))",
+            data: { eftYr: efYr, eftMnt: efMnt, note: "Process", staffTyp: staffTyp }, dataType: "json",
+            success: function (data) {
+                if (data.ok === false) {
+                    toastObj.show({ title: 'Error!', content: data.data || 'Salary process execution failed.', cssClass: 'e-toast-danger', icon: 'e-error toast-icons' });
+                    if (progressBtn1) progressBtn1.progressComplete();
+                    grid.hideSpinner();
+                    $("#modalProcess").modal('hide');
+                    return;
+                }
+                $("#txtPrcId").val(data["PrcId"]);
+                grid.dataSource = data.data;
+                grid.hideSpinner();
+                updateStats(data.data);
+                $("#chkReProcess").removeAttr("disabled");
+                $("#btnToggleReProcess").removeAttr("disabled");
+                $("#btnPrc").attr("disabled", true);
+                toastObj.show(toasts[0]);
+                if (progressBtn1) progressBtn1.progressComplete();
+                loadSalaryStat();
+                loadSalryHeader();
+                $("#modalProcess").modal('hide');
+            },
+            error: function () {
+                toastObj.show(toasts[1]);
+                if (progressBtn1) progressBtn1.progressComplete();
+                grid.hideSpinner();
+                $("#modalProcess").modal('hide');
+            }
+        });
+    }
+
+    // ──── Re-Process ────
+    function runSalaryReProcess() {
+        var errorCount = 0;
+        if ($('#chkSlctdEmp').is(":checked") && $("#drpEmployee").val() == 0) { errorCount++; toastObj.show(toasts[2]); }
+        if ($('#chkSlctdDpt').is(":checked") && $("#drpDpt").val() == 0)      { errorCount++; toastObj.show(toasts[3]); }
+        if (errorCount > 0) return;
+
+        var prcTyp   = "A";
+        var prcId    = $("#txtPrcId").val();
+        var refId    = $("#txtPrcLogId").val();
+        var efMnt    = $("#drpMonth").val();
+        var efYr     = $("#drpYear").val();
+        var staffTyp = "ALL";
+
+        if ($('#chkCatEmp').is(":checked")) {
+            prcTyp = "A";
+            staffTyp = $("#drpReProcCat").val();
+        } else if ($('#chkSlctdEmp').is(":checked")) {
+            prcTyp = "S";
+            refId = $("#drpEmployee").val();
+            staffTyp = "ALL";
+        } else if ($('#chkSlctdDpt').is(":checked")) {
+            prcTyp = "D";
+            refId = $("#drpDpt").val();
+            staffTyp = "ALL";
+        }
+
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("StrtReProc", "HrPrSlryPrcDtl"))",
+            data: { prcId: prcId, refId: refId, prcTyp: prcTyp, eftYr: efYr, eftMnt: efMnt, note: "Re-Process", staffTyp: staffTyp },
+            dataType: "json",
+            success: function (data) {
+                if (data.ok === false) {
+                    toastObj.show({ title: 'Error!', content: data.data || 'Salary re-process execution failed.', cssClass: 'e-toast-danger', icon: 'e-error toast-icons' });
+                    if (progressBtn2) progressBtn2.progressComplete();
+                    grid.hideSpinner();
+                    return;
+                }
+                grid.dataSource = data.data;
+                grid.hideSpinner();
+                updateStats(data.data);
+                toastObj.show(toasts[4]);
+                if (progressBtn2) progressBtn2.progressComplete();
+                loadSalaryStat();
+                loadSalryHeader();
+            },
+            error: function () {
+                toastObj.show(toasts[1]);
+                if (progressBtn2) progressBtn2.progressComplete();
+                grid.hideSpinner();
+            }
+        });
+    }
+
+    // ──── Verify ────
+    function runVerifyProcess() {
+        var efMnt = $("#drpMonth").val();
+        var efYr  = $("#drpYear").val();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("VrfyPrc", "HrPrSlryPrcDtl"))",
+            data: { eftYr: efYr, eftMnt: efMnt, mthod: 2 }, dataType: "json",
+            success: function (data) {
+                $("#crntStat").val(2);
+                ["btnReProcess","btnVrfy"].forEach(id => document.getElementById(id).setAttribute("disabled",""));
+                ["btnCmpltd","btnWps"].forEach(id => document.getElementById(id).removeAttribute("disabled"));
+                setStatusBadge(2, getMonthName(efMnt) + " " + efYr);
+                $("#modalVerify").modal('hide');
+                loadSalryHeader();
+                toastObj.show(toasts[5]);
+            },
+            error: function () { toastObj.show(toasts[1]); }
+        });
+    }
+
+    // ──── Complete ────
+    function runCmpltProcess() {
+        var efMnt = $("#drpMonth").val();
+        var efYr  = $("#drpYear").val();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("VrfyPrc", "HrPrSlryPrcDtl"))",
+            data: { eftYr: efYr, eftMnt: efMnt, mthod: 3 }, dataType: "json",
+            success: function (data) {
+                $("#crntStat").val(3);
+                ["btnReProcess","btnVrfy","btnCmpltd"].forEach(id => document.getElementById(id).setAttribute("disabled",""));
+                document.getElementById("btnWps").removeAttribute("disabled");
+                setStatusBadge(3, getMonthName(efMnt) + " " + efYr);
+                $("#modalComplete").modal('hide');
+                toastObj.show(toasts[6]);
+                setTimeout(function () { window.location.href = "/Payroll/HrPrSlryPrcDtl/Index"; }, 1500);
+            },
+            error: function () { toastObj.show(toasts[1]); }
+        });
+    }
+
+    // ──── WPS ────
+    function runWPSProcess() {
+        var efMn = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        $.ajax({
+            type: "GET", url: "@(Url.Action("GetWPSFile", "HrPrSlryPrcDtl"))",
+            data: { eftYr: efYr, eftMn: efMn }, dataType: "json",
+            success: function (data) { DownloadFile(data.data); }
+        });
+    }
+
+    function DownloadFile(fileName) {
+        var dwnurl = '/attach/wps/' + fileName;
+        $.ajax({ url: dwnurl, method: 'GET', xhrFields: { responseType: 'blob' },
+            success: function (data) {
+                var a = document.createElement('a');
+                a.href = window.URL.createObjectURL(data);
+                a.download = fileName;
+                document.body.append(a); a.click(); a.remove();
+                window.URL.revokeObjectURL(a.href);
+            }
+        });
+    }
+</script>
+
+<!--Start Toast-->
+<script type="text/javascript">
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Salary process completed successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Error!',   content: 'Salary process execution failed.',       cssClass: 'e-toast-danger',  icon: 'e-error toast-icons' },
+        { title: 'Warning!', content: 'Please choose one or more employees.',   cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose a department.',            cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Salary re-process completed.',           cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Success!', content: 'Salary verified successfully.',          cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Success!', content: 'Salary process marked as complete.',     cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+    function created()      { toastObj = this; }
+    function onclose(e)     { if (e.toastContainer.childElementCount === 0) btnEleHide.style.display = 'none'; }
+    function onBeforeOpen() { btnEleHide.style.display = 'inline-block'; }
+</script>
+
+<!--Progress Buttons-->
+<script>
+    var progressBtn1, progressBtn2;
+    function btnProcCreated()   { progressBtn1 = ej.base.getComponent(document.querySelector("#btnProcess"),   "progress-btn"); }
+    function btnReProcCreated() { progressBtn2 = ej.base.getComponent(document.querySelector("#btnReProcess"), "progress-btn"); }
+
+    document.getElementById("btnProcess").addEventListener('click',   function () { runSalaryProcess(); });
+    document.getElementById("btnReProcess").addEventListener('click', function () { runSalaryReProcess(); });
+</script>
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+    .toast-icons { font-family:'Toast_icons'!important; speak:none; font-size:55px; font-style:normal; font-weight:normal; font-variant:normal; text-transform:none; line-height:1; -webkit-font-smoothing:antialiased; }
+    #toast_type .e-toast-icon.e-icons { height:auto; font-size:30px; }
+    .toast-icons.e-success::before { content:"\e701"; }
+    .toast-icons.e-error::before   { content:"\e700"; }
+    .toast-icons.e-info::before    { content:"\e704"; }
+    .toast-icons.e-warning::before { content:"\e703"; }
+</style>

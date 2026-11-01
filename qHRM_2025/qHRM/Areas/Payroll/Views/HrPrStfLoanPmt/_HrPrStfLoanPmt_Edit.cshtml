@@ -1,0 +1,62 @@
+﻿@model qHRM.Areas.Payroll.Models.HrPrStfLoanPmt
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrPrStfLoanPmt"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.StfLnId)
+        @Html.HiddenFor(model => model.LnPmtId)
+        @Html.HiddenFor(model => model.RecStat)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="control-label">Employee</label>
+                <input class="form-control form-control-sm" value=" @ViewBag.EmpDtl" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="control-label">Loan Code</label>
+                <input class="form-control form-control-sm" value=" @ViewBag.LnCode" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="PmtDate" class="control-label"></label>
+                <input asp-for="PmtDate" class="form-control form-control-sm" />
+                <span asp-validation-for="PmtDate" class="text-danger"></span>
+            </div>
+            <div class="form-group  col-md-6">
+                <label asp-for="PmtAmt" class="control-label"></label>
+                <input asp-for="PmtAmt" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="PmtAmt" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label class="control-label">Payment Mode</label>
+                <input class="form-control form-control-sm" value="Manual" readonly />
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<ejs-scripts></ejs-scripts>

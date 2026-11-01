@@ -1,0 +1,30 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpEduQualif
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("Delete", "HrEmpEduQualif"))
+{<div>
+    @Html.HiddenFor(model => model.QualifId)
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.CertNo) : @Html.DisplayFor(model => model.CertNo)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.CertName) : @Html.DisplayFor(model => model.CertName)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.Desc) : @Html.DisplayFor(model => model.Desc)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.Institute) : @Html.DisplayFor(model => model.Institute)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.StDate) : @Html.DisplayFor(model => model.StDate)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.EndDate) : @Html.DisplayFor(model => model.EndDate)
+    </div>
+    @if (ViewBag.RecDelete == true)
+    {
+        <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+    </div>
+}

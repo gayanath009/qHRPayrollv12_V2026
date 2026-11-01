@@ -1,0 +1,37 @@
+﻿@using Syncfusion.EJ2;
+<div>
+    <ejs-grid id="Grid2" width="auto" dataSource="ViewBag.dsOTNoPay" allowPaging="true" allowFiltering="true"
+              allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+        <e-grid-aggregates>
+            <e-grid-aggregate>
+                <e-aggregate-columns>
+                    <e-aggregate-column field="No_Pay_Amt" type="Sum" format="N2"></e-aggregate-column>
+                </e-aggregate-columns>
+            </e-grid-aggregate>
+        </e-grid-aggregates>
+        <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+        <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+        <e-grid-columns>
+            <e-grid-column field="FullName" headerText="Name" width="100"></e-grid-column>
+            <e-grid-column field="EfctvDate" headerText="Date" width="75" format='yMd'></e-grid-column>
+            <e-grid-column field="No_Pay_Amt" headerText="No Pay Amount" width="100"></e-grid-column>
+        </e-grid-columns>
+    </ejs-grid>
+</div>
+<script>
+    function toolbarClick(args) {
+        
+        var gridObj = document.getElementById("Grid2").ej2_instances[0];
+        if (args.item.id === 'Grid2_excelexport') {
+            gridObj.excelExport();
+        }
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalNopay').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    })
+</script>
+<ejs-scripts></ejs-scripts>

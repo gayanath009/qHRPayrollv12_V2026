@@ -1,0 +1,33 @@
+﻿    @using Syncfusion.EJ2
+@model qHRM.Areas.WorkShift.Models.HrEmpWkRoster
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">        
+        <div class="form-group">
+
+            <ejs-grid id="Grid2" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" allowResizing="true" allowSorting="true">
+                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Employee Id" width="100" />
+                    <e-grid-column field="FullName" headerText="Name" width="150" /> 
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+       
+    </div>
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalEmpNotCrtdRst').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    });
+</script>
+<ejs-scripts></ejs-scripts>
+

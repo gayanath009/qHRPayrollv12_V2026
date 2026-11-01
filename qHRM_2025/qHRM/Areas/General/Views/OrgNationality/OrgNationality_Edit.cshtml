@@ -1,0 +1,61 @@
+@model qHRM.Areas.General.Models.OrgNationality
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "OrgNationality"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.NltyId)
+        @Html.HiddenFor(model => model.RecStat)
+
+        <div class="form-group">
+            <label asp-for="NltyNameEng" class="control-label"></label>
+            <input asp-for="ex_NltyNameEng" class="form-control form-control-sm" hidden />
+            <input asp-for="NltyNameEng" class="form-control form-control-sm" />
+            <span asp-validation-for="NltyNameEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="CntryId" class="control-label"></label>
+            <select asp-for="CntryId" id="CntryId" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstCntry, "CntryId", "CntryNameEng", Model?.CntryId))">
+                <option value="">-- Select Country --</option>
+            </select>
+            <span asp-validation-for="CntryId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NltyTypId" class="control-label"></label>
+            <select asp-for="NltyTypId" id="NltyTypId" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstNltyTyp, "NltyTypId", "NltyTypNameEng", Model?.NltyTypId))">
+                <option value="">-- Select Group --</option>
+            </select>
+            <span asp-validation-for="NltyTypId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="Note" class="control-label"></label>
+            <input asp-for="Note" class="form-control form-control-sm" />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-dark btn-block" />
+            <input type="button" value="Close" class="btn btn-sm btn-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

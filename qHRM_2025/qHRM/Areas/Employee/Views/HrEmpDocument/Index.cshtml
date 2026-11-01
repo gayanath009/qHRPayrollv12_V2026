@@ -1,0 +1,163 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpDocument
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Employee Documents</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=@HttpContextAccessor.HttpContext.Session.GetInt32("EmpSysId")">Employee Information</a></li>
+                <li class="breadcrumb-item active">Employee Documents (@HttpContextAccessor.HttpContext.Session.GetString("EmpName"))</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Start Tabs Start-->
+                    <partial name="~/Views/Shared/_EmpNavBar.cshtml" />
+                    <br />
+                    <!--End Tabs End-->
+                    <p>
+                        <div>
+                            @if (ViewBag.RecAdd == true)
+                            {
+                                <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                    Add New Document
+                                </a>
+                            }
+                        </div>
+                    </p>
+
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="DocTyp" headerText="Document Type" width="200"></e-grid-column>
+                                <e-grid-column field="Desc" headerText="Description" width="200"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_download" width="75"></e-grid-column>
+
+                                @if (ViewBag.RecEdit == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_edit" width="60"></e-grid-column>
+                                }
+                                @if (ViewBag.RecDelete == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_delete" width="60"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">
+                                        Create New Employee Documents
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-xl" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Employee Documents</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Delete Employee Documents</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_download">
+    <a href="/attach/empDocs/${DocName}" target="_blank" class="btn btn-sm btn-outline-primary btn-block">
+        <span class="glyphicon glyphicon-download"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${DocId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${DocId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+
+    var createFunc = function () {
+        var url = "/Employee/HrEmpDocument/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (id) {
+        var url = "/Employee/HrEmpDocument/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+
+    var deleteFunc = function (id) {
+        var url = "/Employee/HrEmpDocument/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+
+
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>

@@ -1,0 +1,39 @@
+﻿@model  ErrorViewModel
+@{
+    ViewData["Title"] = "Exception";
+}
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4"></h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Error</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5>An Error occured while processing your request. </h5>
+                    <hr />
+                    <h6>Exception Details</h6>
+                    <div class="alert alert-info">
+                        <h6>Exception Path</h6>
+                        <hr />
+                        <p>@ViewBag.ExceptionPath</p>
+                    </div>
+                    <div class="alert alert-info">
+                        <h6>Message</h6>
+                        <hr />
+                        <p>@ViewBag.ExceptionMessage</p>
+                    </div>
+                    <div class="alert alert-info">
+                        <h6>Exception Description</h6>
+                        <hr />
+                        <p>@ViewBag.StackTrace</p>
+                    </div>
+                    <a asp-action="Index" asp-controller="Home" class="btn btn-sm btn-outline-primary">
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>

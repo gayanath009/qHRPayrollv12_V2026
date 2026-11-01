@@ -1,0 +1,34 @@
+﻿@model qHRM.Areas.Payroll.Models.HrPrAdHocTrnType
+<h5>Are you sure you want to cancel this?</h5>
+@using (Html.BeginForm("Delete", "HrPrAdHocTrnType"))
+{<div>
+    @Html.HiddenFor(model => model.TrnTypId)
+
+     <div class="card-body">
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="TrnType" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.TrnType)</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="TrnTypTxt" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.TrnTypTxt)</p>
+             </div>
+         </div>
+         <div class="form-row">
+             <div class="form-group col-md-12">
+                 <label asp-for="Desc" class="control-label"></label>
+                 <p>@Html.DisplayFor(model => model.Desc)</p>
+             </div>
+         </div>
+         <div class="form-group"></div>
+
+         <div class="form-group">
+             <input type="submit" value="DELETE" class="btn btn-sm btn-primary btn-block" />
+             <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+         </div>
+     </div>
+</div>
+}

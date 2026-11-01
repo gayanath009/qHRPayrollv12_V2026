@@ -1,0 +1,109 @@
+﻿@model IEnumerable<qHRM.Areas.Leave.Models.HrLvWfDelegation>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Approval Delegation";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Approval Delegation</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Leave</a></li>
+                <li class="breadcrumb-item">Approval Delegation</li>
+            </ol>
+
+            <div class="alert" style="background:rgba(153,0,73,0.08);border-left:4px solid #540033;border-radius:6px;padding:14px 18px;margin-bottom:20px;">
+                <i class="fas fa-user-clock" style="color:#540033;"></i>
+                <strong style="color:#540033;"> Delegation Guide:</strong>
+                Allows an approver to temporarily assign their leave approval responsibility to another employee
+                during absences (annual leave, business travel, etc.). Delegation is effective within the specified date range.
+                The original approver's role is <strong>not permanently changed</strong>.
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        @if (ViewBag.RecAdd == true)
+                        {
+                            <a href="#" class="btn btn-sm btn-primary" id="btnAddDeleg" onclick="createDeleg();">
+                                <i class="fas fa-user-plus"></i> New Delegation
+                            </a>
+                        }
+                    </p>
+
+                    <div class="control-section">
+                        <ejs-grid id="GridDeleg" width="auto" dataSource="ViewBag.DataSource"
+                                  allowPaging="true" allowFiltering="true" allowSorting="true"
+                                  load="loadFormattings">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount="5"></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="DelegatorName" headerText="Delegator (From)"  width="180"></e-grid-column>
+                                <e-grid-column field="DelegateName"  headerText="Delegate (To)"     width="180"></e-grid-column>
+                                <e-grid-column field="LvTypName"     headerText="Leave Type"        width="150"></e-grid-column>
+                                <e-grid-column field="FromDate"      headerText="From Date"         width="110" type="date" format="dd-MMM-yyyy"></e-grid-column>
+                                <e-grid-column field="ToDate"        headerText="To Date"           width="110" type="date" format="dd-MMM-yyyy"></e-grid-column>
+                                <e-grid-column field="RecStat"       headerText="Status"            width="100" template="#_delegStat"></e-grid-column>
+                                <e-grid-column field="Reason"        headerText="Reason"            width="200"></e-grid-column>
+                                @if (ViewBag.RecDelete == true)
+                                {
+                                    <e-grid-column field="" headerText="Action" template="#_cancelDeleg" width="100"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+
+                    <!-- CREATE Modal -->
+                    <div class="modal fade" id="modalCreateDeleg" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-md" role="document">
+                            <div class="modal-content" style="border-top:4px solid #540033;">
+                                <div class="modal-header" style="background:rgba(153,0,73,0.06);">
+                                    <h5 class="modal-title" style="color:#540033;font-weight:700;">
+                                        <i class="fas fa-user-clock"></i> New Approval Delegation
+                                    </h5>
+                                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                                </div>
+                                <div class="modal-body" id="delegCreateForm"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script id="_delegStat" type="text/x-template">
+    ${RecStat == 1 ?
+        "<span class='badge badge-success'>Active</span>" :
+        "<span class='badge badge-secondary'>Cancelled</span>"}
+</script>
+
+<script id="_cancelDeleg" type="text/x-template">
+    ${RecStat == 1 ?
+        "<form method='post' action='/Leave/HrLvWfDelegation/Cancel' style='display:inline;'>" +
+        "<input type='hidden' name='delegId' value='" + DelegId + "' />" +
+        "<button type='submit' class='btn btn-sm btn-outline-danger' onclick='return confirm(\"Cancel this delegation?\")'>Cancel</button>" +
+        "</form>" : "—"}
+</script>
+
+<script>
+    function createDeleg() {
+        $.ajax({
+            url: '/Leave/HrLvWfDelegation/CreateNew',
+            type: 'GET',
+            success: function (data) {
+                $('#delegCreateForm').html(data);
+                $('#modalCreateDeleg').modal('show');
+            }
+        });
+    }
+
+    function loadFormattings() {
+        this.element.style.fontFamily = 'Nunito, Segoe UI, sans-serif';
+        this.element.style.fontSize = '13px';
+    }
+</script>

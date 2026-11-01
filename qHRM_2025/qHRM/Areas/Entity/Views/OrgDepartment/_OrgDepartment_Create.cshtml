@@ -1,0 +1,55 @@
+@model qHRM.Areas.Entity.Models.OrgDepartment
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "OrgDepartment"))
+{
+    <span class="alert-success ">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.DeptId)
+        <div class="form-group">
+            <label asp-for="DeptCode" class="control-label"></label>
+            <input asp-for="DeptCode" class="form-control form-control-sm" />
+            <span asp-validation-for="DeptCode" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NameEng" class="control-label"></label>
+            <input asp-for="NameEng" class="form-control form-control-sm" />
+            <span asp-validation-for="NameEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DescEng" class="control-label"></label>
+            <input asp-for="DescEng" class="form-control form-control-sm" />
+            <span asp-validation-for="DescEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="ParentId" class="control-label"></label>
+            <select asp-for="ParentId" id="drpPrtDept" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.ParentDepartments, "DeptId", "DeptName"))">
+                <option value="">-- Select Parent Department --</option>
+            </select>
+            <span asp-validation-for="ParentId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-dark btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

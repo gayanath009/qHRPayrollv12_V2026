@@ -1,0 +1,371 @@
+@model qHRM.Areas.Attendance.Models.HrEmpAttendExp
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<script src="~/lib/jquery/dist/jquery.js"></script>
+
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">Request Exemption for Absent</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item">Attendance</li>
+                <li class="breadcrumb-item active">Request Exemption for Absent</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div id="tabs">
+
+                        <div class="dl-horizontal">
+                            <div class="form-group col-md-12">
+                                <div class="row">
+
+                                    <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+                                        <e-toast-position X="Center"></e-toast-position>
+                                    </ejs-toast>
+
+                                    <div class="col-sm-6">
+                                        <div tabindex="0" class="e-card profile" style="justify-content: flex-start;height:300px">
+                                            <div class="e-card-header">
+                                                <div class="e-card-header-caption center">
+                                                    <div class="e-card-sub-title">Employee Details</div>
+                                                </div>
+                                            </div>
+                                            <div class="e-card-separator"></div>
+                                            <div class="e-card-content">
+                                                <h5 class="card-title"></h5>
+                                                <p class="card-text"></p>
+                                                <p class="card-text">Employee Id : @ViewBag.EmpId</p>
+                                                <p class="card-text">Name        : @ViewBag.EmpName</p>
+                                                <p class="card-text">Department  : @ViewBag.Dpt</p>
+                                                <p class="card-text">Designation : @ViewBag.Dsgntn</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+
+                                        <div tabindex="0" class="e-card profile" style=" justify-content: flex-start;height: 300px">
+                                            <div class="e-card-header">
+                                                <div class="e-card-header-caption center">
+                                                    <div class="e-card-sub-title">Update Exemptions</div>
+                                                </div>
+                                            </div>
+                                            <div class="e-card-separator"></div>
+                                            <div class="e-card-content">
+                                                <h5 class="card-title"></h5>
+                                                <div class="form-row">
+                                                    <div class="form-group col-md-6">
+                                                        <label class="control-label">Effective Start Date</label>
+                                                        <input value="@ViewBag.FromDate" class="form-control form-control-sm" disabled />
+                                                    </div>
+                                                    <div class="form-group col-md-6">
+                                                        <label class="control-label">Effective End Date</label>
+                                                        <input value="@ViewBag.ToDate" class="form-control form-control-sm" disabled />
+                                                    </div>
+                                                </div>
+                                                <div class="form-group col-md-12">
+                                                    <label class="control-label">Remarks</label>
+                                                    <input id="txtRmks" type="text" class="form-control form-control-sm">
+                                                </div>
+                                                <div class="form-group col-md-6">
+                                                    <label class="control-label">&nbsp;</label>
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="requestAbsntExpmtns()">Apply Exemptions</button>
+
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="cnclRequestAbsntExpmtns()">Cancel Request</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <br />
+                                <!--Grid-->
+                                <div class="control-section">
+                                    <div tabindex="0" class="e-card profile" style=" justify-content: flex-start">
+                                        <div class="e-card-header">
+                                            <div class="e-card-header-caption center">
+                                                <div class="e-card-sub-title">Absents</div>
+                                            </div>
+                                        </div>
+                                        <div class="e-card-separator"></div>
+                                        <div class="e-card-content">
+                                            <h5 class="card-title"></h5>
+                                            <input id="txtSlctd" hidden />
+
+                                            <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowSorting="true" allowPaging="false" allowResizing="true" allowFiltering="true"
+                                                      rowSelected="rowSelected" rowDeselected="rowDeselected" rowDataBound="rowDataBound" rowHeight="20">
+                                                @*queryCellInfo="queryCellInfo"*@
+                                                <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                                <e-grid-columns>
+                                                    <e-grid-column field="" type="checkbox" width="30" allowFiltering="false" allowSorting="false"></e-grid-column>
+                                                    <e-grid-column field="AtndcDate" headerText="Date" width="80" minWidth="10" customFormat="@(new { type ="date", format="dd/MM/yyyy" })" type="date"></e-grid-column>
+                                                    <e-grid-column field="ActionStat" headerText="Status" width="125" minWidth="10"></e-grid-column>
+                                                    <e-grid-column field="Note" headerText="Notes" width="100" minWidth="10"></e-grid-column>
+                                                    <e-grid-column field="AprvdStatTxt" headerText="Approved Notes" width="125" minWidth="10"></e-grid-column>
+                                                    <e-grid-column field="AprvdName" headerText="Approved By" width="125" minWidth="10"></e-grid-column>
+                                                </e-grid-columns>
+                                            </ejs-grid>
+                                            <ejs-button id="hideToast"></ejs-button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!--Grid-->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+
+    function rowSelected(args) {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        var selectedvalues = grid.getSelectedRecords().map(obj => obj['AtndcDate']);
+        $("#txtSlctd").val(selectedvalues);
+    }
+
+    function rowDeselected(args) {
+
+        $("#txtSlctd").val('');
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        var delectedvalues = grid.getSelectedRecords().map(obj => obj['AtndcDate']);
+        $("#txtSlctd").val(delectedvalues);
+    }
+
+
+    //function loadFormattings() {
+    //    var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+    //    this.columns[1].format = { type: 'datetime', format: 'dd/MM/yyyy' };
+    //}
+
+    function rowDataBound(args) {
+        if (args.data.AprvdStatTxt === 'Pending')
+            args.row.lastChild.classList.add('pendingStyle')
+    }
+</script>
+
+<style>
+    .e-grid td.e-rowcell.pendingStyle {
+        color: darkorange;
+    }
+</style>
+
+
+
+<script>
+    $(document).ready(function () {
+        loadAbsntExps();
+    });
+
+    function loadAbsntExps() {
+
+        var schTyp = "EMP";
+        var slctdempLst = 0;
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Attendance/HrEmpAtndcExpRqst/Get_AbsntExp',
+            dataType: "json",
+            data: { schTyp: schTyp, slctdempLst: slctdempLst },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                grid.hideSpinner();
+
+            },
+            error: function (xhr, err) {
+                alert("Error");
+            }
+        });
+
+    };
+
+    function requestAbsntExpmtns() {
+
+        var datevals = $("#txtSlctd").val();
+        var datelist = $("#txtSlctd").val().split(',');
+        var Rmks = $("#txtRmks").val();
+        var result = 1;
+
+        if (datevals.length == 0) {
+            toastObj.show(toasts[2]);
+        }
+        else if (Rmks.length == 0) {
+            toastObj.show(toasts[3]);
+        }
+        else {
+
+            for (i = 0; i < datelist.length; ++i) {
+
+                var Date = datelist[i];
+
+                var grid = document.getElementById('Grid').ej2_instances[0];
+                grid.dataSource = null;
+                grid.showSpinner();
+
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: '/Attendance/HrEmpAtndcExpRqst/Set_AbsntExp',
+                    dataType: "json",
+                    data: { Date: Date, Rmks: Rmks },
+                    success: function (data) {
+                        toastObj.show(toasts[0]);
+                        loadAbsntExps();
+                        $("#txtSlctd").val('');
+                        $("#txtRmks").val('');
+                    },
+                    error: function (xhr, err) {
+
+
+                    }
+                });
+            }
+        }
+    };
+
+    function cnclRequestAbsntExpmtns() {
+
+        var datevals = $("#txtSlctd").val();
+        var datelist = $("#txtSlctd").val().split(',');
+        if (datevals.length == 0) {
+            toastObj.show(toasts[2]);
+        }
+        else {
+
+            for (i = 0; i < datelist.length; ++i) {
+                var Date = datelist[i];
+
+                var grid = document.getElementById('Grid').ej2_instances[0];
+                grid.dataSource = null;
+                grid.showSpinner();
+
+                $.ajax({
+                    type: "GET",
+                    contentType: "application/json; charset=utf-8",
+                    url: '/Attendance/HrEmpAtndcExpRqst/Cancel_AbsntExp',
+                    dataType: "json",
+                    data: { Date: Date },
+                    success: function (data) {
+                        toastObj.show(toasts[4]);
+                        loadAbsntExps();
+                        $("#txtSlctd").val('');
+                        $("#txtRmks").val('');
+                    },
+                    error: function (xhr, err) {
+
+
+                    }
+                });
+            }
+        }
+    }
+
+
+</script>
+
+
+<!--Start Toast Start-->
+<script type="text/javascript">
+
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Exemptions were requested successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'Request Exemptions got failed.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'One or more dates should be selected', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Kindly specify the Comments', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Cancellation of the request submitted successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' }
+
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    setTimeout(
+        () => {
+            toastObj.show({
+                target: document.body
+            });
+        }, 500);
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (e.toastContainer.childElementCount === 0) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+    function onBeforeOpen() {
+        btnEleHide.style.display = 'inline-block';
+    }
+</script>
+
+<style>
+    @@font-face {
+        font-family: 'Toast_icons';
+        src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+        font-weight: normal;
+        font-style: normal;
+    }
+
+    #toast_types button {
+        margin: 5px;
+        min-width: 160px;
+        max-width: 160px;
+    }
+
+    .toast-icons {
+        font-family: 'Toast_icons' !important;
+        speak: none;
+        font-size: 55px;
+        font-style: normal;
+        font-weight: normal;
+        font-variant: normal;
+        text-transform: none;
+        line-height: 1;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+    }
+
+    #toast_type .e-toast-icon.e-icons {
+        height: auto;
+        font-size: 30px;
+    }
+
+    .toast-icons.e-success::before {
+        content: "\e701";
+    }
+
+    .toast-icons.e-error::before {
+        content: "\e700";
+    }
+
+    .toast-icons.e-info::before {
+        content: "\e704";
+    }
+
+    .toast-icons.e-warning::before {
+        content: "\e703";
+    }
+
+    .e-grid * {
+        font-size: 11px !important;
+    }
+</style>
+<!--End Toast End-->

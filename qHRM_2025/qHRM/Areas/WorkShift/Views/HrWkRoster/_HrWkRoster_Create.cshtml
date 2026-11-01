@@ -1,0 +1,81 @@
+﻿@model qHRM.Areas.WorkShift.Models.HrWkRoster
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrWkRoster"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.RstId)
+    </div>
+    <div class="card-body">
+        @*<div class="form-group col-md-6">
+        <div id="divNewRstHdr">*@
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="RstCode" class="control-label"></label>
+                <input asp-for="RstCode" class="form-control form-control-sm" />
+                <span asp-validation-for="RstCode" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="NameEng" class="control-label"></label>
+                <input asp-for="NameEng" class="form-control form-control-sm" />
+                <span asp-validation-for="NameEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="DescEng" class="control-label"></label>
+                <input asp-for="DescEng" class="form-control form-control-sm" />
+                <span asp-validation-for="DescEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="SftNos" class="control-label"></label>
+                <input asp-for="SftNos" class="form-control form-control-sm" />
+                <span asp-validation-for="SftNos" class="text-danger"></span>
+            </div>
+        </div>
+        @*<div class="form-row">
+            <div class="form-group col-md-12">
+                <div class="form-check">
+                    <input type="checkbox" asp-for="OvrNghtSft" class="form-check-input" id="chkOvrNghtSft">Over Night Shift
+                    <span asp-validation-for="OvrNghtSft" class="text-danger"></span>
+                </div>
+            </div>
+        </div>*@
+        <div class="form-group"></div>
+
+        @*<div class="form-row">
+            <input value="Next" class="btn btn-sm btn-primary btn-block" onclick="nextFunc();" />
+        </div>*@
+        @*<div id="divRstShfts">
+            <div class="form-row">
+                <input type="submit" value="Back" class="btn btn-sm btn-primary btn-block" />
+            </div>
+        </div>*@
+        @*</div>
+
+            <div class="form-group col-md-6">
+                <ejs-schedule id="schedule" height="550px" selectedDate="new DateTime(2018, 2, 15)" showQuickInfo="false" currentView="Week">
+                    <e-schedule-eventsettings dataSource="@ViewBag.datasource"></e-schedule-eventsettings>
+                    <e-schedule-views>
+                        <e-schedule-view option="Week" showWeekNumber="false"></e-schedule-view>
+                    </e-schedule-views>
+                </ejs-schedule>
+            </div>
+        </div>*@
+
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<ejs-scripts></ejs-scripts>

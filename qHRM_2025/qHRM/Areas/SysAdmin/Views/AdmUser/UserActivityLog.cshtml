@@ -1,0 +1,96 @@
+@{
+    ViewData["Title"] = "User Activity Log";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div>
+    <main>
+        <div class="container-fluid">
+            <h4 class="mt-4">User Login Activities</h4>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">User</a></li>
+                <li class="breadcrumb-item active">User Login Activities</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-4"></div>
+                        <div class="form-group col-md-4">
+
+                            <label class="control-label control-label-sm">Date</label>
+                            <input id="selectedDate" type="date" class="form-control form-control-sm" onchange="getUserLogsByDate()"/>
+
+                        </div>
+                        <div class="form-group col-md-4"></div>
+                    </div>
+                    <br />
+
+                    <div id="tabs-1" class="form-row">
+                        <div class="col-md-12">
+                            <ejs-grid id="Grid" dataSource="ViewBag.UserLog" width="auto" allowPaging="true" allowGrouping=" true" allowFiltering="true"
+                                      allowExcelExport="true" allowPdfExport="true" allowResizing="true">
+                                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                                <e-grid-columns>
+                                    <e-grid-column field="EmpName" headerText="User" width="100"></e-grid-column>
+                                    <e-grid-column field="InTime" headerText="Log in Time" width="175"></e-grid-column>
+                                    <e-grid-column field="OutTime" headerText="Log out Time" width="175"></e-grid-column>
+                                    <e-grid-column field="LogDate" headerText="Log Date" width="175"></e-grid-column>
+
+                                </e-grid-columns>
+                            </ejs-grid>
+                        </div>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+    @*$(document).ready(function(){
+
+            $.ajax({
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                url: "@(Url.Action("UserActivityLog", "AdmUser"))",
+                dataType: "json",
+                data: { strDate: null},
+                success: function (data) {
+                    grid.dataSource = data.data;
+                },
+                error: function (xhr, err) {
+                    alert("Grid Error");
+                }
+            });
+
+    });*@
+
+
+    function getUserLogsByDate() {
+
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        vDate = $("#selectedDate").val();
+        if (vDate == null) {
+            alert("Date can not be null");
+        }
+        else {
+
+            $.ajax({
+                type: "GET",
+                contentType: "application/json; charset=utf-8",
+                url: "@(Url.Action("UserActivityLog", "AdmUser"))",
+                dataType: "json",
+                data: { strDate: vDate },
+                success: function (data) {
+                    console.log(data);
+                    grid.dataSource = data.data;
+                },
+                error: function (xhr, err) {
+                    alert("Grid Error");
+                }
+            });
+        }
+    };
+
+</script>

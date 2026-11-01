@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="WorkflowEngine.API/WorkflowEngine.API.csproj" />
+  <Project Path="WorkflowEngine.Application/WorkflowEngine.Application.csproj" />
+  <Project Path="WorkflowEngine.Domain/WorkflowEngine.Domain.csproj" />
+  <Project Path="WorkflowEngine.Infrastructure/WorkflowEngine.Infrastructure.csproj" />
+  <Project Path="WorkflowEngine.Tests/WorkflowEngine.Tests.csproj" />
+</Solution>

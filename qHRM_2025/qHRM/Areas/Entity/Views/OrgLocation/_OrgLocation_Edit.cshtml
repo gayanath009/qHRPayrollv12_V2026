@@ -1,0 +1,59 @@
+@model qHRM.Areas.Entity.Models.OrgLocation
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "OrgLocation"))
+{
+    <div class="dl-horizontal">
+        <span class="alert-success ">
+            @Html.ValidationSummary(true)
+        </span>
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.LocId)
+        @Html.HiddenFor(model => model.EntId)
+        @Html.HiddenFor(model => model.RecStat)
+        @Html.HiddenFor(model => model.CrtDateTime)
+
+        <div class="form-group">
+            <label asp-for="LocCode" class="control-label"></label>
+            <input asp-for="ex_LocCode" class="form-control form-control-sm" hidden />
+            <input asp-for="LocCode" class="form-control form-control-sm" />
+            <span asp-validation-for="LocCode" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="NameEng" class="control-label"></label>
+            <input asp-for="NameEng" class="form-control form-control-sm" />
+            <span asp-validation-for="NameEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="DescEng" class="control-label"></label>
+            <input asp-for="DescEng" class="form-control form-control-sm" />
+            <span asp-validation-for="DescEng" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="ParentId" class="control-label"></label>
+            <select asp-for="ParentId" id="ParentId" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstPrntLoc, "LocId", "NameEng", Model?.ParentId))">
+                <option value="">-- Select Parent Location --</option>
+            </select>
+            <span asp-validation-for="ParentId" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <input type="submit" value="Save" class="btn btn-sm btn-dark btn-block" />
+            <input type="button" value="Close" class="btn btn-sm btn-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalEdit')
+        });
+
+        $('#modalEdit').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

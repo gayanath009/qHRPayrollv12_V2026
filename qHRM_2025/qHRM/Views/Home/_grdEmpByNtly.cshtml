@@ -1,0 +1,155 @@
+@using Syncfusion.EJ2
+<div class="form-row">
+    <div class="form-group col-md-12">
+
+        <div id="divNltyEmpSmry">
+            <ejs-grid id="Grid" width="auto" dataSource="ViewBag.dsNltyEmpSmry" rowHeight="40" gridLines="Both" allowSorting="true"  dataBound="OnDataBound">
+                <e-grid-aggregates>
+                    <e-grid-aggregate>
+                        <e-aggregate-columns>
+                            <e-aggregate-column field="ActlEmpCnt" type="Sum" footerTemplate="${Sum}" customAttributes=@(new { @class="customcss"})></e-aggregate-column>
+                        </e-aggregate-columns>
+                    </e-grid-aggregate>
+                </e-grid-aggregates>
+                <e-grid-columns>
+                    <e-grid-column template="#itemTemplate" field="NltyName" headerText="Nationality" width="70" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                    <e-grid-column field="ActlEmpCnt" headerText="Actual" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                    <e-grid-column field="AlctdEmpCnt" headerText="Allocated" width="40" textAlign="Right" customAttributes=@(new { @class="customcss" })></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+        <div id="divNltyEmpDtl" style="display:none;">
+            <div>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <button type="button" class="btn btn-outline-primary" onclick="grdNltyEmpDtl_Hide()">Back</button>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label id="labelNltyHeading" class="h4"></label>
+                    </div>
+                    <div class="form-group col-md-3">
+                    </div>
+                </div>
+            </div>
+            <div>&nbsp;</div>
+            <ejs-grid id="GridEmp2" width="auto" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowSorting="true"
+                 allowExcelExport="true" allowPdfExport="true" >
+                <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                <e-grid-columns>
+                    <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                    <e-grid-column field="EmpId" headerText="Employee ID" width="100"></e-grid-column>
+                    <e-grid-column field="Title" headerText="Title" width="50"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Full Name" width="150"></e-grid-column>
+                    <e-grid-column field="DeptName" headerText="Department" width="175"></e-grid-column>
+                    <e-grid-column field="Ex_JoinedDate" headerText="Joined Date" width="125"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<!--Template Column-->
+<script type="text/x-jsrender" id="_avatar">
+    <img class="img-profile rounded-circle" style="width: 35px; height: 45px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${PhotoName ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+</script>
+
+<script id="itemTemplate" type="text/x-template">
+    <div>
+        <a rel='tag' href="#" class="e-underline" onclick="showNltyEmpDtl(${EmpRtoId})">${NltyName}</a>
+    </div>
+</script>
+<!--Template Column-->
+
+<script>
+
+    $(document).ready(function () {
+        grdNltyEmpDtl_Hide();
+    });
+
+
+    function showNltyEmpDtl(Id) {
+
+        var grid = document.getElementById('GridEmp2').ej2_instances[0];
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+        divNltyEmpSmry.style.display = "none";
+        divNltyEmpDtl.style.display = "block";
+
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Home/GetEmployeeByNtlyRtoId',
+            dataType: "json",
+            data: { Id: Id },
+            success: function (data) {
+                console.log(data);
+                grid.dataSource = data.data;
+                $.each(data.data, function (i, obj) {
+                    $('#labelNltyHeading').text('Nationality : ' + obj.NltyName);
+                });
+
+                if (Id == 12) {
+                    $('#labelNltyHeading').text('Nationality : Others ');
+                }
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+
+
+
+    function grdNltyEmpDtl_Hide() {
+        var divNltyEmpSmry = document.getElementById("divNltyEmpSmry");
+        var divNltyEmpDtl = document.getElementById("divNltyEmpDtl");
+        divNltyEmpSmry.style.display = "block";
+        divNltyEmpDtl.style.display = "none";
+    }
+
+    var initialRender = true
+    function OnDataBound() {
+        if (initialRender) {
+            this.aggregateModule.footerRenderer.contentTable.querySelector('.e-summarycell').innerText = "Total Employees";
+            this.aggregateModule.footerRenderer.contentTable.querySelector('.e-templatecell').classList.add('custom-css');
+            initialRender = false;
+        }
+    }
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("GridEmp2").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+
+
+</script>
+<style>
+    .e-grid .e-rowcell.customcss {
+        background-color: white;
+        color: #540033;
+        font-family: "Segoe UI";
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+    .e-grid .e-headercell.customcss {
+        background-color: whitesmoke;
+        color: #540033;
+        font-family: 'Segoe UI';
+        font-size: 30px;
+        font-weight: 600;
+    }
+   
+    .e-grid .e-templatecell.custom-css {
+        color: #540033;
+        font-family: "Segoe UI";
+        font-size: 20px;
+        font-weight: 600;
+    }
+
+</style>
+<ejs-scripts></ejs-scripts>

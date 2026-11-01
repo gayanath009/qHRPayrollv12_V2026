@@ -1,0 +1,20 @@
+﻿@model qHRM.Areas.General.Models.OrgEntity
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("Delete", "OrgEntity"))
+{<div>
+    @Html.HiddenFor(model => model.EntId)
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.NameEng) : @Html.DisplayFor(model => model.NameEng)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.Desc) : @Html.DisplayFor(model => model.Desc)
+    </div>
+    <div class="form-group">
+        @Html.DisplayNameFor(model => model.OrgId) : @Html.DisplayFor(model => model.OrgId)
+    </div>
+
+    <input type="submit" value="Delete" class="btn btn-sm  btn-danger" />
+    <a asp-action="Index" class="btn btn-sm btn-outline-primary">Back</a>
+
+</div>
+}

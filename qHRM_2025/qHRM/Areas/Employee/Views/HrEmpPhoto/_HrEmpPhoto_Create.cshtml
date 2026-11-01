@@ -1,0 +1,28 @@
+﻿@model qHRM.Areas.Employee.Models.HrEmpPhoto
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<form asp-action="Create" asp-controller="HrEmpPhoto" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label for="formControl">Attach Photo</label>
+            <ejs-uploader id="fileUpload" autoUpload="false" multiple="false"  allowedExtensions=".jpg, .png, .jpeg, .bmp"  maxFileSize="1000000"></ejs-uploader>
+            <span asp-validation-for="PhotoName" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label asp-for="Note" class="control-label"></label>
+            <input asp-for="Note" class="form-control form-control-sm" />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+    </div>
+    <div class="form-group">
+        @if (ViewBag.RecAdd == true)
+        {
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+        }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+</form>
+<ejs-scripts></ejs-scripts>

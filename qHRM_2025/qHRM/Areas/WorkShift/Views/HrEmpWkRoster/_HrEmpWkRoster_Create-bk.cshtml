@@ -1,0 +1,267 @@
+﻿
+@model qHRM.Areas.WorkShift.Models.HrEmpWkRoster
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+@using (Html.BeginForm("Create", "HrEmpWkRoster"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created" width="75%">
+            <e-toast-position X="Center"></e-toast-position>
+        </ejs-toast>
+
+        @*<div class="form-group">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <ejs-dropdownlist id="drpEmployee" placeholder="Select Employee" dataSource="ViewBag.lstEmp" ejs-for="EmpSysId" filterBarPlaceholder="Search" allowFiltering="true" filterType="Contains">
+                    <e-dropdownlist-fields text="FulNme" value="ESysId"></e-dropdownlist-fields>
+                </ejs-dropdownlist>
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+            </div>*@
+
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label class="control-label">Employee Type</label>
+                <br />
+                <fieldset class="form-group">
+                    <div class="row">
+                        <div class="col-sm-10">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="chkAllEmp" value="A" checked onclick="showReProcessOptions();">
+                                <label class="form-check-label" for="gridRadios1">
+                                    All Employees
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdEmp" value="S" onclick="showReProcessOptions();">
+                                <label class="form-check-label" for="gridRadios2">
+                                    Individual Employee
+                                </label>
+                            </div>
+                            <input id="txtempTyp" asp-for="EmpTyp" hidden />
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div class="form-group col-md-8">
+                <br /> <br />
+                <div id="dvEmp">
+                    <ejs-dropdownlist id="drpEmp" placeholder="Select Employee" dataSource="ViewBag.lstEmp" ejs-for="EmpSysId" filterBarPlaceholder="Search" allowFiltering="true" filterType="Contains">
+                        <e-dropdownlist-fields text="FulNme" value="ESysId"></e-dropdownlist-fields>
+                    </ejs-dropdownlist>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-12">
+            <label asp-for="RstId" class="control-label"></label>
+            <ejs-dropdownlist id="drpRstTyp" placeholder="Select Roster" dataSource="ViewBag.lstRstrs" ejs-for="RstId" filterBarPlaceholder="Search" allowFiltering="true">
+                <e-dropdownlist-fields text="NameEng" value="RstId"></e-dropdownlist-fields>
+            </ejs-dropdownlist>
+            <span asp-validation-for="RstId" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group  col-md-6">
+            <label asp-for="StDate" class="control-label"></label>
+            <input asp-for="StDate" class="form-control form-control-sm" />
+            <span asp-validation-for="StDate" class="text-danger"></span>
+        </div>
+        <div class="form-group  col-md-6">
+            <label>
+                End Date
+                <input type="checkbox" id="chkEndDate" onclick="enableEndDate()" class="e-left mycheckbox" >
+            </label>
+            <input id="dtpEndDate" asp-for="EndDate" class="form-control form-control-sm" />
+            <span asp-validation-for="EndDate" class="text-danger"></span>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label>
+                Skip Roster Validation
+                <input type="checkbox" data-ng-model="rememberMe" asp-for="SkpRstVldtn" class="pull-right mycheckbox">
+            </label>
+
+        </div>
+        <div class="form-group col-md-6">
+            <label>
+                Consider for Attendance
+                <input type="checkbox" data-ng-model="rememberMe" asp-for="CndrAtndc" class="pull-right mycheckbox">
+            </label>
+            <span asp-validation-for="CndrAtndc" class="text-danger"></span>
+        </div>
+    </div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            @*<input type="button" value="Test" class="btn btn-sm btn-outline-primary btn-block" onclick="listTestFunc();"/>*@
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+
+        }
+
+        <script>
+
+            $(document).ready(function () {
+                showReProcessOptions();
+            });
+
+            function showReProcessOptions() {
+                var chkAllEmp = document.getElementById("chkAllEmp");
+                var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+                var dvEmp = document.getElementById("dvEmp");
+
+                if (chkAllEmp.checked == true) {
+                    dvEmp.style.display = "none";
+                    $('#txtempTyp').val('A');
+                }
+                else if (chkSlctdEmp.checked == true) {
+                    dvEmp.style.display = "block";
+                    $('#txtempTyp').val('S');
+                }
+            }
+
+            function enableEndDate() {
+                var chkEndDate = document.getElementById("chkEndDate");
+                var dtpEndDate = document.getElementById("dtpEndDate");
+
+                if (chkEndDate.checked == true) {
+                    dtpEndDate.style.display = "block";
+                }
+                else {
+                    dtpEndDate.style.display = "none";
+                }
+            }
+
+
+            $('form').each(function () {
+                $(this).submit(function (e) {
+                    var ref = 0;
+                    var drpEmp = document.getElementById('drpEmp').ej2_instances[0];
+
+
+                    if (chkAllEmp.checked == true) {
+                        empTyp = 'A';
+                        ref = 0;
+                    }
+                    else if (chkSlctdEmp.checked == true) {
+                        empTyp = 'S';
+                        ref = drpEmp.value;
+                    }
+
+                    if (empTyp = 'S' && ref == null) {
+                        toastObj.show(toasts[4]);
+                        return false;
+                    }
+
+                    else {
+                        return true;
+                    }
+                });
+            });
+
+
+        </script>
+        <!--Start Toast Start-->
+        <script type="text/javascript">
+
+            var toastObj;
+            var toasts = [
+                { title: 'Success!', content: 'Record Added Successfully', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+                { title: 'Success!', content: 'Record Deleted Successfully', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+                { title: 'Error!', content: 'Adding record got failed', cssClass: 'e-toast-danger', icon: 'e-error toast-icons' },
+                { title: 'Error!', content: 'Deleting record got failed', cssClass: 'e-toast-danger', icon: 'e-error toast-icons' },
+                { title: 'Warning!', content: 'Please choose one or more employees', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' }]
+
+            var btnEleHide = document.getElementById('hideToast');
+
+            setTimeout(
+                () => {
+                    toastObj.show({
+                        target: document.body
+                    });
+                }, 500);
+
+            function created() {
+                toastObj = this;
+            }
+
+
+            function onclose(e) {
+                if (e.toastContainer.childElementCount === 0) {
+                    btnEleHide.style.display = 'none';
+                }
+            }
+            function onBeforeOpen() {
+                btnEleHide.style.display = 'inline-block';
+            }
+        </script>
+
+        <style>
+            @@font-face {
+                font-family: 'Toast_icons';
+                src: url(data:application/x-font-ttf;charset=utf-8;base64,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) format('truetype');
+                font-weight: normal;
+                font-style: normal;
+            }
+
+            #toast_types button {
+                margin: 5px;
+                min-width: 160px;
+                max-width: 160px;
+            }
+
+            .toast-icons {
+                font-family: 'Toast_icons' !important;
+                speak: none;
+                font-size: 55px;
+                font-style: normal;
+                font-weight: normal;
+                font-variant: normal;
+                text-transform: none;
+                line-height: 1;
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+            }
+
+            #toast_type .e-toast-icon.e-icons {
+                height: auto;
+                font-size: 30px;
+            }
+
+            .toast-icons.e-success::before {
+                content: "\e701";
+            }
+
+            .toast-icons.e-error::before {
+                content: "\e700";
+            }
+
+            .toast-icons.e-info::before {
+                content: "\e704";
+            }
+
+            .toast-icons.e-warning::before {
+                content: "\e703";
+            }
+        </style>
+        <!--End Toast End-->
+
+        <script type="text/javascript">
+            $(function () {
+                $('#modalCreate').on('shown.bs.modal', function () {
+                    $(document).off('focusin.modal');
+                });
+            });
+        </script>
+        <ejs-scripts></ejs-scripts>
+

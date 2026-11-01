@@ -1,0 +1,323 @@
+﻿@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrLvEncsh>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Leave Encashment</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Leave Encashment</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        <div>
+                            <a href="#" class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                Add New
+                            </a>
+                            @if (ViewBag.Rec_Add == true)
+                            {
+
+                            }
+                        </div>
+                    </p>
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="PrcdDt" headerText="Date" width="50"></e-grid-column>
+                                <e-grid-column field="EmpId" headerText="Id" width="50"></e-grid-column>
+                                <e-grid-column field="EmpName" headerText="Name" width="100"></e-grid-column>
+                                <e-grid-column field="DptName" headerText="Department" width="100"></e-grid-column>
+                                <e-grid-column field="LvPlcy" headerText="LV Policy" width="70"></e-grid-column>
+                                <e-grid-column field="IncldPrjAlwnc" headerText="Add Project Alwnc" width="50"></e-grid-column>
+                                <e-grid-column field="IncldLstMnthSlry" headerText="Add Last Month Salary" width="50"></e-grid-column>
+                                <e-grid-column field="IncldTktFee" headerText="Ticket Fee" width="50"></e-grid-column>
+                                <e-grid-column field="FrmDt" headerText="From Date" width="80" format='yMd'></e-grid-column>
+                                <e-grid-column field="ToDt" headerText="To Date" width="80" format='yMd'></e-grid-column>
+                                <e-grid-column field="EftWrkDys" headerText="Effective Days" width="50"></e-grid-column>
+                                <e-grid-column field="NpCnt" headerText="No pays" width="50"></e-grid-column>
+                                <e-grid-column field="ErndLvCnt" headerText="Earned Leaves" width="50"></e-grid-column>
+                                <e-grid-column field="LvSlry" headerText="Leave Salary" width="70"></e-grid-column>
+                                <e-grid-column field="LstMntSlry" headerText="Lv Month Salary" width="70"></e-grid-column>
+                                <e-grid-column field="TktFee" headerText="Ticket Fee" width="70"></e-grid-column>
+
+                                <e-grid-column field="" headerText="" template="#_edit" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_cancel" width="50"></e-grid-column>
+
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                                @if (ViewBag.Rec_Delete == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Add New Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Cancel-->
+                    <div class="modal" id="modalCancel" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancel Encashment</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${ LvEncshId })">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<script type="text/x-jsrender" id="_cancel">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="cancelFunc(${ LvEncshId })">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/Payroll/HrPrLvEncsh/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (lvEncshId) {
+        var url = "/Payroll/HrPrLvEncsh/EditGet?lvEncshId=" + lvEncshId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var deleteFunc = function (lvEncshId) {
+        var url = "/Payroll/HrPrLvEncsh/DeleteGet?lvEncshId=" + lvEncshId;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+</script>
+
+
+
+
+
+@*@{
+        Layout = null;
+    }
+
+    <!DOCTYPE html>
+
+    <html>
+    <head>
+        <meta name="viewport" content="width=device-width" />
+        <title>Index</title>
+    </head>
+    <body>
+    <p>
+        <a asp-action="Create">Create New</a>
+    </p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>
+                    @Html.DisplayNameFor(model => model.PlcyId)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RefTyp)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RefId)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.IncldLstMnthSlry)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.IncldPrjAlwnc)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.FrmDtTyp)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.FrmDt)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ToDt)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.StatIndx)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.Rmks)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EftWrkDys)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.NpCnt)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.ErndLvCnt)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.GrsSlry)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LvSlry)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.LstMntSlry)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.RecStat)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.CrtId)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.CrtDateTime)
+                </th>
+                <th>
+                    @Html.DisplayNameFor(model => model.EmpSys)
+                </th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+    @foreach (var item in Model) {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.PlcyId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RefTyp)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RefId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IncldLstMnthSlry)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IncldPrjAlwnc)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FrmDtTyp)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.FrmDt)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ToDt)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.StatIndx)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Rmks)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.EftWrkDys)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.NpCnt)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.ErndLvCnt)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.GrsSlry)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LvSlry)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.LstMntSlry)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.RecStat)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CrtId)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.CrtDateTime)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.EmpSys.AdId)
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.LvEncshId">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.LvEncshId">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.LvEncshId">Delete</a>
+                </td>
+            </tr>
+    }
+        </tbody>
+    </table>
+    </body>
+    </html>*@

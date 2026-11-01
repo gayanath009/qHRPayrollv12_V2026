@@ -1,0 +1,729 @@
+@model qHRM.Areas.Payroll.Models.HrPrConfig
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+
+@{
+    ViewData["Title"] = "Payroll Configuration";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<style>
+    /* ============================================================
+       PAYROLL CONFIGURATION - ORGINFO STYLE (#540033)
+       ============================================================ */
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --org-slate-900: #0f172a;
+        --org-slate-800: #1e293b;
+        --org-slate-600: #475569;
+        --org-slate-500: #64748b;
+        --org-slate-200: #e2e8f0;
+        --org-slate-100: #f1f5f9;
+        --org-slate-50: #f8fafc;
+        --org-radius-lg: 16px;
+        --org-radius-md: 10px;
+        --org-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    .org-page-container {
+        padding: 1.25rem 0.5rem 2rem 0.5rem;
+    }
+
+    /* Compact Header Card */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--org-slate-200);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--org-slate-900);
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: var(--org-slate-600);
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+    .org-breadcrumb a {
+        color: var(--org-slate-600);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .org-breadcrumb a:hover {
+        color: var(--org-primary);
+    }
+
+    /* Buttons */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .org-btn-create:active {
+        transform: translateY(0);
+    }
+
+    /* Cards */
+    .org-main-card {
+        background: #ffffff;
+        border: 1px solid var(--org-slate-200);
+        border-radius: var(--org-radius-lg);
+        box-shadow: var(--org-shadow);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .org-card-header {
+        padding: 1.15rem 1.5rem;
+        background: #ffffff;
+        border-bottom: 1px solid var(--org-slate-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .org-card-header-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--org-slate-800);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-card-header-title i {
+        color: var(--org-primary);
+        margin-right: 0.6rem;
+    }
+
+    .org-card-body {
+        padding: 1.35rem 1.5rem;
+    }
+
+    /* Form Fields */
+    .cfg-group {
+        margin-bottom: 1.1rem;
+    }
+
+    .cfg-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: var(--org-slate-600);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        margin-bottom: 0.4rem;
+        display: block;
+    }
+
+    .cfg-input {
+        width: 100%;
+        background: var(--org-slate-50);
+        border: 1px solid var(--org-slate-200);
+        color: var(--org-slate-800);
+        border-radius: var(--org-radius-md);
+        padding: 0.55rem 0.85rem;
+        font-size: 0.875rem;
+        outline: none;
+        transition: all 0.2s ease;
+    }
+
+    .cfg-input:focus {
+        border-color: var(--org-primary);
+        box-shadow: 0 0 0 3px rgba(84, 0, 51, 0.12);
+        background: #ffffff;
+    }
+
+    .cfg-input:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background: var(--org-slate-100);
+    }
+
+    .cfg-check {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        font-size: 0.85rem;
+        color: var(--org-slate-800);
+        font-weight: 600;
+        cursor: pointer;
+        user-select: none;
+        margin-top: 0.5rem;
+    }
+
+    .cfg-check input {
+        width: 18px;
+        height: 18px;
+        accent-color: var(--org-primary);
+        cursor: pointer;
+    }
+
+    /* Action Buttons in Gratuity Grid */
+    .org-actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .org-action-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        padding: 0;
+        outline: none;
+        font-size: 0.8rem;
+    }
+
+    .org-action-edit {
+        background: #fdf2f8;
+        color: var(--org-primary);
+        border-color: #fbcfe8;
+    }
+
+    .org-action-edit:hover {
+        background: var(--org-primary);
+        color: #ffffff !important;
+        border-color: var(--org-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(84, 0, 51, 0.25);
+    }
+
+    .org-action-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .org-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    }
+
+    /* Modal Overrides */
+    .org-modal .modal-content {
+        border: none !important;
+        border-radius: var(--org-radius-lg) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        overflow: hidden;
+    }
+
+    .org-modal .modal-header {
+        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
+        color: #ffffff !important;
+        padding: 1.15rem 1.5rem !important;
+        border-bottom: none !important;
+    }
+
+    .org-modal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-modal .modal-header .close {
+        color: #ffffff !important;
+        opacity: 0.8 !important;
+        text-shadow: none !important;
+    }
+
+    .org-modal .modal-header .close:hover {
+        opacity: 1 !important;
+    }
+</style>
+
+<div class="org-page-container">
+    @using (Html.BeginForm("CreatePrConfig", "HrPrConfig", FormMethod.Post, new { id = "cfgForm" }))
+    {
+        @Html.AntiForgeryToken()
+        @Html.HiddenFor(model => model.PrCnfId)
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+        <!-- COMPACT HERO HEADER -->
+        <div class="org-hero-card">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                <div class="d-flex align-items-center">
+                    <div class="org-icon-badge mr-3">
+                        <i class="fas fa-cogs"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                            <h1 class="org-title">Payroll Configuration</h1>
+                            <span class="badge org-category-pill">PAYROLL</span>
+                        </div>
+                        <div class="org-breadcrumb">
+                            <a href="#">Settings</a> / <span class="text-dark font-weight-medium">Payroll Configuration</span>
+                            <span class="text-muted mx-1">&bull;</span>
+                            <span class="text-muted">Manage company-wide payroll rules, cutoffs, banking parameters, and gratuity scales</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <button type="submit" class="btn org-btn-create">
+                        <i class="fas fa-save mr-1"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="container-fluid px-0">
+            <div class="row">
+
+                <!-- Left Column -->
+                <div class="col-12 col-xl-6">
+                    <!-- Cutoff & Period Settings -->
+                    <div class="org-main-card">
+                        <div class="org-card-header">
+                            <div class="org-card-header-title">
+                                <i class="fas fa-calendar-check"></i>
+                                <span>Attendance & Salary Cutoff Rules</span>
+                            </div>
+                        </div>
+                        <div class="org-card-body">
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="AttnCtEom" id="chkAttnCtEom" onchange="chkAttnCtEomChange()" />
+                                        Attendance Cutoff at Month End
+                                    </label>
+                                    <span asp-validation-for="AttnCtEom" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="AttnCtDay" class="cfg-label">Attendance Cutoff Day</label>
+                                    <input id="txtAttnCtDay" asp-for="AttnCtDay" class="cfg-input" />
+                                    <span asp-validation-for="AttnCtDay" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="SlryPrcEom" id="chkSlryPrcEom" onchange="chkSlryPrcEomChange()" />
+                                        Salary Process at Month End
+                                    </label>
+                                    <span asp-validation-for="SlryPrcEom" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="SlryPrcDay" class="cfg-label">Salary Process Day</label>
+                                    <input id="txtSlryPrcDay" asp-for="SlryPrcDay" class="cfg-input" />
+                                    <span asp-validation-for="SlryPrcDay" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="SlryPrcStYear" class="cfg-label">Salary Starting Year</label>
+                                    <input asp-for="SlryPrcStYear" class="cfg-input" />
+                                    <span asp-validation-for="SlryPrcStYear" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="SlryPrcStMonth" class="cfg-label">Salary Starting Month</label>
+                                    <input asp-for="SlryPrcStMonth" class="cfg-input" />
+                                    <span asp-validation-for="SlryPrcStMonth" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="SlryPrcLstMnt" id="chkSlryPrcLstMnt" />
+                                        Include Final Salary in Process
+                                    </label>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="OtClcActMntHrs" id="chkOtClcActMntHrs" onchange="chkOtClcActMntHrsChange()" />
+                                        Actual Working Hours for OT
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="OtClcMntHrsVal" class="cfg-label">Monthly Standard Hours</label>
+                                    <input id="txtOtClcMntHrsVal" asp-for="OtClcMntHrsVal" class="cfg-input" />
+                                    <span asp-validation-for="OtClcMntHrsVal" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="Notes" class="cfg-label">Configuration Notes</label>
+                                    <input asp-for="Notes" class="cfg-input" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payer Banking & WPS -->
+                    <div class="org-main-card">
+                        <div class="org-card-header">
+                            <div class="org-card-header-title">
+                                <i class="fas fa-university"></i>
+                                <span>Payer Banking & WPS Information</span>
+                            </div>
+                        </div>
+                        <div class="org-card-body">
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrEid" class="cfg-label">Employer ID (EID)</label>
+                                    <input asp-for="PyrEid" class="cfg-input" />
+                                    <span asp-validation-for="PyrEid" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrQid" class="cfg-label">Employer QID</label>
+                                    <input asp-for="PyrQid" class="cfg-input" />
+                                    <span asp-validation-for="PyrQid" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrBnkShtNm" class="cfg-label">Bank Short Code</label>
+                                    <input asp-for="PyrBnkShtNm" class="cfg-input" />
+                                    <span asp-validation-for="PyrBnkShtNm" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrIban" class="cfg-label">IBAN</label>
+                                    <input asp-for="PyrIban" class="cfg-input" />
+                                    <span asp-validation-for="PyrIban" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrBnkNm" class="cfg-label">Bank Name</label>
+                                    <input asp-for="PyrBnkNm" class="cfg-input" />
+                                    <span asp-validation-for="PyrBnkNm" class="text-danger"></span>
+                                </div>
+                                <div class="col-md-6 cfg-group">
+                                    <label asp-for="PyrBrnch" class="cfg-label">Bank Branch</label>
+                                    <input asp-for="PyrBrnch" class="cfg-input" />
+                                    <span asp-validation-for="PyrBrnch" class="text-danger"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: End of Service & Gratuity -->
+                <div class="col-12 col-xl-6">
+                    <div class="org-main-card">
+                        <div class="org-card-header">
+                            <div class="org-card-header-title">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>End of Service & Gratuity Rules</span>
+                            </div>
+                        </div>
+                        <div class="org-card-body">
+                            <div class="form-row">
+                                <div class="col-md-8 cfg-group">
+                                    <label asp-for="EsLvSMnWkPrd" class="cfg-label">Min. Work Period for Leave Salary (Months)</label>
+                                </div>
+                                <div class="col-md-4 cfg-group">
+                                    <input id="txtEsLvSMnWkPrd" asp-for="EsLvSMnWkPrd" class="cfg-input" />
+                                    <span asp-validation-for="EsLvSMnWkPrd" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-8 cfg-group">
+                                    <label asp-for="EsLvSDiYVal" class="cfg-label">Days in Year Divisor for Leave Salary</label>
+                                </div>
+                                <div class="col-md-4 cfg-group">
+                                    <input id="txtEsLvSDiYVal" asp-for="EsLvSDiYVal" class="cfg-input" />
+                                    <span asp-validation-for="EsLvSDiYVal" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-7 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="EsLmsActDiM" id="chkEsLmsActDiM" onchange="chkEsLmsActDiMChange()" />
+                                        Divide by Actual Days of Month
+                                    </label>
+                                </div>
+                                <div class="col-md-5 cfg-group">
+                                    <label asp-for="EsLmsDiMVal" class="cfg-label">Last Month Days Divisor</label>
+                                    <input id="txtEsLmsDiMVal" asp-for="EsLmsDiMVal" class="cfg-input" disabled="disabled" />
+                                    <span asp-validation-for="EsLmsDiMVal" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-8 cfg-group">
+                                    <label asp-for="EsGrtDiMVal" class="cfg-label">Gratuity Days in Month Divisor</label>
+                                </div>
+                                <div class="col-md-4 cfg-group">
+                                    <input id="txtEsGrtDiMVal" asp-for="EsGrtDiMVal" class="cfg-input" />
+                                    <span asp-validation-for="EsGrtDiMVal" class="text-danger"></span>
+                                </div>
+                            </div>
+                            <div class="form-row">
+                                <div class="col-md-7 cfg-group">
+                                    <label class="cfg-check">
+                                        <input type="checkbox" asp-for="EsGrtActDiY" id="chkEsGrtActDiY" onchange="chkEsGrtActDiYChange()" />
+                                        Actual Days in Year for Gratuity
+                                    </label>
+                                </div>
+                                <div class="col-md-5 cfg-group">
+                                    <label asp-for="EsGrtDiYVal" class="cfg-label">Gratuity Days in Year</label>
+                                    <input id="txtEsGrtDiYVal" asp-for="EsGrtDiYVal" class="cfg-input" />
+                                    <span asp-validation-for="EsGrtDiYVal" class="text-danger"></span>
+                                </div>
+                            </div>
+
+                            <hr style="border-top:1px solid var(--org-slate-200); margin: 1.5rem 0 1.25rem 0;" />
+
+                            <!-- Gratuity Levels Sub-Grid -->
+                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                <span class="cfg-label mb-0" style="font-size:0.82rem; color:var(--org-slate-800);">Gratuity Service Scale</span>
+                                @if (@ViewBag.PrCnfId > 0)
+                                {
+                                    <button type="button" class="btn org-btn-create" style="padding: 0.4rem 0.9rem !important; font-size: 0.78rem !important;" onclick="createGrtLvlFunc(@ViewBag.PrCnfId);">
+                                        <i class="fas fa-plus-circle mr-1"></i> Add Level
+                                    </button>
+                                }
+                            </div>
+                            <div class="control-section" style="border: 1px solid var(--org-slate-200); border-radius: var(--org-radius-md); overflow: hidden;">
+                                <ejs-grid id="Grid" width="auto" dataSource="@ViewBag.DsHrPrCnfGrtvtyLvl" allowResizing="true">
+                                    <e-grid-columns>
+                                        <e-grid-column field="LwrBndryYrs" headerText="From (Yrs)" width="70" textAlign="Center"></e-grid-column>
+                                        <e-grid-column field="UprBndryYrs" headerText="To (Yrs)" width="70" textAlign="Center"></e-grid-column>
+                                        <e-grid-column field="EftDays" headerText="Days" width="60" textAlign="Center"></e-grid-column>
+                                        <e-grid-column field="" headerText="Edit" template="#_edit" width="50" textAlign="Center"></e-grid-column>
+                                        <e-grid-column field="" headerText="Cancel" template="#_cancel" width="50" textAlign="Center"></e-grid-column>
+                                    </e-grid-columns>
+                                </ejs-grid>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    }
+</div>
+
+<!-- Gratuity Modals -->
+<div class="modal fade org-modal" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalCreateTitle">
+                    <i class="fas fa-plus-circle mr-2"></i> New Gratuity Level
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="createModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditTitle">
+                    <i class="fas fa-pen mr-2"></i> Update Gratuity Level
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="editModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade org-modal" id="modalCancel" tabindex="-1" role="dialog" aria-labelledby="modalCancelTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;">
+                <h5 class="modal-title" id="modalCancelTitle">
+                    <i class="fas fa-trash-alt mr-2"></i> Cancel Gratuity Level
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="cancelModalBody"></div>
+        </div>
+    </div>
+</div>
+
+<!-- Command Button Templates -->
+<script type="text/x-jsrender" id="_edit">
+    <button type="button" class="org-action-btn org-action-edit" title="Edit" onclick="editFunc(${GrtLvlId})">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_cancel">
+    <button type="button" class="org-action-btn org-action-delete" title="Cancel" onclick="cancelFunc(${GrtLvlId})">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+</script>
+
+<script>
+    $(document).ready(function () {
+        chkAttnCtEomChange();
+        chkSlryPrcEomChange();
+        chkEsLmsActDiMChange();
+        chkEsGrtActDiYChange();
+        chkOtClcActMntHrsChange();
+    });
+
+    function chkAttnCtEomChange() {
+        var chkAttnCtEom = document.getElementById("chkAttnCtEom");
+        var txtAttnCtDay = document.getElementById("txtAttnCtDay");
+        if (chkAttnCtEom.checked == true) {
+            txtAttnCtDay.disabled = true;
+            $("#txtAttnCtDay").val("0");
+        } else {
+            txtAttnCtDay.disabled = false;
+            $("#txtAttnCtDay").val("20");
+        }
+    }
+
+    function chkSlryPrcEomChange() {
+        var chkSlryPrcEom = document.getElementById("chkSlryPrcEom");
+        var txtSlryPrcDay = document.getElementById("txtSlryPrcDay");
+        if (chkSlryPrcEom.checked == true) {
+            txtSlryPrcDay.disabled = true;
+            $("#txtSlryPrcDay").val("0");
+        } else {
+            txtSlryPrcDay.disabled = false;
+            $("#txtSlryPrcDay").val("1");
+        }
+    }
+
+    function chkEsLmsActDiMChange() {
+        var chkEsLmsActDiM = document.getElementById("chkEsLmsActDiM");
+        var txtEsLmsDiMVal = document.getElementById("txtEsLmsDiMVal");
+        if (chkEsLmsActDiM.checked == true) {
+            txtEsLmsDiMVal.disabled = true;
+            $("#txtEsLmsDiMVal").val("0");
+        } else {
+            txtEsLmsDiMVal.disabled = false;
+            $("#txtEsLmsDiMVal").val("30");
+        }
+    }
+
+    function chkEsGrtActDiYChange() {
+        var chkEsGrtActDiY = document.getElementById("chkEsGrtActDiY");
+        var txtEsGrtDiYVal = document.getElementById("txtEsGrtDiYVal");
+        if (chkEsGrtActDiY.checked == true) {
+            txtEsGrtDiYVal.disabled = true;
+            $("#txtEsGrtDiYVal").val("0");
+        } else {
+            txtEsGrtDiYVal.disabled = false;
+            $("#txtEsGrtDiYVal").val("30");
+        }
+    }
+
+    function chkOtClcActMntHrsChange() {
+        var chkOtClcActMntHrs = document.getElementById("chkOtClcActMntHrs");
+        var txtOtClcMntHrsVal = document.getElementById("txtOtClcMntHrsVal");
+        if (chkOtClcActMntHrs.checked == true) {
+            txtOtClcMntHrsVal.disabled = true;
+            $("#txtOtClcMntHrsVal").val("0");
+        } else {
+            txtOtClcMntHrsVal.disabled = false;
+        }
+    }
+
+    var createGrtLvlFunc = function (prCnfId) {
+        var url = "/Payroll/HrPrConfig/CreateGrtGet?prCnfId=" + prCnfId;
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        });
+    }
+
+    var editFunc = function (grtLvlId) {
+        var url = "/Payroll/HrPrConfig/EditGrtGet?grtLvlId=" + grtLvlId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    }
+
+    var cancelFunc = function (grtLvlId) {
+        var url = "/Payroll/HrPrConfig/CancelGrtGet?grtLvlId=" + grtLvlId;
+        $("#cancelModalBody").load(url, function () {
+            $("#modalCancel").modal("show");
+        });
+    }
+</script>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

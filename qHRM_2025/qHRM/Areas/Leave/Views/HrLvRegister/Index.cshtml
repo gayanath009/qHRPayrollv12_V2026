@@ -1,0 +1,1072 @@
+@model IEnumerable<qHRM.Areas.Leave.Models.HrLvRegister>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+@Html.AntiForgeryToken()
+<style>
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: var(--clr-muted);
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+    .org-breadcrumb a {
+        color: var(--clr-muted);
+        text-decoration: none;
+        transition: color 0.15s;
+    }
+    .org-breadcrumb a:hover {
+        color: var(--org-primary);
+    }
+
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+        text-decoration: none !important;
+    }
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    .org-btn-outline {
+        background: #ffffff !important;
+        color: var(--org-primary) !important;
+        border: 1px solid var(--org-primary-border) !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        text-decoration: none !important;
+    }
+    .org-btn-outline:hover {
+        background: var(--org-primary-light) !important;
+        color: var(--org-primary-hover) !important;
+        border-color: var(--org-primary) !important;
+    }
+</style>
+
+<div>
+    <main>
+        <div class="container-fluid">
+
+            <!-- COMPACT HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                                <h1 class="org-title">Leave Register</h1>
+                                <span class="badge org-category-pill">LEAVE</span>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#">Leave</a> / <span class="text-dark font-weight-medium">Leave Register</span>
+                                <span class="text-muted mx-1">&bull;</span>
+                                <span class="text-muted">Track employee leave applications, approvals, workflow status, and available balances</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <a href="#" class="btn org-btn-outline" id="btnViewBalances" onclick="openLeaveBalanceModal();">
+                            <i class="fas fa-wallet mr-1"></i> Available Leave Balance
+                        </a>
+                        @if (ViewBag.RecAdd == true)
+                        {
+                            <a href="#" class="btn org-btn-create" id="btnAddNew" onclick="createFunc();">
+                                <i class="fas fa-plus-circle mr-1"></i> Add Leave
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" allowSorting="true"
+                                  allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )" load="loadFormattings" >
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="Emp_Id"       headerText="Employee Id"        width="70"></e-grid-column>
+                                <e-grid-column field="Full_Name"    headerText="Name"               width="150"></e-grid-column>
+                                <e-grid-column field="LvTyp"        headerText="Leave Type"         width="110"></e-grid-column>
+                                <e-grid-column field="LvYear"       headerText="Year"               width="50"></e-grid-column>
+                                <e-grid-column field="Incident"     headerText="Incident No."       width="70"></e-grid-column>
+                                <e-grid-column field="StDate"       headerText="Start Date"         width="70"></e-grid-column>
+                                <e-grid-column field="EndDate"      headerText="End Date"           width="70"></e-grid-column>
+                                <e-grid-column field="Days"         headerText="No. of Days"        width="70"></e-grid-column>
+                                <e-grid-column field="CurrAvblDays" headerText="Available Days"     width="80"></e-grid-column>
+                                <e-grid-column field="Stat"         headerText="Status"             width="60"></e-grid-column>
+                                <e-grid-column field="CrtDateTime"  headerText="Leave Created Date" width="115" customFormat="@(new { type ="date", format="dd/MM/yyyy" })" type="date"></e-grid-column>
+                                <!-- Workflow Status Column -->
+                                <e-grid-column field="WfStat"       headerText="Workflow Status"    textAlign="Center" width="135" template="#_wfstat"></e-grid-column>
+                                <e-grid-column field=""             headerText="Action"             textAlign="Center" template="#_wfsubmit" width="105"></e-grid-column>
+                                @if (ViewBag.RecEdit == true)
+                                {
+                                    <!-- <e-grid-column field="" headerText="" template="#_rejoin" width="50"></e-grid-column> -->
+                                    <e-grid-column field="" headerText="" template="#_edit"   width="50"></e-grid-column>
+                                }
+                                @if (ViewBag.RecDelete == true)
+                                {
+                                    <e-grid-column field="" headerText="" template="#_delete" width="50"></e-grid-column>
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Add Leave</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Rejoin-->
+                    <div class="modal fade" id="modalRejoin" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Rejoin Form</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="rejoinModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Rejoin-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Modify Leave</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Delete-->
+                    <div class="modal" id="modalDelete" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Remove Leave</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+
+                    <!-- Submit to Workflow Confirmation Modal -->
+                    <div class="modal fade" id="modalConfirmSubmit" tabindex="-1" role="dialog" aria-labelledby="confirmSubmitModalTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+                            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.2); overflow: hidden;">
+                                <div class="modal-header py-3 px-4" style="background: #540033; color: #ffffff;">
+                                    <h5 class="modal-title font-weight-bold mb-0" id="confirmSubmitModalTitle" style="font-size: 1.05rem;">
+                                        <i class="fas fa-paper-plane mr-2"></i> Submit Leave to Approval Workflow
+                                    </h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="outline: none; opacity: 0.9;">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" style="background-color: #fdfafc;">
+                                    <div id="wfSubmitAlertArea"></div>
+                                    <p class="text-secondary mb-3" style="font-size: 0.92rem;">
+                                        Are you sure you want to submit this leave application to the approval workflow?
+                                    </p>
+                                    <div class="card border-0 shadow-sm p-3 mb-3" style="background: #ffffff; border-radius: 8px; border-left: 4px solid #540033 !important;">
+                                        <table class="table table-sm table-borderless mb-0" style="font-size: 0.88rem;">
+                                            <tbody>
+                                                <tr>
+                                                    <td class="text-muted py-1" style="width: 35%;">Employee:</td>
+                                                    <td class="font-weight-bold text-dark py-1" id="wfModalEmpName">—</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-muted py-1">Leave Type:</td>
+                                                    <td class="font-weight-bold text-dark py-1" id="wfModalLvType">—</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="text-muted py-1">Duration:</td>
+                                                    <td class="font-weight-bold text-dark py-1" id="wfModalDays">—</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="text-xs text-muted">
+                                        <i class="fas fa-info-circle mr-1 text-info"></i> Once submitted, the application status will change to <strong>Leave Initiated</strong> and notifications will be sent to the assigned approvers.
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-white py-2 px-4 border-top d-flex justify-content-between">
+                                    <button type="button" class="btn btn-sm btn-secondary px-3" data-dismiss="modal" id="btnCancelSubmitWf" style="border-radius: 6px;">Cancel</button>
+                                    <button type="button" class="btn btn-sm text-white px-4" id="btnDoSubmitWorkflow" style="background: #540033; border-radius: 6px; font-weight: 600;">
+                                        <i class="fas fa-paper-plane mr-1"></i> Confirm & Submit
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Submit to Workflow Confirmation Modal -->
+
+                    <!-- Workflow Approval Timeline Modal -->
+                    <div class="modal fade" id="modalTimeline" tabindex="-1" role="dialog" aria-labelledby="timelineModalLongTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-width: 1120px; width: 95vw;">
+                            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.18); overflow: hidden;">
+                                <div class="modal-header py-3 px-4 bg-white border-bottom align-items-center">
+                                    <h5 class="modal-title font-weight-bold mb-0 text-gray-900" style="font-size: 1.15rem; color: #1e293b;">
+                                        Leave Approval Status
+                                    </h5>
+                                    <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close" style="outline: none;">
+                                        <span aria-hidden="true" style="font-size: 1.5rem;">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-0" id="timelineModalBody" style="background-color: #ffffff; max-height: 80vh; overflow-y: auto;">
+                                </div>
+                                <div class="modal-footer bg-white py-2 border-top">
+                                    <button type="button" class="btn btn-sm btn-secondary px-3" data-dismiss="modal" style="border-radius: 6px;">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Workflow Timeline Modal -->
+
+                    <!-- Leave Balance & Audit Modal -->
+                    <div class="modal fade" id="modalLeaveBalance" tabindex="-1" role="dialog" aria-labelledby="lvBalanceModalTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-xl" role="document" style="max-width: 1100px;">
+                            <div class="modal-content" style="border-radius: 10px; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                                <div class="modal-header py-3 px-4 bg-primary text-white">
+                                    <h5 class="modal-title font-weight-bold mb-0" id="lvBalanceModalTitle">
+                                        <i class="fas fa-wallet mr-2"></i> Employee Leave Balances & History
+                                    </h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body p-4" style="background-color: #f8fafc;">
+                                    <!-- Header Filters -->
+                                    <div class="card mb-3 border-0 shadow-sm">
+                                        <div class="card-body py-3">
+                                            <div class="row align-items-center">
+                                                <div class="col-md-5">
+                                                    <label class="font-weight-bold text-secondary mb-1">Employee</label>
+                                                    @if (ViewBag.IsRestrictedUser == true || (ViewBag.ShowAllEmployees == false && ViewBag.IsOutsourceAdmin != true && ViewBag.CanSelectEmployee != true))
+                                                    {
+                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                                                            @if (ViewBag.lstEmp != null)
+                                                            {
+                                                                foreach (var item in (IEnumerable<dynamic>)ViewBag.lstEmp)
+                                                                {
+                                                                    <option value="@item.ESysId" selected>@item.FulNme</option>
+                                                                }
+                                                            }
+                                                        </select>
+                                                    }
+                                                    else
+                                                    {
+                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" onchange="onModalEmployeeChange();">
+                                                            @if (ViewBag.lstEmp != null)
+                                                            {
+                                                                int currentEmpId = Convert.ToInt32(ViewBag.CurrentEmpSysId ?? 0);
+                                                                foreach (var item in (IEnumerable<dynamic>)ViewBag.lstEmp)
+                                                                {
+                                                                    int itemEmpId = Convert.ToInt32(item.ESysId);
+                                                                    if (itemEmpId == currentEmpId)
+                                                                    {
+                                                                        <option value="@item.ESysId" selected>@item.FulNme</option>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <option value="@item.ESysId">@item.FulNme</option>
+                                                                    }
+                                                                }
+                                                            }
+                                                        </select>
+                                                    }
+                                                    <small id="modalBalEmpInfo" class="text-muted font-weight-bold"></small>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="font-weight-bold text-secondary mb-1">Leave Year</label>
+                                                    <select id="modalBalYear" class="form-control form-control-sm" onchange="refreshModalBalances();">
+                                                        <option value="2026" selected>2026</option>
+                                                        <option value="2025">2025</option>
+                                                        <option value="2024">2024</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-4 text-right">
+                                                    <button class="btn btn-sm btn-outline-primary mr-1" onclick="refreshModalBalances();">
+                                                        <i class="fas fa-sync-alt mr-1"></i> Refresh
+                                                    </button>
+                                                    <button class="btn btn-sm btn-outline-secondary" onclick="syncAllBalances();" title="Sync & maintain running balances with active leave types">
+                                                        <i class="fas fa-database mr-1"></i> Sync DB
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary KPI Cards (Centered 2 Cards) -->
+                                    <div class="row mb-3 justify-content-center">
+                                        <div class="col-md-5 col-lg-4 mb-2">
+                                            <div class="card border-0 shadow-sm bg-white" style="border-left: 4px solid #36b9cc !important; border-radius: 8px;">
+                                                <div class="card-body py-3 text-center">
+                                                    <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                                        <i class="fas fa-spinner fa-spin mr-1"></i> Total In Progress
+                                                    </div>
+                                                    <div class="h3 mb-0 font-weight-bold text-info" id="kpiTotalInProgress">0 days</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-5 col-lg-4 mb-2">
+                                            <div class="card border-0 shadow-sm bg-white" style="border-left: 4px solid #f6c23e !important; border-radius: 8px;">
+                                                <div class="card-body py-3 text-center">
+                                                    <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                                        <i class="fas fa-check-circle mr-1"></i> Total Used / Approved
+                                                    </div>
+                                                    <div class="h3 mb-0 font-weight-bold text-gray-800" id="kpiTotalUsed">0 days</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Nav Tabs -->
+                                    <ul class="nav nav-pills mb-3" id="pills-tab" role="tablist">
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link active font-weight-bold" id="pills-balance-tab" data-toggle="pill" href="#pills-balance" role="tab" aria-controls="pills-balance" aria-selected="true">
+                                                <i class="fas fa-table mr-1"></i> Current Balances
+                                            </a>
+                                        </li>
+                                        <li class="nav-item" role="presentation">
+                                            <a class="nav-link font-weight-bold" id="pills-audit-tab" data-toggle="pill" href="#pills-audit" role="tab" aria-controls="pills-audit" aria-selected="false">
+                                                <i class="fas fa-history mr-1"></i> Balance Transaction Ledger
+                                            </a>
+                                        </li>
+                                    </ul>
+
+                                    <div class="tab-content" id="pills-tabContent">
+                                        <!-- Tab 1: Balances Table -->
+                                        <div class="tab-pane fade show active" id="pills-balance" role="tabpanel" aria-labelledby="pills-balance-tab">
+                                            <div class="card border-0 shadow-sm">
+                                                <div class="table-responsive">
+                                                    <table class="table table-hover mb-0" id="tblLeaveBalances">
+                                                        <thead class="thead-light">
+                                                            <tr>
+                                                                <th>Leave Type</th>
+                                                                <th>Code</th>
+                                                                <th class="text-center">Entitlement</th>
+                                                                <th class="text-center">In Progress</th>
+                                                                <th class="text-center">Used / Approved</th>
+                                                                <th class="text-center">Available Balance</th>
+                                                                <th class="text-center">Usage Progress</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="tblLeaveBalancesBody">
+                                                            <tr><td colspan="7" class="text-center py-3 text-muted">Loading balances...</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tab 2: Audit History -->
+                                        <div class="tab-pane fade" id="pills-audit" role="tabpanel" aria-labelledby="pills-audit-tab">
+                                            <div class="card border-0 shadow-sm">
+                                                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                                                    <table class="table table-hover mb-0" id="tblBalanceAudit">
+                                                        <thead class="thead-light">
+                                                            <tr>
+                                                                <th>Date & Time</th>
+                                                                <th>Leave Type</th>
+                                                                <th>Transaction Type</th>
+                                                                <th class="text-center">Change</th>
+                                                                <th class="text-center">Before</th>
+                                                                <th class="text-center">After</th>
+                                                                <th>Remarks</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="tblBalanceAuditBody">
+                                                            <tr><td colspan="7" class="text-center py-3 text-muted">No transactions recorded yet.</td></tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer bg-white py-2 border-top">
+                                    <button type="button" class="btn btn-sm btn-secondary px-3" data-dismiss="modal">Close</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Leave Balance & Audit Modal -->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-template" id="_rejoin">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="rejoinFunc(${LvId})" title="Rejoin">
+        <i class="fas fa-sign-in-alt"></i>
+    </a>
+</script>
+<script type="text/x-template" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${LvId})" title="Edit">
+        <i class="fas fa-pencil-alt"></i>
+    </a>
+</script>
+<script type="text/x-template" id="_delete">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${LvId})" title="Delete">
+        <i class="fas fa-trash"></i>
+    </a>
+</script>
+
+<!-- Workflow Status Badge Template -->
+<script type="text/x-template" id="_wfstat">
+    <div style="display:flex; justify-content:center; align-items:center; width:100%;">
+    ${if(WfStat === 'Approved')}
+        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent btn-wf-timeline" data-lvid="${LvId}" onclick="viewWorkflowTimeline(${LvId}, event)" title="Click to view Approval Timeline">
+            <span class="badge badge-success" style="background:#27ae60;color:#fff;padding:6px 10px;border-radius:4px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                <i class="fas fa-check-circle"></i> Approved
+            </span>
+        </button>
+    ${else if(WfStat === 'Rejected')}
+        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent btn-wf-timeline" data-lvid="${LvId}" onclick="viewWorkflowTimeline(${LvId}, event)" title="Click to view Approval Timeline">
+            <span class="badge badge-danger" style="background:#c0392b;color:#fff;padding:6px 10px;border-radius:4px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                <i class="fas fa-times-circle"></i> Rejected
+            </span>
+        </button>
+    ${else if(WfStat === 'Leave Initiated' || WfStat === 'Submitted' || WfStat === 'InProgress')}
+        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent btn-wf-timeline" data-lvid="${LvId}" onclick="viewWorkflowTimeline(${LvId}, event)" title="Click to view Approval Timeline">
+            <span class="badge badge-primary" style="background:#2563eb;color:#fff;padding:6px 10px;border-radius:4px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                <i class="fas fa-paper-plane"></i> Leave Initiated
+            </span>
+        </button>
+    ${else if(WfStat === 'PendingResubmission')}
+        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent btn-wf-timeline" data-lvid="${LvId}" onclick="viewWorkflowTimeline(${LvId}, event)" title="Click to view Approval Timeline">
+            <span class="badge badge-warning" style="background:#e67e22;color:#fff;padding:6px 10px;border-radius:4px;font-size:11px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.1);">
+                <i class="fas fa-redo"></i> Returned
+            </span>
+        </button>
+    ${else if(WfStat === 'Cancelled')}
+        <span class="badge badge-secondary" style="background:#7f8c8d;color:#fff;padding:6px 10px;border-radius:4px;font-size:11px;white-space:nowrap;">
+            Cancelled
+        </span>
+    ${else}
+        <button type="button" class="btn btn-sm p-0 border-0 bg-transparent btn-wf-timeline" data-lvid="${LvId}" onclick="viewWorkflowTimeline(${LvId}, event)" title="Click to view Approval Timeline">
+            <span class="badge badge-light" style="background:#ecf0f1;color:#666;padding:6px 10px;border-radius:4px;border:1px solid #ddd;font-size:11px;white-space:nowrap;cursor:pointer;">
+                Not Submitted
+            </span>
+        </button>
+    ${/if}
+    </div>
+</script>
+
+<!-- Submit / Leave Status Button Template -->
+<script type="text/x-template" id="_wfsubmit">
+    <div style="display:flex; justify-content:center; align-items:center; width:100%; gap:4px;">
+    ${if(!WfStat || WfStat === '' || WfStat === 'Draft')}
+        <button type="button" class="btn btn-sm btn-wf-submit" data-lvid="${LvId}" data-emp="${Full_Name}" data-lvtyp="${LvTyp}" data-days="${Days}"
+                title="Submit to Approval Workflow"
+                style="background:#540033;color:#fff;border:none;padding:4px 10px;border-radius:4px;font-size:11px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;cursor:pointer;">
+            <i class="fas fa-paper-plane" style="pointer-events:none;"></i> Submit
+        </button>
+    ${else}
+        <button type="button" class="btn btn-sm btn-wf-timeline" data-lvid="${LvId}"
+                title="View Approval Timeline"
+                style="border-radius:4px;font-size:11px;font-weight:600;padding:4px 9px;white-space:nowrap;display:inline-flex;align-items:center;gap:4px;cursor:pointer;border:1px solid #540033;color:#540033;background:#fff;">
+            <i class="fas fa-stream" style="color:#540033;pointer-events:none;"></i> Leave Status
+        </button>
+    ${/if}
+    </div>
+</script>
+<!--Command Buttons-->
+
+<!--Open Partial Views-->
+<script>
+    function loadFormattings(args) {
+        if (this && this.sortSettings) {
+            this.sortSettings.columns = [{ field: 'CrtDateTime', direction: 'Descending' }];
+        }
+    }
+
+    function toolbarClick(args) {
+        if (args && args.item && args.item.id === 'Grid_excelexport') {
+            this.excelExport();
+        }
+    }
+
+    var createFunc = function () {
+        var url = "/Leave/HrLvRegister/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        });
+    };
+
+    var editFunc = function (args) {
+        var url = "/Leave/HrLvRegister/EditGet?id=" + args;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    };
+
+    var deleteFunc = function (args) {
+        var url = "/Leave/HrLvRegister/DeleteGet?id=" + args;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        });
+    };
+
+    var rejoinFunc = function (args) {
+        var url = "/Leave/HrLvRegister/RejoinGet?lvId=" + args;
+        $("#rejoinModalBody").load(url, function () {
+            $("#modalRejoin").modal("show");
+        });
+    };
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // WORKFLOW ENGINE ACTIONS & CONFIRMATION MODAL
+    // ─────────────────────────────────────────────────────────────────────────
+    var pendingSubmitLvId = 0;
+
+    function openSubmitConfirmModal(lvId, empName, lvType, days) {
+        if (!lvId || lvId <= 0) return;
+        pendingSubmitLvId = lvId;
+        $("#wfSubmitAlertArea").empty();
+        $("#wfModalEmpName").text(empName || "—");
+        $("#wfModalLvType").text(lvType || "—");
+        $("#wfModalDays").text(days ? (days + " day(s)") : "—");
+        $("#btnDoSubmitWorkflow").prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Confirm & Submit');
+        $("#btnCancelSubmitWf").prop("disabled", false);
+        $("#modalConfirmSubmit").modal("show");
+    }
+
+    $("#btnDoSubmitWorkflow").on('click', function () {
+        if (!pendingSubmitLvId || pendingSubmitLvId <= 0) return;
+        var btn = $(this);
+        var cancelBtn = $("#btnCancelSubmitWf");
+        btn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm mr-1" role="status"></span> Submitting to Workflow...');
+        cancelBtn.prop("disabled", true);
+        $("#wfSubmitAlertArea").empty();
+
+        var token = $('input[name="__RequestVerificationToken"]').val();
+
+        $.ajax({
+            url: '@Url.Action("SubmitToWorkflow", "HrLvRegister", new { area = "Leave" })',
+            type: 'POST',
+            data: {
+                lvId: pendingSubmitLvId,
+                __RequestVerificationToken: token
+            },
+            success: function (result) {
+                if (result.success) {
+                    $("#wfSubmitAlertArea").html(
+                        '<div class="alert alert-success d-flex align-items-center py-2 px-3 mb-3" style="font-size:0.88rem; border-radius:6px;">' +
+                        '<i class="fas fa-check-circle fa-lg mr-2 text-success"></i>' +
+                        '<div><strong>Success!</strong> ' + (result.message || 'Leave application submitted to approval workflow successfully.') + '</div>' +
+                        '</div>'
+                    );
+                    btn.html('<i class="fas fa-check mr-1"></i> Submitted!');
+                    setTimeout(function () {
+                        location.reload();
+                    }, 1200);
+                } else {
+                    btn.prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Confirm & Submit');
+                    cancelBtn.prop("disabled", false);
+                    $("#wfSubmitAlertArea").html(
+                        '<div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.85rem; border-radius:6px;">' +
+                        '<div class="font-weight-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> Submission Failed</div>' +
+                        '<div>' + (result.message || 'Unknown error occurred.') + '</div>' +
+                        '</div>'
+                    );
+                }
+            },
+            error: function (xhr) {
+                btn.prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Confirm & Submit');
+                cancelBtn.prop("disabled", false);
+                var msg = xhr.responseJSON ? xhr.responseJSON.message : (xhr.responseText ? xhr.responseText : 'An unexpected error occurred. Please try again.');
+                $("#wfSubmitAlertArea").html(
+                    '<div class="alert alert-danger py-2 px-3 mb-3" style="font-size:0.85rem; border-radius:6px;">' +
+                    '<div class="font-weight-bold mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> Network/Server Error</div>' +
+                    '<div>' + msg + '</div>' +
+                    '</div>'
+                );
+            }
+        });
+    });
+
+    function submitToWorkflow(lvId, eventOrEl) {
+        if (!lvId || lvId <= 0) return;
+        if (eventOrEl && typeof eventOrEl.preventDefault === 'function') {
+            try { eventOrEl.preventDefault(); eventOrEl.stopPropagation(); } catch (e) { }
+        }
+        var btn = document.querySelector('.btn-wf-submit[data-lvid="' + lvId + '"]');
+        var empName = btn ? btn.getAttribute('data-emp') : '';
+        var lvType = btn ? btn.getAttribute('data-lvtyp') : '';
+        var days = btn ? btn.getAttribute('data-days') : '';
+        openSubmitConfirmModal(lvId, empName, lvType, days);
+    }
+
+    var viewWorkflowTimeline = function (lvId, eventOrEl) {
+        if (!lvId || lvId <= 0) return;
+
+        if (eventOrEl && typeof eventOrEl.preventDefault === 'function') {
+            try {
+                eventOrEl.preventDefault();
+                eventOrEl.stopPropagation();
+            } catch (e) { }
+        }
+        var url = '@Url.Action("TimelineGet", "HrLvRegister", new { area = "Leave" })?lvId=' + lvId + '&_t=' + Date.now();
+        $("#timelineModalBody").html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status" style="color: #540033 !important;"><span class="sr-only">Loading...</span></div><p class="text-muted small mt-2">Loading approval workflow progress...</p></div>');
+        $("#modalTimeline").modal("show");
+
+        $.ajax({
+            url: url,
+            type: 'GET',
+            cache: false,
+            success: function (htmlContent) {
+                $("#timelineModalBody").html(htmlContent);
+            },
+            error: function (xhr, status, error) {
+                var errDesc = "Unable to load approval timeline.";
+                if (xhr && xhr.status > 0) {
+                    errDesc += " (" + xhr.status + " " + xhr.statusText + ")";
+                }
+                $("#timelineModalBody").html('<div class="alert alert-danger m-3"><i class="fas fa-exclamation-triangle mr-2"></i> ' + errDesc + '</div>');
+            }
+        });
+    };
+
+    // Delegated click handlers for dynamically rendered Syncfusion grid templates
+    $(document).on('click', '.btn-wf-submit', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var lvId = $(this).attr('data-lvid') || $(this).data('lvid');
+        var empName = $(this).attr('data-emp') || $(this).data('emp');
+        var lvType = $(this).attr('data-lvtyp') || $(this).data('lvtyp');
+        var days = $(this).attr('data-days') || $(this).data('days');
+        openSubmitConfirmModal(parseInt(lvId), empName, lvType, days);
+    });
+
+    $(document).on('click', '.btn-wf-timeline', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var lvId = $(this).attr('data-lvid') || $(this).data('lvid');
+        viewWorkflowTimeline(parseInt(lvId), this);
+    });
+
+    $(document).ready(function () {
+        var urlParams = new URLSearchParams(window.location.search);
+        var openLvId = urlParams.get('openLvId');
+        if (openLvId && parseInt(openLvId) > 0) {
+            setTimeout(function () {
+                viewWorkflowTimeline(parseInt(openLvId));
+            }, 600);
+        }
+    });
+    // ─────────────────────────────────────────────────────────────────────────
+</script>
+<!--Open Partial Views-->
+
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+@*<script>
+    //Date Range Search for Created Date//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[5].format = { type: 'date', format: 'dd/MM/yyyy' };
+        this.columns[6].format = { type: 'date', format: 'dd/MM/yyyy' };        
+       
+    }
+</script>*@
+
+<script>
+    //Date Range Search for StDate And EndDate//
+    var flValInput;
+    var daterangepicker;
+    function loadFormattings() {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        this.columns[5].format = { type: 'date', format: 'dd/MM/yyyy' };
+        this.columns[6].format = { type: 'date', format: 'dd/MM/yyyy' };
+        
+
+
+        this.columns[5].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
+                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('StDate', 'equal', startDate) : grid.filterByColumn('StDate', 'greaterthan', startDate);
+
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+        this.columns[6].filter = {
+            type: "Menu",
+            ui: {
+                create: (args) => {
+                    flValInput = ej.base.createElement('input', { className: 'e-input' });
+                    args.target.appendChild(flValInput);
+                },
+                write: (args) => {
+
+                    daterangepicker = new ej.calendars.DateRangePicker({
+                        change: function (e) {
+                            var target = e.element;
+
+                            if (e.value) {
+                                startDate = e.value[0];
+                                endDate = e.value[1];
+                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
+                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('EndDate', 'equal', startDate) : grid.filterByColumn('EndDate', 'greaterthan', startDate);
+
+                            }
+                            else {
+                                grid.filterSettings.columns = [];
+                                grid.removeFilteredColsByField(target.id);
+                            }
+                        },
+                    });
+                    daterangepicker.appendTo(flValInput);
+                }
+            },
+        };
+
+    }
+</script>
+
+
+<script>
+    function rowDataBound(args) {
+        if (args.data.LvTyp === "Annual") {
+            btnRjnDiv.style.display="none";
+        }
+    }
+
+    var loggedInEmpSysId = @(ViewBag.CurrentEmpSysId != null && (int)ViewBag.CurrentEmpSysId > 0 ? (int)ViewBag.CurrentEmpSysId : 1);
+    var currentBalanceEmpSysId = loggedInEmpSysId;
+
+    function openLeaveBalanceModal(empSysId) {
+        var isShowAll = @(ViewBag.IsRestrictedUser != true && (ViewBag.ShowAllEmployees == true || ViewBag.IsOutsourceAdmin == true || ViewBag.CanSelectEmployee == true) ? "true" : "false");
+        if (!isShowAll) {
+            empSysId = loggedInEmpSysId;
+        }
+        else if (!empSysId || empSysId <= 0) {
+            // Admin or HR Admin logged in: default to his/her own balances & history at first view
+            empSysId = loggedInEmpSysId;
+        }
+
+        currentBalanceEmpSysId = parseInt(empSysId) || loggedInEmpSysId;
+        $('#modalBalEmpSelect').val(currentBalanceEmpSysId);
+
+        // Fallback to whatever value is actually in the dropdown if empSysId was not found
+        var actualVal = $('#modalBalEmpSelect').val();
+        if (actualVal) {
+            currentBalanceEmpSysId = parseInt(actualVal);
+        }
+
+        $('#modalLeaveBalance').modal('show');
+        refreshModalBalances();
+    }
+
+    function onModalEmployeeChange() {
+        currentBalanceEmpSysId = parseInt($('#modalBalEmpSelect').val()) || 1;
+        refreshModalBalances();
+    }
+
+    function syncAllBalances() {
+        var year = $('#modalBalYear').val() || new Date().getFullYear();
+        $('#tblLeaveBalancesBody').html('<tr><td colspan="7" class="text-center py-3 text-info"><i class="fas fa-spinner fa-spin mr-1"></i> Synchronizing running balances with active leave types...</td></tr>');
+        
+        $.ajax({
+            type: "POST",
+            url: "/Leave/HrLvRegister/SyncRunningBalances",
+            data: { year: year },
+            dataType: "json",
+            success: function (res) {
+                if (res.success) {
+                    refreshModalBalances();
+                } else {
+                    alert('Sync error: ' + (res.message || 'Unknown error'));
+                    refreshModalBalances();
+                }
+            },
+            error: function (xhr, status, error) {
+                alert('Error syncing balances: ' + error);
+                refreshModalBalances();
+            }
+        });
+    }
+
+    function refreshModalBalances() {
+        var year = $('#modalBalYear').val() || new Date().getFullYear();
+        var empSysId = currentBalanceEmpSysId || $('#modalBalEmpSelect').val() || 1;
+
+        $('#tblLeaveBalancesBody').html('<tr><td colspan="7" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Loading balances...</td></tr>');
+        $('#tblBalanceAuditBody').html('<tr><td colspan="7" class="text-center py-3 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Loading transactions...</td></tr>');
+
+        // Fetch balances summary
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetEmployeeBalances",
+            data: { empSysId: empSysId, year: year },
+            dataType: "json",
+            success: function (res) {
+                if (res.success && res.data) {
+                    var data = res.data;
+                    currentBalanceEmpSysId = data.empSysId || data.EmpSysId || empSysId;
+                    $('#modalBalEmpSelect').val(currentBalanceEmpSysId);
+
+                    var empId = data.empId || data.EmpId || '';
+                    var dept = data.department || data.Department || '';
+                    var gender = data.gender || data.Gender || '';
+                    var religion = data.religion || data.Religion || '';
+                    var empDetails = [];
+                    if (empId) empDetails.push('Emp ID: ' + empId);
+                    if (dept) empDetails.push('Dept: ' + dept);
+                    if (gender) empDetails.push('Gender: ' + gender);
+                    if (religion) empDetails.push('Religion: ' + religion);
+                    $('#modalBalEmpInfo').text(empDetails.join(' | '));
+
+                    var totInProg = data.totalInProgress !== undefined ? data.totalInProgress : (data.TotalInProgress !== undefined ? data.TotalInProgress : 0);
+                    var totUsed = data.totalUsed !== undefined ? data.totalUsed : (data.TotalUsed !== undefined ? data.TotalUsed : 0);
+
+                    $('#kpiTotalInProgress').text(totInProg + ' days');
+                    $('#kpiTotalUsed').text(totUsed + ' days');
+
+                    var html = '';
+                    var list = data.leaveBalances || data.LeaveBalances || data.balances || data.Balances;
+                    if (list && list.length > 0) {
+                        list.forEach(function (b) {
+                            var ltName = b.leaveTypeName || b.LeaveTypeName || '-';
+                            var ltCode = b.leaveTypeCode || b.LeaveTypeCode || '-';
+                            var ent = b.entitlement !== undefined ? b.entitlement : (b.Entitlement !== undefined ? b.Entitlement : 0);
+                            var inProg = b.inProgress !== undefined ? b.inProgress : (b.InProgress !== undefined ? b.InProgress : 0);
+                            var used = b.used !== undefined ? b.used : (b.Used !== undefined ? b.Used : 0);
+                            var rem = b.remaining !== undefined ? b.remaining : (b.Remaining !== undefined ? b.Remaining : 0);
+                            var ruleNotice = b.ruleNotice || b.RuleNotice || '';
+
+                            var pct = ent > 0 ? Math.min(100, Math.round(((used + inProg) / ent) * 100)) : 0;
+                            var badgeClass = rem > 5 ? 'badge-success' : (rem > 0 ? 'badge-warning' : 'badge-danger');
+                            var barClass = pct > 80 ? 'bg-danger' : (pct > 50 ? 'bg-warning' : 'bg-primary');
+
+                            html += '<tr>' +
+                                '<td class="font-weight-bold text-dark">' +
+                                    ltName +
+                                    (ruleNotice ? '<br><small class="text-muted" style="font-weight:normal;">' + ruleNotice + '</small>' : '') +
+                                '</td>' +
+                                '<td><span class="badge badge-light border">' + ltCode + '</span></td>' +
+                                '<td class="text-center font-weight-bold">' + ent + '</td>' +
+                                '<td class="text-center text-info font-weight-bold">' + inProg + '</td>' +
+                                '<td class="text-center text-danger font-weight-bold">' + used + '</td>' +
+                                '<td class="text-center"><span class="badge ' + badgeClass + ' px-2 py-1" style="font-size:0.9rem;">' + rem + ' days</span></td>' +
+                                '<td class="text-center" style="min-width: 130px;">' +
+                                    '<div class="progress" style="height: 12px; border-radius: 6px;">' +
+                                        '<div class="progress-bar ' + barClass + '" role="progressbar" style="width: ' + pct + '%;" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"></div>' +
+                                    '</div>' +
+                                    '<small class="text-muted">' + pct + '% utilized</small>' +
+                                '</td>' +
+                            '</tr>';
+                        });
+                    } else {
+                        html = '<tr><td colspan="7" class="text-center py-3 text-muted">No active leave entitlements configured for this year.</td></tr>';
+                    }
+                    $('#tblLeaveBalancesBody').html(html);
+                } else {
+                    $('#tblLeaveBalancesBody').html('<tr><td colspan="7" class="text-center py-3 text-danger">Failed to load leave balances: ' + (res.message || 'Unknown error') + '</td></tr>');
+                }
+            },
+            error: function (xhr, status, error) {
+                $('#tblLeaveBalancesBody').html('<tr><td colspan="7" class="text-center py-3 text-danger">Error contacting server (' + error + ').</td></tr>');
+            }
+        });
+
+        // Fetch Audit history
+        $.ajax({
+            type: "GET",
+            url: "/Leave/HrLvRegister/GetBalanceAudit",
+            data: { empSysId: empSysId, year: year },
+            dataType: "json",
+            success: function (res) {
+                if (res.success && res.data) {
+                    var html = '';
+                    if (res.data.length > 0) {
+                        res.data.forEach(function (tx) {
+                            var delta = tx.days !== undefined ? tx.days : (tx.Days !== undefined ? tx.Days : (tx.deltaDays !== undefined ? tx.deltaDays : 0));
+                            var dtDisplay = tx.dateFormatted || tx.DateFormatted || tx.transactionDateDisplay || tx.TransactionDateDisplay || '-';
+                            var ltName = tx.leaveTypeName || tx.LeaveTypeName || '-';
+                            var trnType = tx.transactionType || tx.TransactionType || tx.trnType || tx.TrnType || '-';
+                            var balBf = tx.balanceBefore !== undefined ? tx.balanceBefore : (tx.BalanceBefore !== undefined ? tx.BalanceBefore : 0);
+                            var balAf = tx.balanceAfter !== undefined ? tx.balanceAfter : (tx.BalanceAfter !== undefined ? tx.BalanceAfter : 0);
+                            var rmks = tx.remarks || tx.Remarks || '-';
+
+                            var deltaBadge = delta >= 0 
+                                ? '<span class="badge badge-success">+' + delta + '</span>' 
+                                : '<span class="badge badge-danger">' + delta + '</span>';
+
+                            html += '<tr>' +
+                                '<td class="text-muted" style="font-size: 0.85rem;">' + dtDisplay + '</td>' +
+                                '<td class="font-weight-bold">' + ltName + '</td>' +
+                                '<td><span class="badge badge-secondary">' + trnType + '</span></td>' +
+                                '<td class="text-center">' + deltaBadge + '</td>' +
+                                '<td class="text-center">' + balBf + '</td>' +
+                                '<td class="text-center font-weight-bold text-primary">' + balAf + '</td>' +
+                                '<td><small class="text-muted">' + rmks + '</small></td>' +
+                            '</tr>';
+                        });
+                    } else {
+                        html = '<tr><td colspan="7" class="text-center py-3 text-muted">No transaction ledger entries recorded.</td></tr>';
+                    }
+                    $('#tblBalanceAuditBody').html(html);
+                } else {
+                    $('#tblBalanceAuditBody').html('<tr><td colspan="7" class="text-center py-3 text-danger">Failed to load transaction history.</td></tr>');
+                }
+            },
+            error: function (xhr, status, error) {
+                $('#tblBalanceAuditBody').html('<tr><td colspan="7" class="text-center py-3 text-danger">Error loading transactions.</td></tr>');
+            }
+        });
+    }
+</script>

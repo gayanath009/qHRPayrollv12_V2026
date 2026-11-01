@@ -1,0 +1,38 @@
+﻿<div>
+    <ejs-grid id="Grid3" width="auto" dataSource="ViewBag.dsSlrySummry" allowPaging="true" allowFiltering="true"
+              allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+
+        <e-grid-aggregates>
+            <e-grid-aggregate>
+                <e-aggregate-columns>
+                    <e-aggregate-column field="Value" type="Sum" format="N2"></e-aggregate-column>                   
+                </e-aggregate-columns>
+            </e-grid-aggregate>
+        </e-grid-aggregates>
+
+        <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+        <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+        <e-grid-columns>
+            <e-grid-column field="FullName" headerText="Name" width="100"></e-grid-column>
+            <e-grid-column field="Value" headerText="@ViewBag.heading" width="75" format="N2" textAlign="Right"></e-grid-column>
+        </e-grid-columns>
+    </ejs-grid>
+</div>
+
+<script>
+   function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid3").ej2_instances[0];
+        if (args.item.id === 'Grid3_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    $(function () {
+        $('#modalSummary').on('shown.bs.modal', function () {
+            $(document).off('focusin.modal');
+        });
+    })
+</script>
+<ejs-scripts></ejs-scripts>

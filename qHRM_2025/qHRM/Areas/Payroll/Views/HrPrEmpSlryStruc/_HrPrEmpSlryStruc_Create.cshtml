@@ -1,0 +1,147 @@
+@model qHRM.Areas.Payroll.Models.HrPrEmpSlryStrucVw
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrPrEmpSlryStruc"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <select asp-for="EmpSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "EmpSysId", "EmpDesc"))">
+                    <option value="">-- Select Employee --</option>
+                </select>
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+                @Html.HiddenFor(model => model.SlStrcId)
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="Basic" class="control-label"></label>
+                <input asp-for="Basic" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="Basic" class="text-danger"></span>
+            </div>
+            <div class="form-group  col-md-6">
+                <label asp-for="HrAlwnc" class="control-label"></label>
+                <input asp-for="HrAlwnc" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="HrAlwnc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="TrnsAlwnc" class="control-label"></label>
+                <input asp-for="TrnsAlwnc" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="TrnsAlwnc" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="PstnAlwnc" class="control-label"></label>
+                <input asp-for="PstnAlwnc" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="PstnAlwnc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="MedAlwnc" class="control-label"></label>
+                <input asp-for="MedAlwnc" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="MedAlwnc" class="text-danger"></span>
+            </div>
+            <div class="form-group  col-md-6">
+                <label asp-for="MobAlwnc" class="control-label"></label>
+                <input asp-for="MobAlwnc" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="MobAlwnc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="SpcAlwnc" class="control-label"></label>
+                <input asp-for="SpcAlwnc" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="SpcAlwnc" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="PrfmAlwnc" class="control-label"></label>
+                <input asp-for="PrfmAlwnc" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="PrfmAlwnc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="OthrAlwnc" class="control-label"></label>
+                <input asp-for="OthrAlwnc" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="OthrAlwnc" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="IncntvPrc" class="control-label"></label>
+                <input asp-for="IncntvPrc" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="IncntvPrc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="BonusRate" class="control-label"></label>
+                <input asp-for="BonusRate" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="BonusRate" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="AirTcktFee" class="control-label"></label>
+                <input asp-for="AirTcktFee" class="form-control form-control-sm" style="text-align:right"/>
+                <span asp-validation-for="AirTcktFee" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label asp-for="OtId" class="control-label"></label>
+            <select asp-for="OtId" id="drpOtRate" class="form-control form-control-sm select2-dropdown" disabled
+                    asp-items="@(new SelectList(ViewBag.lstOT, "OtId", "OtDesc"))">
+                <option value="">-- Select OT Rate --</option>
+            </select>
+            <span asp-validation-for="OtId" class="text-danger"></span>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            @if (ViewBag.RecAdd == true)
+            {
+                <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#drpEmp').on('change', function () {
+            var empSysId = $(this).val();
+            if (empSysId) {
+                $.ajax({
+                    type: "GET",
+                    url: "@(Url.Action("GetEmpOTStat", "HrPrEmpSlryStruc"))",
+                    data: { empSysid: empSysId },
+                    success: function (data) {
+                        $('#drpOtRate').prop('disabled', !data.data);
+                    },
+                    error: function (xhr, err) {
+                        console.error("Error fetching OT Stat", err);
+                    }
+                });
+            } else {
+                $('#drpOtRate').prop('disabled', true);
+            }
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

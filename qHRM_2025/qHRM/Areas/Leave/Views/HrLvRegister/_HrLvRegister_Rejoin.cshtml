@@ -1,0 +1,67 @@
+@model qHRM.Areas.Leave.Models.HrLvRegister
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Rejoin", "HrLvRegister"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.LvId)
+        @Html.HiddenFor(model => model.Incident)
+
+        <div class="form-group">
+            @Html.DisplayNameFor(model => model.EmpSysId) : @ViewBag.EmpName
+        </div>
+        <div class="form-group">
+            @Html.DisplayNameFor(model => model.LvTypId) : @ViewBag.LvTyp
+        </div>
+        <div class="form-group">
+            @Html.DisplayNameFor(model => model.StDate) : @Html.DisplayFor(model => model.StDate)
+        </div>
+        <div class="form-group">
+            @Html.DisplayNameFor(model => model.EndDate) : @Html.DisplayFor(model => model.EndDate)
+        </div>
+        <div class="form-group">
+            @Html.DisplayNameFor(model => model.Days) : @Html.DisplayFor(model => model.Days)
+        </div>
+        <div class="form-group">
+            <label asp-for="RjnDate" class="control-label"></label>
+            <input id="lvRjnDate" asp-for="RjnDate" class="form-control form-control-sm" />
+            <span asp-validation-for="RjnDate" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label asp-for="RjnStat" class="control-label"></label>
+            <select asp-for="RjnStat" id="drpRjnStat" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstRjnStat, "Indx", "ElmntTxt", Model?.RjnStat))">
+                <option value="">-- Select Rejoin Status --</option>
+            </select>
+            <span asp-validation-for="RjnStat" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Note" class="control-label"></label>
+            <input asp-for="Note" class="form-control form-control-sm" />
+            <span asp-validation-for="Note" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalRejoin').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalRejoin')
+        });
+
+        $('#modalRejoin').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

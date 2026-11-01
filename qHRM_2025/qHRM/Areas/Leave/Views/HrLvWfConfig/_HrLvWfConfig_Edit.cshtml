@@ -1,0 +1,171 @@
+@model qHRM.Areas.Leave.Models.HrLvWfConfig
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+@using (Html.BeginForm("Edit", "HrLvWfConfig", new { area = "Leave" }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <span class="alert-success">@Html.ValidationSummary(true)</span>
+    @Html.HiddenFor(m => m.WfCfgId)
+    @Html.HiddenFor(m => m.LvTypId)   @* Leave Type not editable after creation *@
+
+    <div class="row">
+        <!-- LEFT COLUMN -->
+        <div class="col-md-6">
+            <h6 class="font-weight-bold mb-3" style="color:#540033;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                <i class="fas fa-cog"></i> Workflow Mapping
+            </h6>
+
+            <div class="form-group">
+                <label class="control-label">Leave Type</label>
+                <input value="@Model.LvTypName" class="form-control form-control-sm" disabled />
+                <small class="text-muted">Leave Type cannot be changed. Create a new configuration to change it.</small>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="WfCode" class="control-label"></label>
+                <input asp-for="WfCode" class="form-control form-control-sm"
+                       placeholder="e.g. LV_SICK, LV_CASUAL" />
+                <span asp-validation-for="WfCode" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <label asp-for="EffDate" class="control-label"></label>
+                <input asp-for="EffDate" type="date" class="form-control form-control-sm" />
+            </div>
+
+            <div class="form-group">
+                <label asp-for="ExpDate" class="control-label"></label>
+                <input asp-for="ExpDate" type="date" class="form-control form-control-sm" />
+            </div>
+
+            <div class="form-group">
+                <div class="custom-control custom-switch">
+                    <input asp-for="IsEnabled" type="checkbox" class="custom-control-input" id="chkIsEnabled" />
+                    <label class="custom-control-label" for="chkIsEnabled">Workflow Enabled</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: Approvers -->
+        <div class="col-md-6">
+            <h6 class="font-weight-bold mb-3" style="color:#540033;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                <i class="fas fa-users"></i> Designated Approvers
+            </h6>
+
+            <div class="form-group">
+                <label class="control-label">HR Manager (Step 1)</label>
+                <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
+                    <option value="">-- Select HR Manager --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">BU Head (Step 3)</label>
+                <select asp-for="BuHeadEmpId" id="drpBuHead" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.BuHeadEmpId))">
+                    <option value="">-- Select BU Head --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">Finance Approver</label>
+                <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
+                    <option value="">-- Select Finance Employee --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">CEO (Final Approver)</label>
+                <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
+                    <option value="">-- Select CEO Employee --</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- POLICY RULES -->
+    <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
+    <h6 class="font-weight-bold mb-3" style="color:#540033;">
+        <i class="fas fa-shield-alt"></i> Policy Rules
+    </h6>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input asp-for="MedCertRequired" type="checkbox" class="custom-control-input" id="chkMedCert" />
+                    <label class="custom-control-label" for="chkMedCert">Medical Certificate Required</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input asp-for="NoPay" type="checkbox" class="custom-control-input" id="chkNoPay" />
+                    <label class="custom-control-label" for="chkNoPay">No Pay Leave</label>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="custom-control custom-checkbox">
+                    <input asp-for="OnceInService" type="checkbox" class="custom-control-input" id="chkOnce" />
+                    <label class="custom-control-label" for="chkOnce">Once in Service Only</label>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">Payroll Cutoff Day</label>
+                <input asp-for="PayrollCutoffDay" type="number" min="1" max="31" class="form-control form-control-sm" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Full Pay Days (Sick)</label>
+                <input asp-for="FullPayDays" type="number" min="0" class="form-control form-control-sm" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Half Pay Days (Sick)</label>
+                <input asp-for="HalfPayDays" type="number" min="0" class="form-control form-control-sm" />
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="form-group">
+                <label class="control-label">Max Days per Application</label>
+                <input asp-for="MaxDays" type="number" min="0" class="form-control form-control-sm" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Annual Entitlement (Days)</label>
+                <input asp-for="AnnualEntitlement" type="number" min="0" class="form-control form-control-sm" />
+            </div>
+            <div class="form-group">
+                <label class="control-label">Gender Required (M/F)</label>
+                <input asp-for="GenderRequired" class="form-control form-control-sm" maxlength="1" />
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group mt-3">
+        <input type="submit" value="Update Configuration" class="btn btn-sm btn-primary" />
+        <input type="button" value="Cancel" class="btn btn-sm btn-outline-secondary" data-dismiss="modal" />
+    </div>
+}
+
+<script>
+    $(function () {
+        $('#modalEdit .select2-dropdown').each(function () {
+            var $this = $(this);
+            if ($this.hasClass("select2-hidden-accessible")) {
+                $this.select2('destroy');
+            }
+            $this.select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalEdit')
+            });
+        });
+
+        $('#modalEdit .select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

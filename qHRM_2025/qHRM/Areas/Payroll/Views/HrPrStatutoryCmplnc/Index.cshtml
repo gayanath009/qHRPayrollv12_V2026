@@ -1,0 +1,108 @@
+﻿<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">
+                Statutory Compliances - Not Implemented
+            </h1>
+            @*<ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item active">Statutory Compliances</li>
+            </ol>*@
+        </div>
+    </main>
+</div>
+
+@*@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrStatutoryCmplnc>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.StutryCode)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NameEng)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.NameArb)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Desc)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.DescArb)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IsPrcnt)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.Value)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MinSlry)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.MaxSlry)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.RecStat)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.CrtDateTime)
+            </th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+@foreach (var item in Model) {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.StutryCode)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.NameEng)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.NameArb)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Desc)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.DescArb)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.IsPrcnt)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Value)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MinSlry)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.MaxSlry)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.RecStat)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.CrtDateTime)
+            </td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@item.StutryId">Edit</a> |
+                <a asp-action="Details" asp-route-id="@item.StutryId">Details</a> |
+                <a asp-action="Delete" asp-route-id="@item.StutryId">Delete</a>
+            </td>
+        </tr>
+}
+    </tbody>
+</table>*@

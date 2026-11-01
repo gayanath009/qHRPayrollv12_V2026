@@ -1,0 +1,84 @@
+﻿@model IEnumerable<qHRM.Areas.Employee.Models.EmpSrtOrdVw>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Employee Sort Order</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Human Resource</a></li>
+                <li class="breadcrumb-item active">Employee Sort Order</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.EmpSrtOrdLst" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="DeptName" headerText="Department" width="80"></e-grid-column>
+                                <e-grid-column field="EmpSrtOrd" headerText="Emp Sort Order" width="50"></e-grid-column>
+                                <e-grid-column field="EmpId" headerText="Emp Id" width="50"></e-grid-column>
+                                <e-grid-column field="EmpName" headerText="Name" width="100"></e-grid-column>
+                                <e-grid-column field="DesigName" headerText="Designation" width="80"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_updt" width="50"></e-grid-column>
+
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalUpdt" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalLongTitle">Update Sort Order</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="updtModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id ="_updt">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="updtFunc(${EmpSysId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var updtFunc = function (empSysId) {
+        var url = "/Employee/EmpSrtOrdVw/UpdateGet?empSysId=" + empSysId;
+        $("#updtModalBody").load(url, function () {
+            $("#modalUpdt").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    }
+</script>

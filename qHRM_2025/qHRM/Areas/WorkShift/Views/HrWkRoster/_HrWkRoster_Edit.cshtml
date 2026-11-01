@@ -1,0 +1,64 @@
+﻿@model qHRM.Areas.WorkShift.Models.HrWkRoster
+@using Syncfusion.EJ2
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Edit", "HrWkRoster"))
+{
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.RstId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="RstCode" class="control-label"></label>
+                <input asp-for="ex_RstCode" class="form-control form-control-sm" hidden />
+                <input asp-for="RstCode" class="form-control form-control-sm" />
+                <span asp-validation-for="RstCode" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="NameEng" class="control-label"></label>
+                <input asp-for="NameEng" class="form-control form-control-sm" />
+                <span asp-validation-for="NameEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="DescEng" class="control-label"></label>
+                <input asp-for="DescEng" class="form-control form-control-sm" />
+                <span asp-validation-for="DescEng" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="SftNos" class="control-label"></label>
+                <input asp-for="SftNos" class="form-control form-control-sm" />
+                <span asp-validation-for="SftNos" class="text-danger"></span>
+            </div>
+            @*<div class="form-group col-md-1"></div>
+            <div class="form-group col-md-5">
+                <div></div>
+                <div>
+                    <input id="rdoActive" type="radio" class="form-check-input" asp-for="RecStat" value="1" name="optradio" checked>Active
+                </div>
+                <div>
+                    <input id="rdoDeactive" type="radio" class="form-check-input" asp-for="RecStat" value="0" name="optradio">Deactive
+                </div>
+            </div>*@
+        </div>
+
+            
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+<ejs-scripts></ejs-scripts>

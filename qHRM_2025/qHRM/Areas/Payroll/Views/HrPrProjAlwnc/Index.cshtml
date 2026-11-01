@@ -1,0 +1,295 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrProjAlwnc>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<style>
+    /* ============================================================
+       PAGE HEADER & CREATE BUTTON - ORGINFO STYLE (#540033)
+       ============================================================ */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: #fdf2f8;
+        color: #540033;
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fbcfe8;
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    /* Create Button */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        letter-spacing: 0.01em !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+        text-decoration: none !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+</style>
+<div>
+    <main>
+        <div class="container-fluid px-0">
+            <!-- COMPACT HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-project-diagram"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                                <h1 class="org-title">Project Allowances</h1>
+                                <span class="badge org-category-pill">PAYROLL</span>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#">Payroll</a> / <span class="text-dark font-weight-medium">Project Allowances</span>
+                                <span class="text-muted mx-1">&bull;</span>
+                                <span class="text-muted">Special site, project, and assignment allowances</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn org-btn-create" id="btnCreate" onclick="createFunc();">
+                            <i class="fas fa-plus-circle mr-1"></i> Add New
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="form-inline">
+                        <div class="form-group mb-2">
+                            <label for="lblEftYear" class="control-label">Effective Year </label>
+                            <select placeholer="Select Year" id="drpYearSch" class="form-control form-control-sm"  style="margin-left:6px" asp-items="@(new SelectList(ViewBag.lstYear, "Key", "Value",@ViewBag.EftYear))" onchange="filterRec()">
+                            </select>
+                            <label for="lblEftMonth" class="control-label"  style="margin-left:12px">Month  </label>
+                            <select placeholer="Select Month" id="drpMonthSch" class="form-control form-control-sm"  style="margin-left:6px" asp-items="@(new SelectList(ViewBag.lstMonth, "Indx", "ElmntTxt",@ViewBag.EftMonth))" onchange="filterRec()">
+                            </select>
+                        </div>
+                    </div>
+
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="grdPrjAlwnc" width="auto" dataSource="ViewBag.DataSource" allowSorting="true" allowPaging="true" allowFiltering="true" allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )"
+                                  allowResizing="true">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="EftMonth" headerText="From Month" width="75"></e-grid-column>
+                                <e-grid-column field="EndMonth" headerText="To Month" width="75"></e-grid-column>
+                                <e-grid-column field="Prds" headerText=" Months" width="40"></e-grid-column>
+                                <e-grid-column field="EmpDesc" headerText="Employee" width="100"></e-grid-column>
+                                <e-grid-column field="Ref" headerText="Reference" width="80"></e-grid-column>
+                                <e-grid-column field="ProjAlwncAmt" headerText="Amount" width="50" format='0.00' textAlign="Right"></e-grid-column>
+                                <e-grid-column field="RecStatTxt" headerText="Status" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_edit" width="50"></e-grid-column>
+                                <e-grid-column field="" headerText="" template="#_cancel" width="50"></e-grid-column>
+
+                                @if (ViewBag.Rec_Edit == true)
+                                {
+
+                                }
+                                @if (ViewBag.Rec_Delete == true)
+                                {
+
+                                }
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Add Project Allowance</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Project Allowance</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->
+                    <!--Cancel-->
+                    <div class="modal" id="modalCancel" tabindex="-1" role="dialog">
+                        <div class="modal-dialog" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cancel Entry</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="deleteModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Delete-->
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${ProjAlwncId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+
+<script type="text/x-jsrender" id="_cancel">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="cancelFunc(${ProjAlwncId})">
+        <span class="glyphicon glyphicon-trash"></span>
+    </a>
+</script>
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    function filterRec() {
+        var grdPrjAlwnc = document.getElementById('grdPrjAlwnc').ej2_instances[0];
+
+        var sYear = $('#drpYearSch').val();
+        var sMonth = $('#drpMonthSch').val();
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Payroll/HrPrProjAlwnc/GetHrPrProjAlwnc',
+            dataType: "json",
+            data: { year: sYear, month: sMonth },
+            success: function (data) {
+                grdPrjAlwnc.dataSource = data.data;
+            },
+            error: function (xhr, err) {
+
+            }
+        });
+    }
+
+    var createFunc = function () {
+        var url = "/Payroll/HrPrProjAlwnc/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        })
+    }
+
+    var editFunc = function (projAlwncId) {
+        var url = "/Payroll/HrPrProjAlwnc/EditGet?projAlwncId=" + projAlwncId;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+
+    var cancelFunc = function (projAlwncId) {
+        var url = "/Payroll/HrPrProjAlwnc/CancelGet?projAlwncId=" + projAlwncId;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalCancel").modal("show");
+        })
+    }
+</script>
+<!--Open Partial Views-->
+
+<script>
+    
+        function toolbarClick(args) {
+            var gridObj = document.getElementById("grdPrjAlwnc").ej2_instances[0];
+
+            if (args.item.id === 'grdPrjAlwnc_excelexport') {
+                gridObj.excelExport();
+            }
+        }
+    
+</script>

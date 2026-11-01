@@ -1,0 +1,143 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrEmpSlryStrucVw>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Salary Structures</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Salary Structures</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+
+                    
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping=" true" allowFiltering="true" allowResizing="true"
+                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )"  rowHeight="25">
+                            <e-grid-aggregates>
+                                <e-grid-aggregate>
+                                    <e-aggregate-columns>
+                                        <e-aggregate-column field="Basic" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="HrAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="TrnsAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="PstnAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="MedAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="MobAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="ProjAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="OthrAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="SpcAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="MedicalAllowance" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="IncntvPrc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="PrfmAlwnc" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="AirTcktFee" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
+                                        <e-aggregate-column field="Nt_Slry" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>                                                                              
+                                    </e-aggregate-columns>
+                                </e-grid-aggregate>
+                            </e-grid-aggregates>
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="EmpId" headerText="Employee Id" width="100"></e-grid-column>
+                                <e-grid-column field="EmpName" headerText="Employee Name" width="125"></e-grid-column>
+                                <e-grid-column field="DeptName" headerText="Department" width="100"></e-grid-column>
+                                <e-grid-column field="Basic" headerText="Basic" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="HrAlwnc" headerText="Accommodation" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="TrnsAlwnc" headerText="Transport" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="PstnAlwnc" headerText="Position" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="MedAlwnc" headerText="Medical" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="MobAlwnc" headerText="Mobile" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="ProjAlwnc" headerText="Project" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="OthrAlwnc" headerText="Other" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="SpcAlwnc" headerText="Special" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="IncntvPrc" headerText="Incentive (%)" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="PrfmAlwnc" headerText="Performance" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="AirTcktFee" headerText="Air Ticket" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="Nt_Slry" headerText="Net Salary" format="N2" textAlign="Right" width="100"></e-grid-column>
+                                <e-grid-column field="OtCode" headerText="OT Code" width="100"></e-grid-column>
+                        </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                    <!--Grid-->
+                    <!--Create-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Add Salary Details</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Create-->
+                    <!--Edit-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Edit Salary Details</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--Edit-->                
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!--Command Buttons-->
+<script type="text/x-jsrender" id="_edit">
+    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${SlStrcId})">
+        <span class="glyphicon glyphicon-pencil"></span>
+    </a>
+</script>
+
+<!--Command Buttons-->
+<!--Open Partial Views-->
+<script>
+    var createFunc = function () {
+        var url = "/Payroll/HrPrEmpSlryStruc/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");                         
+        })
+    }
+
+    var editFunc = function (id) {
+        var url = "/Payroll/HrPrEmpSlryStruc/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        })
+    }
+   
+</script>
+<!--Open Partial Views-->
+
+<script>
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+
+    }
+</script>

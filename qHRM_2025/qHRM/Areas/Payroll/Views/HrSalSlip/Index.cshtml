@@ -1,0 +1,645 @@
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@model qHRM.Areas.Payroll.Models.PrSalarySheetView
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<script src="~/lib/jquery/dist/jquery.js"></script>
+
+<style>
+    :root {
+        /* Design tokens matching HrPrSlryPrcDtl */
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-surface2: #f1f5f9;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-accent: #6366f1;
+        --clr-accent2: #8b5cf6;
+        --clr-success: #16a34a;
+        --clr-warning: #f59e0b;
+        --clr-danger: #ef4444;
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 6px 24px rgba(2,6,23,0.06);
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .slry-wrap { font-family: 'Inter', sans-serif; padding: 0; }
+
+    /* ─── Compact Header Card (OrgInfo Style) ─── */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border, #e2e8f0);
+        padding: 0.75rem 1.25rem;
+        margin: 0.75rem 2rem 1.25rem 2rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #0f172a;
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: #fdf2f8;
+        color: #540033;
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid #fbcfe8;
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    /* ─── Stat Cards ─── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 2rem; }
+    .stat-card { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.1rem 1.25rem; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-sm); }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(99,102,241,0.35); }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius: var(--radius) var(--radius) 0 0; }
+    .stat-card.sc-indigo::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.sc-green::before  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.sc-red::before    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.sc-amber::before  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card.sc-cyan::before   { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+    .stat-card-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); }
+    .stat-card-val   { font-size: 1.35rem; font-weight: 700; color: var(--clr-text); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+    .stat-card-sub   { font-size: 0.7rem; color: var(--clr-muted); margin-top: 0.2rem; }
+
+    /* ─── Main panel layout ─── */
+    .slry-main { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; padding: 0 2rem 2rem; }
+    @@media (max-width: 1100px) { .slry-main { grid-template-columns: 1fr; } }
+
+    /* ─── Control Panel ─── */
+    .ctrl-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow-sm); }
+    .ctrl-panel-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--clr-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+    .ctrl-panel-title::after { content: ''; flex: 1; height: 1px; background: var(--clr-border); }
+
+    .ctrl-group { margin-bottom: 1.1rem; }
+    .ctrl-label  { font-size: 0.72rem; font-weight: 600; color: var(--clr-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.35rem; }
+    .ctrl-select { width: 100%; background: var(--clr-surface2); border: 1px solid var(--clr-border); color: var(--clr-text); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.85rem; outline: none; transition: border-color 0.2s; font-family: 'Inter', sans-serif; }
+    .ctrl-select:focus { border-color: var(--clr-accent); }
+    .ctrl-select option { background: var(--clr-surface2); }
+
+    /* ─── Action Buttons ─── */
+    .ctrl-divider { height: 1px; background: var(--clr-border); margin: 1.25rem 0; }
+    .action-btn { width: 100%; border: none; border-radius: var(--radius-sm); padding: 0.65rem 1rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.65rem; font-family: 'Inter', sans-serif; letter-spacing: 0.01em; text-decoration: none; }
+    .action-btn:disabled { opacity: 0.38; cursor: not-allowed; pointer-events: none; }
+    .action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .btn-process  { background: linear-gradient(135deg, #990049, #b80058); color: #fff; box-shadow: 0 2px 12px rgba(153,0,73,0.4); }
+    .btn-process:hover:not(:disabled)  { box-shadow: 0 4px 20px rgba(153,0,73,0.6); transform: translateY(-1px); color: #fff; }
+    .btn-verify   { background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; box-shadow: 0 2px 12px rgba(6,182,212,0.35); }
+    .btn-verify:hover:not(:disabled)   { box-shadow: 0 4px 20px rgba(6,182,212,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-complete { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; box-shadow: 0 2px 12px rgba(34,197,94,0.35); }
+    .btn-complete:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(34,197,94,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-wps      { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; box-shadow: 0 2px 12px rgba(245,158,11,0.35); }
+    .btn-wps:hover:not(:disabled)      { box-shadow: 0 4px 20px rgba(245,158,11,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-repro    { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; box-shadow: 0 2px 12px rgba(2,132,199,0.35); }
+    .btn-repro:hover:not(:disabled)    { box-shadow: 0 4px 20px rgba(2,132,199,0.55); transform: translateY(-1px); color: #fff; }
+    .btn-email    { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,0.35); }
+    .btn-email:hover:not(:disabled)    { box-shadow: 0 4px 20px rgba(99,102,241,0.55); transform: translateY(-1px); color: #fff; }
+
+    /* ─── Status Badge ─── */
+    .status-badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; border-radius: 999px; padding: 0.3rem 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .sb-idle     { background: rgba(148,163,184,0.12); color: #94a3b8; }     .sb-idle .dot     { background: #94a3b8; }
+    .sb-process  { background: rgba(99,102,241,0.15); color: #818cf8; }      .sb-process .dot  { background: #818cf8; animation: pulse-dot 1.5s infinite; }
+    .sb-verified { background: rgba(6,182,212,0.15);  color: #22d3ee; }      .sb-verified .dot { background: #22d3ee; }
+    .sb-complete { background: rgba(34,197,94,0.15);  color: #4ade80; }      .sb-complete .dot { background: #4ade80; }
+    @@keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    /* ─── Grid panel ─── */
+    .grid-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .grid-panel-hdr { padding: 1rem 1.25rem; border-bottom: 1px solid var(--clr-border); display: flex; align-items: center; justify-content: space-between; }
+    .grid-panel-hdr h3 { font-size: 0.85rem; font-weight: 700; color: var(--clr-text); margin: 0; }
+    .grid-inner { padding: 1rem; }
+
+    /* ─── Syncfusion grid light-theme overrides ─── */
+    .e-grid { background: transparent !important; border: none !important; }
+    .e-grid .e-headercell { background: #f8fafc !important; color: var(--clr-muted) !important; font-size: 0.72rem !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-rowcell { background: transparent !important; border-color: var(--clr-border) !important; color: var(--clr-text) !important; font-size: 0.8rem !important; }
+    .e-grid .e-altrow .e-rowcell { background: #f8fafc !important; }
+    .e-grid .e-row:hover .e-rowcell { background: rgba(99,102,241,0.06) !important; }
+    .e-grid .e-footer-content, .e-grid .e-summarycell { background: #f1f5f9 !important; color: var(--clr-muted) !important; font-size: 0.75rem !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-summarycell a { color: var(--clr-accent) !important; text-decoration: none !important; }
+    .e-grid .e-summarycell a:hover { color: var(--clr-accent2) !important; }
+    .e-grid .e-pager { background: #f8fafc !important; border-color: var(--clr-border) !important; color: var(--clr-muted) !important; }
+    .e-grid .e-toolbar { background: #f8fafc !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-toolbar .e-tbar-btn { background: var(--clr-surface) !important; color: var(--clr-text) !important; border: 1px solid var(--clr-border) !important; border-radius: 6px !important; }
+
+    .helper-text { font-size: 0.73rem; color: var(--clr-muted); line-height: 1.4; margin-top: 0.35rem; }
+</style>
+
+<div class="slry-wrap">
+
+    <!-- COMPACT HERO HEADER -->
+    <div class="org-hero-card">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <div class="org-icon-badge mr-3">
+                    <i class="fas fa-file-invoice-dollar"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                        <h1 class="org-title">Salary Reports</h1>
+                        <span class="badge org-category-pill">PAYROLL</span>
+                    </div>
+                    <div class="org-breadcrumb">
+                        <a href="#" class="text-secondary font-weight-bold">Payroll</a> / <span class="text-dark font-weight-medium">Salary Reports</span>
+                        <span class="text-muted mx-1">&bull;</span>
+                        <span class="text-muted">Monthly payslips, salary sheets, and payroll bank advice</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+        <div class="stat-card sc-indigo">
+            <div class="stat-card-label">Total Employees</div>
+            <div class="stat-card-val" id="statCount">—</div>
+            <div class="stat-card-sub">In Salary Sheet</div>
+        </div>
+        <div class="stat-card sc-green">
+            <div class="stat-card-label">Total Gross</div>
+            <div class="stat-card-val" id="statGross">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-red">
+            <div class="stat-card-label">Total Deductions</div>
+            <div class="stat-card-val" id="statDed">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-amber">
+            <div class="stat-card-label">Net Payable</div>
+            <div class="stat-card-val" id="statNet">—</div>
+            <div class="stat-card-sub">QR.</div>
+        </div>
+        <div class="stat-card sc-cyan">
+            <div class="stat-card-label">Selection / Period</div>
+            <div style="margin-top:0.3rem" id="statStatus">
+                <span class="status-badge sb-idle" id="selBadge"><span class="dot"></span>0 Selected</span>
+            </div>
+            <div class="stat-card-sub" id="statPeriod">—</div>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div class="slry-main">
+
+        <!-- ─── Control Panel ─── -->
+        <div class="ctrl-panel">
+            <div class="ctrl-panel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                    <path d="M4.5 10.5A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5z"/>
+                </svg>
+                Report Controls
+            </div>
+
+            <!-- Period Filter -->
+            <div class="ctrl-group">
+                <div class="ctrl-label">Period</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <select id="drpYear" class="ctrl-select"
+                            asp-items="@(new SelectList(ViewBag.lstYear, "value", "text", ViewBag.SelectedYear))" onchange="filterPaySheet();">
+                    </select>
+                    <select id="drpMonth" class="ctrl-select"
+                            asp-items="@(new SelectList(ViewBag.lstMonth, "value", "text", ViewBag.SelectedMonth))" onchange="filterPaySheet();">
+                    </select>
+                </div>
+                <div class="helper-text">Select employee rows in the table to print individual pay slips.</div>
+            </div>
+
+            <div class="ctrl-divider"></div>
+
+            <!-- Action 1: Print Pay Slip -->
+            <div>
+                @using (Html.BeginForm("PrintPaySlip", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "return validateReportForm(event)" }))
+                {
+                    <input id="txtEmps" asp-for="Emp_Id" hidden />
+                    <input id="txtEftYr" asp-for="EftYr" hidden />
+                    <input id="txtEftMnt" asp-for="EftMnt" hidden />
+                    <button type="submit" class="action-btn btn-process" id="btnPaySlip">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                        </svg>
+                        <span id="btnPaySlipTxt">Print Pay Slip</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Action 2: Salary Sheet Summary -->
+            <div>
+                @using (Html.BeginForm("PrintSlrySht", "HrSalSlip", FormMethod.Post, new { target = "_blank" }))
+                {
+                    <input id="txtEftYr2" asp-for="EftYr" hidden />
+                    <input id="txtEftMnt2" asp-for="EftMnt" hidden />
+                    <button type="submit" class="action-btn btn-verify">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M14 1a1 1 0 0 1 1 1v12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h12zM2 0a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
+                            <path d="M4 10.5a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0-3a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5zm0-3a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5z"/>
+                        </svg>
+                        <span>Salary Sheet Summary</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Action 3: Staff Salary Sheet with Category Dropdown -->
+            <div style="background: rgba(99,102,241,0.03); border: 1px solid var(--clr-border); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.65rem;">
+                <div class="ctrl-label" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.35rem;">
+                    <span>Staff Category</span>
+                    <span style="font-size:0.65rem; color:var(--clr-muted); font-weight:normal; text-transform:none;">Salary Sheet Filter</span>
+                </div>
+                <div style="margin-bottom: 0.6rem;">
+                    <select id="drpStaffCategory" class="ctrl-select" onchange="syncStaffCategory()">
+                        <option value="1">Outsourced Staff</option>
+                        <option value="0">In-House Staff</option>
+                        <option value="2">All Staff</option>
+                    </select>
+                </div>
+                @using (Html.BeginForm("PrintStaffSalarySheet", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "syncStaffCategory()" }))
+                {
+                    <input id="txtEftYrStaff" asp-for="EftYr" hidden />
+                    <input id="txtEftMntStaff" asp-for="EftMnt" hidden />
+                    <input id="txtStaffCategory" name="sctn" value="0" hidden />
+                    <button type="submit" class="action-btn btn-complete" id="btnStaffSalarySheet" style="margin-bottom:0;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V10a.5.5 0 0 1 .342-.474L6 7.64V4.5a.5.5 0 0 1 .276-.447l8-4a.5.5 0 0 1 .487.022zM6 8.694 1 10.36V15h5V8.694zM7 15h2v-1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V15h2V1.709L7 5.209V15z"/>
+                        </svg>
+                        <span>Staff Salary Sheet</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Action 5: Download Excel -->
+            <div>
+                @using (Html.BeginForm("GetSlryShtExcel", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "syncStaffCategory()" }))
+                {
+                    <input id="txtEftYr3" asp-for="EftYr" hidden />
+                    <input id="txtEftMnt3" asp-for="EftMnt" hidden />
+                    <input id="txtStaffCategoryExcel" name="sctn" value="0" hidden />
+                    <button type="submit" class="action-btn btn-repro">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/>
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                        </svg>
+                        <span>Download Salary Sheet</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Action 6: Email Salary Slips -->
+            <div>
+                <a href="/Payroll/HrSalSlip/EmailSlrySlipIndex" class="action-btn btn-email">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                    </svg>
+                    <span>Email Salary Slips</span>
+                </a>
+            </div>
+
+            <!-- Hidden trackers -->
+            <div>
+                <input id="txtPaySheetList" type="text" asp-for="lstPaySlip" hidden />
+                <input id="txtMnt" type="text" asp-for="EftMnt" hidden />
+                <input id="txtYr" type="text" asp-for="EftYr" hidden />
+            </div>
+
+        </div>
+
+        <!-- ─── Grid Panel ─── -->
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>Salary Sheet Records</h3>
+                <span class="badge badge-light" id="gridCountBadge" style="font-size:0.75rem; color:var(--clr-muted); font-weight:600;"></span>
+            </div>
+
+            <div class="grid-inner">
+                <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created">
+                    <e-toast-position X="Center"></e-toast-position>
+                </ejs-toast>
+
+                <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowSorting="true" allowPaging="true" allowGrouping="true" allowFiltering="true" allowResizing="true"
+                          rowSelected="rowSelected" rowDeselected="rowDeselected" allowExcelExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )">
+                    <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                    <e-grid-aggregates>
+                        <e-grid-aggregate>
+                            <e-aggregate-columns>
+                                <e-aggregate-column field="BasicSalary" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="HouseRent" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="Transport" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="Position" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="ProjectAllowance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="Incentives" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="Mobile" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="Overtime" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="MedicalAllowance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="SpcAllowance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrPmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="GrossSalary" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="SalaryAdvance" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="StaffLoans" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="NoPay" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="OthrRcvryAmt" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="TotalDeductions" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="NtSlry" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                                <e-aggregate-column field="PmtMod" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
+                            </e-aggregate-columns>
+                        </e-grid-aggregate>
+                    </e-grid-aggregates>
+
+                    <e-grid-pagesettings pageCount=5 pageSize=20></e-grid-pagesettings>
+                    <e-grid-columns>
+                        <e-grid-column field="" type="checkbox" width="50" allowFiltering="false" allowSorting="false"></e-grid-column>
+                        <e-grid-column field="Index" headerText="SI" width="60" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Department" headerText="Department" width="130" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Emp_Id" headerText="Employee ID" width="105" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Full_Name" headerText="Name" width="140" minWidth="10"></e-grid-column>
+                        <e-grid-column field="Designation" headerText="Designation" width="130" minWidth="10"></e-grid-column>
+                        <e-grid-column field="BasicSalary" headerText="Basic" width="130" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Allowances" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "HouseRent", Width = "120", HeaderText = "HRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"  },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "Transport", Width = "120", HeaderText = "TRA", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "Position", Width = "120", HeaderText =  "Position", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "ProjectAllowance", Width = "120", HeaderText = "Project", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "Incentives", Width = "120", HeaderText = "Incentives", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "Mobile", Width = "120", HeaderText = "Mobile", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "Overtime", Width = "120", HeaderText = "Overtime", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "MedicalAllowance", Width = "120", HeaderText = "Medical", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "SpcAllowance", Width = "120", HeaderText = "Special", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrAlwnc", Width = "130", HeaderText = "Other Allowance", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrPmt", Width = "130", HeaderText = "Other Adjstmnt", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="GrossSalary" headerText="Gross Salary" width="135" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Deductions" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "SalaryAdvance", Width = "120", HeaderText = "Salary Advance", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"  },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "StaffLoans", Width = "120", HeaderText = "Staff Loans", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "NoPay", Width = "120", HeaderText =  "NoPay", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "OthrRcvryAmt", Width = "130", HeaderText = "Othr Adjustments", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="TotalDeductions" headerText="Total Deductions" width="135" format="N2" textAlign="Right"></e-grid-column>
+                        <e-grid-column headerText="Net Salary" textAlign="Center"
+                                       columns="@( new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "BnkAmt", Width = "130", HeaderText = "Bank Transfer", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right, MinWidth="10"  },
+                                    new Syncfusion.EJ2.Grids.GridColumn { Field = "CshAmt", Width = "130", HeaderText = "Cash Payment", Format="N2", TextAlign= Syncfusion.EJ2.Grids.TextAlign.Right,  MinWidth="10" }
+                            } )">
+                        </e-grid-column>
+                        <e-grid-column field="Remarks" headerText="Remarks" width="150"></e-grid-column>
+                    </e-grid-columns>
+                </ejs-grid>
+                <ejs-button id="hideToast" style="display:none;"></ejs-button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+    $(document).ready(function () {
+        syncHiddenDates();
+        updatePeriodDisplay();
+        
+        // Initial stat calculation from loaded grid data
+        setTimeout(function() {
+            var gridObj = document.getElementById("Grid");
+            if (gridObj && gridObj.ej2_instances && gridObj.ej2_instances[0]) {
+                var ds = gridObj.ej2_instances[0].dataSource;
+                if (ds && Array.isArray(ds)) {
+                    updateStatCards(ds);
+                } else {
+                    filterPaySheet();
+                }
+            } else {
+                filterPaySheet();
+            }
+        }, 300);
+    });
+
+    function syncStaffCategory() {
+        var cat = $("#drpStaffCategory").val() || '0';
+        $("#txtStaffCategory").val(cat);
+        $("#txtStaffCategoryExcel").val(cat);
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        $("#txtEftMntStaff").val(efMnt);
+        $("#txtEftYrStaff").val(efYr);
+        $("#txtEftMnt3").val(efMnt);
+        $("#txtEftYr3").val(efYr);
+    }
+
+    function syncHiddenDates() {
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        $("#txtEftMnt").val(efMnt);
+        $("#txtEftYr").val(efYr);
+        $("#txtEftMnt2").val(efMnt);
+        $("#txtEftYr2").val(efYr);
+        $("#txtEftMnt3").val(efMnt);
+        $("#txtEftYr3").val(efYr);
+        $("#txtEftMntIn").val(efMnt);
+        $("#txtEftYrIn").val(efYr);
+        $("#txtEftMntOut").val(efMnt);
+        $("#txtEftYrOut").val(efYr);
+        $("#txtEftMntStaff").val(efMnt);
+        $("#txtEftYrStaff").val(efYr);
+        var cat = $("#drpStaffCategory").val() || '0';
+        $("#txtStaffCategory").val(cat);
+        $("#txtStaffCategoryExcel").val(cat);
+        $("#txtMnt").val(efMnt);
+        $("#txtYr").val(efYr);
+    }
+
+    function updatePeriodDisplay() {
+        var mntTxt = $("#drpMonth option:selected").text();
+        var yrTxt = $("#drpYear").val();
+        $("#statPeriod").text(mntTxt + " " + yrTxt);
+    }
+
+    function validateReportForm(e) {
+        var empIds = $("#txtEmps").val();
+        if (!empIds || empIds.trim().length === 0) {
+            if (toastObj) {
+                toastObj.show(toasts[2]);
+            } else {
+                alert("Please select at least one employee from the table first.");
+            }
+            if (e) {
+                e.preventDefault();
+            }
+            return false;
+        }
+        return true;
+    }
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+
+    function filterPaySheet() {
+        syncHiddenDates();
+        updatePeriodDisplay();
+
+        // Clear selection on month/year change
+        $("#txtPaySheetList").val('');
+        $("#txtEmps").val('');
+        updateSelectionBadge(0);
+
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        grid.dataSource = null;
+        grid.showSpinner();
+
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Payroll/HrSalSlip/GetPaySheet',
+            dataType: "json",
+            data: { eftYr: efYr, eftMnt: efMnt },
+            success: function (res) {
+                grid.dataSource = res.data;
+                grid.hideSpinner();
+                updateStatCards(res.data);
+            },
+            error: function (xhr, err) {
+                grid.hideSpinner();
+                if (toastObj) {
+                    toastObj.show(toasts[3]);
+                }
+            }
+        });
+    }
+
+    function updateStatCards(records) {
+        if (!records || records.length === 0 || (records.length === 1 && records[0].Index === 0)) {
+            $("#statCount").text("0");
+            $("#statGross").text("0.00");
+            $("#statDed").text("0.00");
+            $("#statNet").text("0.00");
+            $("#gridCountBadge").text("0 Records");
+            return;
+        }
+        var count = records.length;
+        var gross = 0;
+        var ded = 0;
+        var net = 0;
+        records.forEach(function(r) {
+            gross += Number(r.GrossSalary || 0);
+            ded += Number(r.TotalDeductions || 0);
+            net += Number(r.NtSlry || 0);
+        });
+        $("#statCount").text(count.toLocaleString());
+        $("#statGross").text(gross.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $("#statDed").text(ded.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $("#statNet").text(net.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $("#gridCountBadge").text(count + " Records");
+    }
+
+    function rowSelected(args) {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        var selectedvalues = grid.getSelectedRecords().map(obj => obj['Emp_Sys_Id']);
+        $("#txtPaySheetList").val(selectedvalues.join(','));
+        $("#txtEmps").val(selectedvalues.join(','));
+        updateSelectionBadge(selectedvalues.length);
+    }
+
+    function rowDeselected(args) {
+        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
+        var selectedvalues = grid.getSelectedRecords().map(obj => obj['Emp_Sys_Id']);
+        $("#txtPaySheetList").val(selectedvalues.join(','));
+        $("#txtEmps").val(selectedvalues.join(','));
+        updateSelectionBadge(selectedvalues.length);
+    }
+
+    function updateSelectionBadge(count) {
+        if (count > 0) {
+            $("#selBadge").html('<span class="dot"></span>' + count + ' Selected').removeClass('sb-idle').addClass('sb-process');
+            $("#btnPaySlipTxt").text('Print Pay Slip (' + count + ')');
+        } else {
+            $("#selBadge").html('<span class="dot"></span>0 Selected').removeClass('sb-process').addClass('sb-idle');
+            $("#btnPaySlipTxt").text('Print Pay Slip');
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Pay Sheets Generated', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'No Record Found.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose the employee first.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Error!', content: 'Application Error', cssClass: 'e-toast-danger', icon: 'e-warning toast-icons' },
+        { title: 'Success!', content: 'Salary Sheet Generated', cssClass: 'e-toast-success', icon: 'e-success toast-icons' }
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (btnEleHide && e.toastContainer.childElementCount === 0) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+
+    function onBeforeOpen() {
+        if (btnEleHide) {
+            btnEleHide.style.display = 'inline-block';
+        }
+    }
+</script>

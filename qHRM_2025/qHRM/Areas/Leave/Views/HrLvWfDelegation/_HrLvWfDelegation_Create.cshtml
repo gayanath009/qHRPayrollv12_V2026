@@ -1,0 +1,81 @@
+@model qHRM.Areas.Leave.Models.HrLvWfDelegation
+
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+@using (Html.BeginForm("Create", "HrLvWfDelegation"))
+{
+    <div class="dl-horizontal">
+        <div class="form-group">
+            <label asp-for="DlgtrEmpId" class="control-label">Delegator (Approver going on leave)</label>
+            <select asp-for="DlgtrEmpId" id="drpDelegator" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme"))">
+                <option value="">-- Select the employee delegating approval --</option>
+            </select>
+            <span asp-validation-for="DlgtrEmpId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="DlgteEmpId" class="control-label">Delegate (Employee receiving approvals)</label>
+            <select asp-for="DlgteEmpId" id="drpDelegate" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme"))">
+                <option value="">-- Select the delegate employee --</option>
+            </select>
+            <span asp-validation-for="DlgteEmpId" class="text-danger"></span>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="LvTypId" class="control-label">Leave Type (leave blank for all types)</label>
+            <select asp-for="LvTypId" id="drpLvTyp" class="form-control form-control-sm select2-dropdown"
+                    asp-items="@(new SelectList(ViewBag.lstLvTyp, "LvTypId", "NameEng"))">
+                <option value="">-- All Leave Types --</option>
+            </select>
+            <small class="text-muted">Leave blank to delegate for all leave types.</small>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="FromDate" class="control-label"></label>
+                    <input asp-for="FromDate" type="date" class="form-control form-control-sm" />
+                    <span asp-validation-for="FromDate" class="text-danger"></span>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-group">
+                    <label asp-for="ToDate" class="control-label"></label>
+                    <input asp-for="ToDate" type="date" class="form-control form-control-sm" />
+                    <span asp-validation-for="ToDate" class="text-danger"></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label asp-for="Reason" class="control-label"></label>
+            <textarea asp-for="Reason" class="form-control form-control-sm" rows="3"
+                      placeholder="e.g. Annual leave from 19 Aug – 2 Sep 2026"></textarea>
+        </div>
+
+        <div class="form-group">
+            <input type="submit" value="Create Delegation" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Cancel" class="btn btn-sm btn-outline-secondary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(function () {
+        $('.select2-dropdown').each(function () {
+            var $modal = $(this).closest('.modal');
+            $(this).select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $modal.length ? $modal : $(document.body)
+            });
+        });
+
+        $('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+</script>

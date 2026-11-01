@@ -1,0 +1,579 @@
+@using Syncfusion.EJ2
+@using Syncfusion.EJ2.Notifications;
+@model qHRM.Areas.Payroll.Models.PrSalarySheetView
+@using Microsoft.AspNetCore.Http;
+@inject IHttpContextAccessor HttpContextAccessor
+<script src="~/lib/jquery/dist/jquery.js"></script>
+
+<style>
+    :root {
+        /* Design tokens matching Salary Reports / HrPrSlryPrcDtl */
+        --clr-bg: #f7fafc;
+        --clr-surface: #ffffff;
+        --clr-surface2: #f1f5f9;
+        --clr-border: rgba(2,6,23,0.06);
+        --clr-accent: #6366f1;
+        --clr-accent2: #8b5cf6;
+        --clr-success: #16a34a;
+        --clr-warning: #f59e0b;
+        --clr-danger: #ef4444;
+        --clr-text: #0f172a;
+        --clr-muted: #475569;
+        --radius: 14px;
+        --radius-sm: 8px;
+        --shadow: 0 6px 24px rgba(2,6,23,0.06);
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+    }
+
+    .slry-wrap { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 0; }
+
+    /* ─── Page Header ─── */
+    .slry-page-hdr { background: linear-gradient(135deg, #ffffff 0%, #f7fafc 100%); border-bottom: 1px solid var(--clr-border); padding: 1.5rem 2rem 1rem; margin-bottom: 1.5rem; }
+    .slry-page-hdr h2 { font-size: 1.5rem; font-weight: 700; color: var(--clr-text); margin: 0; letter-spacing: -0.02em; }
+    .slry-page-hdr h2 span { background: linear-gradient(135deg, var(--clr-accent), var(--clr-accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .slry-breadcrumb { font-size: 0.75rem; color: var(--clr-muted); margin-top: 0.25rem; }
+    .slry-breadcrumb a { color: var(--clr-muted); text-decoration: none; }
+    .slry-breadcrumb a:hover { color: var(--clr-accent); }
+
+    /* ─── Stat Cards ─── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; padding: 0 2rem; }
+    .stat-card { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.1rem 1.25rem; position: relative; overflow: hidden; transition: transform 0.2s, border-color 0.2s; box-shadow: var(--shadow-sm); }
+    .stat-card:hover { transform: translateY(-2px); border-color: rgba(99,102,241,0.35); }
+    .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; border-radius: var(--radius) var(--radius) 0 0; }
+    .stat-card.sc-indigo::before { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.sc-green::before  { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.sc-red::before    { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.sc-amber::before  { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card-label { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--clr-muted); }
+    .stat-card-val   { font-size: 1.35rem; font-weight: 700; color: var(--clr-text); margin-top: 0.25rem; font-variant-numeric: tabular-nums; }
+    .stat-card-sub   { font-size: 0.7rem; color: var(--clr-muted); margin-top: 0.2rem; }
+
+    /* ─── Main panel layout ─── */
+    .slry-main { display: grid; grid-template-columns: 320px 1fr; gap: 1.5rem; padding: 0 2rem 2rem; }
+    @@media (max-width: 1100px) { .slry-main { grid-template-columns: 1fr; } }
+
+    /* ─── Control Panel ─── */
+    .ctrl-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow-sm); height: fit-content; }
+    .ctrl-panel-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--clr-muted); margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.5rem; }
+    .ctrl-panel-title::after { content: ''; flex: 1; height: 1px; background: var(--clr-border); }
+
+    .ctrl-group { margin-bottom: 1.1rem; }
+    .ctrl-label  { font-size: 0.72rem; font-weight: 600; color: var(--clr-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.35rem; }
+    .ctrl-select { width: 100%; background: var(--clr-surface2); border: 1px solid var(--clr-border); color: var(--clr-text); border-radius: var(--radius-sm); padding: 0.5rem 0.75rem; font-size: 0.85rem; outline: none; transition: border-color 0.2s; font-family: inherit; }
+    .ctrl-select:focus { border-color: var(--clr-accent); }
+    .ctrl-select option { background: var(--clr-surface2); }
+
+    /* ─── Info Callout ─── */
+    .info-callout { background: rgba(99,102,241,0.05); border: 1px solid rgba(99,102,241,0.18); border-radius: var(--radius-sm); padding: 0.75rem 0.85rem; font-size: 0.73rem; color: var(--clr-muted); line-height: 1.45; margin-bottom: 1.1rem; display: flex; gap: 0.5rem; align-items: flex-start; }
+    .info-callout svg { flex-shrink: 0; color: var(--clr-accent); margin-top: 2px; }
+
+    /* ─── Action Buttons ─── */
+    .ctrl-divider { height: 1px; background: var(--clr-border); margin: 1.25rem 0; }
+    .action-btn { width: 100%; border: none; border-radius: var(--radius-sm); padding: 0.65rem 1rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 0.65rem; font-family: inherit; letter-spacing: 0.01em; text-decoration: none; }
+    .action-btn:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
+    .action-btn svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+    .btn-generate { background: linear-gradient(135deg, #0284c7, #0369a1); color: #fff; box-shadow: 0 2px 12px rgba(2,132,199,0.35); }
+    .btn-generate:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(2,132,199,0.55); transform: translateY(-1px); color: #fff; }
+
+    .btn-send-email { background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; box-shadow: 0 2px 12px rgba(99,102,241,0.35); }
+    .btn-send-email:hover:not(:disabled) { box-shadow: 0 4px 20px rgba(99,102,241,0.55); transform: translateY(-1px); color: #fff; }
+
+    .btn-back { background: var(--clr-surface2); color: var(--clr-text); border: 1px solid var(--clr-border); }
+    .btn-back:hover { background: #e2e8f0; color: var(--clr-text); }
+
+    .helper-text { font-size: 0.72rem; color: var(--clr-muted); line-height: 1.35; margin-top: 0.25rem; margin-bottom: 0.65rem; }
+
+    /* ─── Grid panel ─── */
+    .grid-panel { background: var(--clr-surface); border: 1px solid var(--clr-border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-sm); }
+    .grid-panel-hdr { padding: 1rem 1.25rem; border-bottom: 1px solid var(--clr-border); display: flex; align-items: center; justify-content: space-between; }
+    .grid-panel-hdr h3 { font-size: 0.85rem; font-weight: 700; color: var(--clr-text); margin: 0; }
+    .grid-inner { padding: 1rem; }
+
+    /* ─── Syncfusion grid light-theme overrides ─── */
+    .e-grid { background: transparent !important; border: none !important; }
+    .e-grid .e-headercell { background: #f8fafc !important; color: var(--clr-muted) !important; font-size: 0.72rem !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-rowcell { background: transparent !important; border-color: var(--clr-border) !important; color: var(--clr-text) !important; font-size: 0.8rem !important; }
+    .e-grid .e-altrow .e-rowcell { background: #f8fafc !important; }
+    .e-grid .e-row:hover .e-rowcell { background: rgba(99,102,241,0.06) !important; }
+    .e-grid .e-footer-content, .e-grid .e-summarycell { background: #f1f5f9 !important; color: var(--clr-muted) !important; font-size: 0.75rem !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-pager { background: #f8fafc !important; border-color: var(--clr-border) !important; color: var(--clr-muted) !important; }
+    .e-grid .e-toolbar { background: #f8fafc !important; border-color: var(--clr-border) !important; }
+
+    /* ─── Delivery Status Badges ─── */
+    .badge-dlvrd { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 9999px; }
+    .badge-dlvrd.is-delivered { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+    .badge-dlvrd.is-not-delivered { background: #ffe4e6; color: #be123c; border: 1px solid #fecdd3; }
+    .badge-dlvrd.is-no-attach { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+    .badge-dlvrd.is-no-email { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+
+    /* Toast animation */
+    #toast_type .e-toast-icon.e-icons { font-size: 24px; }
+</style>
+
+<div class="slry-wrap">
+
+    <!-- Page Header -->
+    <div class="slry-page-hdr">
+        <h2>Email Salary Slips </h2>
+        <div class="slry-breadcrumb">
+            <a href="/Payroll/HrSalSlip">Payroll / Salary Reports</a> / Email Salary Slips
+        </div>
+    </div>
+
+    <!-- Stat Cards -->
+    <div class="stat-grid">
+        <div class="stat-card sc-indigo">
+            <div class="stat-card-label">Total Eligible</div>
+            <div class="stat-card-val" id="statTotal">—</div>
+            <div class="stat-card-sub">In Email Queue</div>
+        </div>
+        <div class="stat-card sc-green">
+            <div class="stat-card-label">Delivered</div>
+            <div class="stat-card-val" id="statDelivered">—</div>
+            <div class="stat-card-sub">Slips Sent</div>
+        </div>
+        <div class="stat-card sc-red">
+            <div class="stat-card-label">Not Delivered</div>
+            <div class="stat-card-val" id="statNotDelivered">—</div>
+            <div class="stat-card-sub">Pending / Missing</div>
+        </div>
+        <div class="stat-card sc-amber">
+            <div class="stat-card-label">Period / Selection</div>
+            <div class="stat-card-val" id="statSelected" style="font-size: 1.05rem;">0 Selected</div>
+            <div class="stat-card-sub" id="statPeriod">—</div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="slry-main">
+
+        <!-- ─── Control Panel ─── -->
+        <div class="ctrl-panel">
+            <div class="ctrl-panel-title">Email Controls</div>
+
+            <!-- Period Filter -->
+            <div class="ctrl-group">
+                <div class="ctrl-label">Period</div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:0.5rem;">
+                    <select id="drpYear" class="ctrl-select"
+                            asp-items="@(new SelectList(ViewBag.lstYear, "value", "text", ViewBag.SelectedYear))" onchange="filterPeriod();">
+                    </select>
+                    <select id="drpMonth" class="ctrl-select"
+                            asp-items="@(new SelectList(ViewBag.lstMonth, "value", "text", ViewBag.SelectedMonth))" onchange="filterPeriod();">
+                    </select>
+                </div>
+            </div>
+
+            <!-- Configuration Note -->
+            <div class="info-callout">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm.93-9.412-1 4.705c-.07.34.029.533.304.533.194 0 .487-.07.686-.246l-.088.416c-.287.346-.92.598-1.465.598-.703 0-1.002-.422-.808-1.319l.738-3.468c.064-.293.006-.399-.287-.47l-.451-.081.082-.381 2.29-.287zM8 5.5a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/>
+                </svg>
+                <div>
+                    <strong>Note:</strong><br />
+                    Fisrt Generate the PaySlips and then click Send Emails to Send SalarySlips to Employees Mail Ids
+                </div>
+            </div>
+
+            <div class="ctrl-divider"></div>
+
+            <!-- Action 1: Generate All Pay Slips -->
+            <div>
+                <button type="button" class="action-btn btn-generate" id="btnGenerateSlips" onclick="generateAllPaySlips();">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
+                        <path d="M4.5 10.5A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5z"/>
+                    </svg>
+                    <span id="btnGenerateSlipsTxt">Generate Pay Slips</span>
+                </button>
+                <div class="helper-text">
+                    &nbsp;
+                </div>
+            </div>
+
+            <!-- Action 2: Send Emails -->
+            <div style="margin-top: 0.5rem;">
+                <button type="button" class="action-btn btn-send-email" id="btnSendEmails" data-toggle="modal" data-target="#conSndEmail">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.8 14.5a.5.5 0 0 1-.928.028l-3.39-5.932-5.932-3.39a.5.5 0 0 1 .028-.928L15.314.036a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.831L14.12 2.066 6.636 10.07zm-.92-1.026L1.099 6.283 13.934 1.88 5.716 9.044z"/>
+                    </svg>
+                    <span>Send Emails</span>
+                </button>
+            </div>
+
+            <div class="ctrl-divider"></div>
+
+            <!-- Action 3: Back to Salary Reports -->
+            <div>
+                <a href="/Payroll/HrSalSlip" class="action-btn btn-back">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
+                    </svg>
+                    <span>Back to Salary Reports</span>
+                </a>
+            </div>
+
+            <!-- Hidden trackers -->
+            <input id="txtEmps" type="text" hidden />
+        </div>
+
+        <!-- ─── Grid Panel ─── -->
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>Salary Slip Email Delivery Status</h3>
+                <span id="gridCountBadge" style="font-size:0.75rem; color:var(--clr-muted); background:var(--clr-surface2); border:1px solid var(--clr-border); padding:0.25rem 0.65rem; border-radius:999px; font-weight:600;">
+                    Loading records...
+                </span>
+            </div>
+
+            <div class="grid-inner">
+                <ejs-toast id="toast_type" close="onclose" beforeOpen="onBeforeOpen" created="created">
+                    <e-toast-position X="Center"></e-toast-position>
+                </ejs-toast>
+
+                <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowSorting="true" allowPaging="false" allowGrouping="true" allowFiltering="true" allowResizing="true"
+                          rowSelected="rowSelected" rowDeselected="rowDeselected" allowExcelExport="true" queryCellInfo="mrkSndStat">
+                    <e-grid-selectionsettings type="Multiple"></e-grid-selectionsettings>
+                    <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                    <e-grid-columns>
+                        <e-grid-column field="" type="checkbox" width="50" allowFiltering="false" allowSorting="false"></e-grid-column>
+                        <e-grid-column field="Index" headerText="SI No." width="80" textAlign="Center"></e-grid-column>
+                        <e-grid-column field="EmpId" headerText="Employee ID" width="110" textAlign="Center"></e-grid-column>
+                        <e-grid-column field="PstName" headerText="Name" width="220"></e-grid-column>
+                        <e-grid-column field="IsDlvrd" headerText="Email Delivery Status" width="180"></e-grid-column>
+                    </e-grid-columns>
+                </ejs-grid>
+                <ejs-button id="hideToast" style="display:none;"></ejs-button>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Confirmation Modal for Emails -->
+<div class="modal fade" id="conSndEmail" tabindex="-1" role="dialog" aria-labelledby="conSndEmailLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: var(--radius); border: 1px solid var(--clr-border); box-shadow: var(--shadow);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--clr-border); padding: 1.25rem 1.5rem;">
+                <h5 class="modal-title" id="conSndEmailLabel" style="font-size:1.05rem; font-weight:700; color:var(--clr-text); display:flex; align-items:center; gap:0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:var(--clr-accent);">
+                        <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
+                    </svg>
+                    Confirm Email Dispatch
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="outline:none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; font-size:0.85rem; color:var(--clr-text); line-height:1.6;">
+                <p>Are you sure you want to dispatch salary slips via email to all selected employees?</p>
+                <div style="background:var(--clr-surface2); border:1px solid var(--clr-border); border-radius:var(--radius-sm); padding:0.85rem; font-size:0.78rem; color:var(--clr-muted);">
+                    <strong>Reminder:</strong> Salary slips will be attached from folder <br/>
+                    
+                    Please make sure you have generated pay slips before dispatching emails.
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--clr-border); padding: 1rem 1.5rem;">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal" style="border-radius:var(--radius-sm); font-weight:600;">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" onclick="emailPaySlips();" style="border-radius:var(--radius-sm); font-weight:600; background:linear-gradient(135deg, #6366f1, #8b5cf6); border:none; padding:0.45rem 1.25rem;">Confirm & Send</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Generation Complete Modal -->
+<div class="modal fade" id="modalGenComplete" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content" style="border-radius: var(--radius); border: 1px solid var(--clr-border); box-shadow: var(--shadow);">
+            <div class="modal-header" style="border-bottom: 1px solid var(--clr-border); padding: 1.25rem 1.5rem;">
+                <h5 class="modal-title" style="font-size:1.05rem; font-weight:700; color:var(--clr-text); display:flex; align-items:center; gap:0.5rem;">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" fill="#16a34a" viewBox="0 0 16 16">
+                        <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zm-3.97-3.03a.75.75 0 0 0-1.08.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-.01-1.05z"/>
+                    </svg>
+                    Salary Slips Generated Successfully
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="outline:none;">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1.5rem; font-size:0.88rem; color:var(--clr-text); line-height:1.6;">
+                <p id="genCompleteMainMsg">Salary slips have been generated and saved successfully!</p>
+                <div style="background:var(--clr-surface2); border:1px solid var(--clr-border); border-radius:var(--radius-sm); padding:0.9rem; font-size:0.82rem; color:var(--clr-muted);">
+                    <div><strong>Total Generated:</strong> <span id="genSuccessCount" style="font-weight:700; color:var(--clr-accent);">0</span> records</div>
+                    <div style="margin-top:0.35rem;"><strong>Folder:</strong> <code style="font-weight:600; color:var(--clr-accent);">wwwroot\attach\empPaySlip\<span id="genSuccessFolder"></span></code></div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top: 1px solid var(--clr-border); padding: 1rem 1.5rem;">
+                <button type="button" class="btn btn-sm btn-primary" data-dismiss="modal" style="border-radius:var(--radius-sm); font-weight:600; background:linear-gradient(135deg, #16a34a, #15803d); border:none; padding:0.45rem 1.25rem;">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var pollTimer = null;
+
+    $(document).ready(function () {
+        updatePeriodBadge();
+        RfrshSndStat();
+    });
+
+    function filterPeriod() {
+        updatePeriodBadge();
+        RfrshSndStat();
+    }
+
+    function updatePeriodBadge() {
+        var mntName = $("#drpMonth option:selected").text();
+        var yr = $("#drpYear").val();
+        var mntVal = ("0" + $("#drpMonth").val()).slice(-2);
+        $("#statPeriod").text(mntName + " " + yr);
+        $("#modalFolderCode").text("wwwroot\\attach\\empPaySlip\\" + yr + "-" + mntVal);
+    }
+
+    function RfrshSndStat() {
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        var grid = document.getElementById('Grid').ej2_instances[0];
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Payroll/HrSalSlip/PaySlpsSndStat',
+            dataType: "json",
+            data: { efYr: efYr, efMnt: efMnt },
+            success: function (data) {
+                if (data && data.data) {
+                    grid.dataSource = data.data;
+                    updateStatCards(data.data);
+                }
+            }
+        });
+    }
+
+    function updateStatCards(dataList) {
+        if (!dataList) return;
+        var total = dataList.length;
+        var delivered = 0;
+        var notDelivered = 0;
+
+        for (var i = 0; i < total; i++) {
+            var stat = dataList[i].IsDlvrd || '';
+            if (stat.indexOf('Delivered') !== -1 && stat.indexOf('Not') === -1) {
+                delivered++;
+            } else {
+                notDelivered++;
+            }
+        }
+
+        $("#statTotal").text(total);
+        $("#statDelivered").text(delivered);
+        $("#statNotDelivered").text(notDelivered);
+        $("#gridCountBadge").text(total + " Records");
+
+        var selectedCount = $("#txtEmps").val() ? $("#txtEmps").val().split(',').filter(Boolean).length : 0;
+        $("#statSelected").text(selectedCount > 0 ? (selectedCount + " Selected") : "All (" + total + ")");
+    }
+
+    function rowSelected(args) {
+        updateSelectedTracker();
+    }
+
+    function rowDeselected(args) {
+        updateSelectedTracker();
+    }
+
+    function updateSelectedTracker() {
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        if (!grid) return;
+        var selected = grid.getSelectedRecords() || [];
+        var ids = selected.map(obj => obj['EmpSysId']);
+        $("#txtEmps").val(ids.join(','));
+        var total = grid.dataSource ? grid.dataSource.length : 0;
+        $("#statSelected").text(ids.length > 0 ? (ids.length + " Selected") : "All (" + total + ")");
+    }
+
+    function generateAllPaySlips() {
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+        var empIds = $("#txtEmps").val();
+
+        // If no specific row selected, target all records in grid
+        if (!empIds || empIds.trim() === '') {
+            var allRecords = grid.dataSource || [];
+            if (allRecords.length > 0) {
+                empIds = allRecords.map(obj => obj['EmpSysId']).join(',');
+            }
+        }
+
+        var btn = $("#btnGenerateSlips");
+        var btnTxt = $("#btnGenerateSlipsTxt");
+        btn.prop('disabled', true);
+        btnTxt.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating Slips...');
+
+        grid.showSpinner();
+
+        $.ajax({
+            type: "POST",
+            url: '/Payroll/HrSalSlip/GenerateAllPaySlps',
+            data: { efYr: efYr, efMnt: efMnt, empIds: empIds },
+            dataType: "json",
+            success: function (res) {
+                btn.prop('disabled', false);
+                btnTxt.text('Generate Pay Slips');
+                grid.hideSpinner();
+
+                if (res.ok) {
+                    $("#genSuccessCount").text(res.count);
+                    $("#genSuccessFolder").text(res.folder);
+                    $("#genCompleteMainMsg").text(res.message);
+                    $("#modalGenComplete").modal('show');
+
+                    toastObj.show({
+                        title: 'Success!',
+                        content: res.message,
+                        cssClass: 'e-toast-success',
+                        icon: 'e-success toast-icons'
+                    });
+                    RfrshSndStat();
+                } else {
+                    toastObj.show({
+                        title: 'Notice',
+                        content: res.message || 'Unable to generate slips.',
+                        cssClass: 'e-toast-warning',
+                        icon: 'e-warning toast-icons'
+                    });
+                }
+            },
+            error: function (xhr, err) {
+                btn.prop('disabled', false);
+                btnTxt.text('Generate Pay Slips');
+                grid.hideSpinner();
+                toastObj.show({
+                    title: 'Error',
+                    content: 'An error occurred while generating pay slips.',
+                    cssClass: 'e-toast-danger',
+                    icon: 'e-error toast-icons'
+                });
+            }
+        });
+    }
+
+    // Alias
+    var generateAllPaySlps = generateAllPaySlips;
+
+    function emailPaySlips() {
+        var grid = document.getElementById('Grid').ej2_instances[0];
+        var empIds = $("#txtEmps").val();
+
+        // If no specific row selected, choose all employees in current grid
+        if (!empIds || empIds.length === 0) {
+            var allRecords = grid.dataSource || [];
+            if (allRecords.length === 0) {
+                toastObj.show(toasts[2]); // Please choose the employee first
+                $('#conSndEmail').modal('hide');
+                return;
+            }
+            empIds = allRecords.map(obj => obj['EmpSysId']).join(',');
+        }
+
+        var efMnt = $("#drpMonth").val();
+        var efYr = $("#drpYear").val();
+
+        $('#conSndEmail').modal('hide');
+        grid.showSpinner();
+
+        var sendBtn = $("#btnSendEmails");
+        sendBtn.prop('disabled', true);
+
+        // Start live polling while sending
+        var pollInterval = setInterval(function () {
+            RfrshSndStat();
+        }, 4000);
+
+        $.ajax({
+            type: "GET",
+            contentType: "application/json; charset=utf-8",
+            url: '/Payroll/HrSalSlip/SendPaySlps',
+            dataType: "json",
+            data: { efYr: efYr, efMnt: efMnt, empIds: empIds },
+            success: function (data) {
+                clearInterval(pollInterval);
+                sendBtn.prop('disabled', false);
+                grid.hideSpinner();
+                if (data && data.data) {
+                    grid.dataSource = data.data;
+                    updateStatCards(data.data);
+                }
+                toastObj.show({
+                    title: 'Dispatched',
+                    content: 'Email process completed successfully.',
+                    cssClass: 'e-toast-success',
+                    icon: 'e-success toast-icons'
+                });
+            },
+            error: function (xhr, err) {
+                clearInterval(pollInterval);
+                sendBtn.prop('disabled', false);
+                grid.hideSpinner();
+                toastObj.show(toasts[3]);
+            }
+        });
+    }
+
+    function mrkSndStat(args) {
+        if (args.column.field === 'IsDlvrd') {
+            var val = args.data.IsDlvrd || '';
+            var badgeClass = 'badge-dlvrd ';
+            var icon = '';
+
+            if (val.indexOf('Delivered') !== -1 && val.indexOf('Not') === -1) {
+                badgeClass += 'is-delivered';
+                icon = '✓ ';
+            } else if (val.indexOf('Not Delivered') !== -1) {
+                badgeClass += 'is-not-delivered';
+                icon = '✕ ';
+            } else if (val.indexOf('No Attachment') !== -1) {
+                badgeClass += 'is-no-attach';
+                icon = '⚠ ';
+            } else if (val.indexOf('No Email') !== -1) {
+                badgeClass += 'is-no-email';
+                icon = '✉ ';
+            } else {
+                badgeClass += 'is-not-delivered';
+            }
+
+            args.cell.innerHTML = '<span class="' + badgeClass + '">' + icon + val + '</span>';
+        }
+    }
+</script>
+
+<script type="text/javascript">
+    var toastObj;
+    var toasts = [
+        { title: 'Success!', content: 'Pay Sheets Generated', cssClass: 'e-toast-success', icon: 'e-success toast-icons' },
+        { title: 'Warning!', content: 'No Record Found.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Warning!', content: 'Please choose the employee first.', cssClass: 'e-toast-warning', icon: 'e-warning toast-icons' },
+        { title: 'Error!', content: 'Application Error', cssClass: 'e-toast-danger', icon: 'e-error toast-icons' },
+        { title: 'Success!', content: 'Emails were sent successfully', cssClass: 'e-toast-success', icon: 'e-success toast-icons' }
+    ];
+    var btnEleHide = document.getElementById('hideToast');
+
+    function created() {
+        toastObj = this;
+    }
+
+    function onclose(e) {
+        if (e.toastContainer && e.toastContainer.childElementCount === 0 && btnEleHide) {
+            btnEleHide.style.display = 'none';
+        }
+    }
+    function onBeforeOpen() {
+        if (btnEleHide) {
+            btnEleHide.style.display = 'inline-block';
+        }
+    }
+</script>

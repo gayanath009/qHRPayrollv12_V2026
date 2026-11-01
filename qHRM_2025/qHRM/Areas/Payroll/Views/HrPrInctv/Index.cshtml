@@ -1,0 +1,401 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrInctv>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+<ejs-treeview id="listdata"></ejs-treeview>
+
+<style>
+    /* ============================================================
+       STAFF INCENTIVES - ORGINFO STYLE (#540033)
+       ============================================================ */
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --org-slate-900: #0f172a;
+        --org-slate-800: #1e293b;
+        --org-slate-600: #475569;
+        --org-slate-500: #64748b;
+        --org-slate-200: #e2e8f0;
+        --org-slate-100: #f1f5f9;
+        --org-slate-50: #f8fafc;
+        --org-radius-lg: 16px;
+        --org-radius-md: 10px;
+        --org-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.03);
+    }
+
+    .org-page-container {
+        padding: 1.25rem 0.5rem 2rem 0.5rem;
+    }
+
+    /* Hero Banner */
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--org-slate-200);
+        padding: 0.75rem 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 38px;
+        height: 38px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.05rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        flex-shrink: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+        display: inline-block;
+        line-height: 1;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: #475569;
+        margin-top: 0.15rem;
+        line-height: 1.2;
+    }
+
+    .org-title {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: var(--org-slate-900);
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    /* Create Button */
+    .org-btn-create {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        display: inline-flex;
+        align-items: center;
+        transition: all 0.2s ease !important;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+        text-decoration: none !important;
+    }
+
+    .org-btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
+        color: #ffffff !important;
+    }
+
+    /* Main Card */
+    .org-main-card {
+        background: #ffffff;
+        border: 1px solid var(--org-slate-200);
+        border-radius: var(--org-radius-lg);
+        box-shadow: var(--org-shadow);
+        overflow: hidden;
+    }
+
+    .org-card-header {
+        padding: 1.15rem 1.5rem;
+        background: #ffffff;
+        border-bottom: 1px solid var(--org-slate-200);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+
+    .org-card-header-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: var(--org-slate-800);
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-card-header-title i {
+        color: var(--org-primary);
+        margin-right: 0.6rem;
+    }
+
+    /* Action Buttons in Grid */
+    .org-actions-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .org-action-btn {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid transparent;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+        cursor: pointer;
+        padding: 0;
+        outline: none;
+    }
+
+    .org-action-edit {
+        background: #fdf2f8;
+        color: var(--org-primary);
+        border-color: #fbcfe8;
+    }
+
+    .org-action-edit:hover {
+        background: var(--org-primary);
+        color: #ffffff !important;
+        border-color: var(--org-primary);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(84, 0, 51, 0.25);
+    }
+
+    .org-action-delete {
+        background: #fef2f2;
+        color: #dc2626;
+        border-color: #fecaca;
+    }
+
+    .org-action-delete:hover {
+        background: #dc2626;
+        color: #ffffff !important;
+        border-color: #dc2626;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(220, 38, 38, 0.25);
+    }
+
+    /* Modal Overrides */
+    .org-modal .modal-content {
+        border: none !important;
+        border-radius: var(--org-radius-lg) !important;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+        overflow: hidden;
+    }
+
+    .org-modal .modal-header {
+        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
+        color: #ffffff !important;
+        padding: 1.15rem 1.5rem !important;
+        border-bottom: none !important;
+    }
+
+    .org-modal .modal-header .modal-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        font-size: 1.1rem !important;
+        display: flex;
+        align-items: center;
+    }
+
+    .org-modal .modal-header .close {
+        color: #ffffff !important;
+        opacity: 0.8 !important;
+        text-shadow: none !important;
+    }
+
+    .org-modal .modal-header .close:hover {
+        opacity: 1 !important;
+    }
+</style>
+
+<div class="org-page-container">
+    <main>
+        <div class="container-fluid px-0">
+
+            <!-- HERO HEADER -->
+            <div class="org-hero-card">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+                    <div class="d-flex align-items-center">
+                        <div class="org-icon-badge mr-3">
+                            <i class="fas fa-award"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center mb-1">
+                                <span class="org-category-pill mr-2">PAYROLL</span>
+                                <h1 class="org-title">Staff Incentives</h1>
+                            </div>
+                            <div class="org-breadcrumb">
+                                <a href="#" class="text-secondary font-weight-bold">Payroll</a> &bull;
+                                <span>Manage recurring and one-off employee incentive allocations and performance bonuses</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mt-2 mt-md-0">
+                        <button type="button" class="btn org-btn-create" id="btnCreate" onclick="createFunc();">
+                            <i class="fas fa-plus-circle mr-2"></i> Add Incentive
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN DATA CARD -->
+            <div class="org-main-card mb-4">
+                <div class="org-card-header">
+                    <div class="org-card-header-title">
+                        <i class="fas fa-table"></i>
+                        <span>Staff Incentives Register</span>
+                    </div>
+                    <div class="text-muted small d-none d-sm-block">
+                        <i class="fas fa-info-circle mr-1 text-primary"></i> Filter or sort to view incentives
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowFiltering="true" toolbarClick="toolbarClick" allowExcelExport="true" toolbar="@(new List<string>() {"ExcelExport"} )">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="EmpId" headerText="Employee Id" width="90"></e-grid-column>
+                                <e-grid-column field="FullName" headerText="Name" width="160"></e-grid-column>
+                                <e-grid-column field="InctvTypDesc" headerText="Incentive Type" width="130"></e-grid-column>
+                                <e-grid-column field="StYear" headerText="Eft Year" width="70" textAlign="Center"></e-grid-column>
+                                <e-grid-column field="StMnthName" headerText="Eft Month" width="80" textAlign="Center"></e-grid-column>
+                                <e-grid-column field="InctvAmt" headerText="Amount" width="90" textAlign="Right" format="0.00"></e-grid-column>
+                                <e-grid-column field="NoMnths" headerText="No of Month" width="90" textAlign="Center"></e-grid-column>
+                                <e-grid-column field="Note" headerText="Note" width="180"></e-grid-column>
+                                <e-grid-column field="" headerText="Edit" template="#_edit" width="60" textAlign="Center"></e-grid-column>
+                                <e-grid-column field="" headerText="Delete" template="#_delete" width="60" textAlign="Center"></e-grid-column>
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MODALS -->
+            <!--Create-->
+            <div class="modal fade org-modal" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalCreateTitle">
+                                <i class="fas fa-plus-circle mr-2"></i> Add Staff Incentive
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="createModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Edit-->
+            <div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="modalEditTitle">
+                                <i class="fas fa-pen mr-2"></i> Edit Staff Incentive
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="editModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!--Delete-->
+            <div class="modal fade org-modal" id="modalDelete" tabindex="-1" role="dialog" aria-labelledby="modalDeleteTitle" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;">
+                            <h5 class="modal-title" id="modalDeleteTitle">
+                                <i class="fas fa-trash-alt mr-2"></i> Delete Staff Incentive
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body" id="deleteModalBody"></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+</div>
+
+<!-- Command Button Templates -->
+<script type="text/x-jsrender" id="_edit">
+    <button type="button" class="org-action-btn org-action-edit" title="Edit" onclick="editFunc(${InctvId})">
+        <i class="fas fa-pen"></i>
+    </button>
+</script>
+<script type="text/x-jsrender" id="_delete">
+    <button type="button" class="org-action-btn org-action-delete" title="Delete" onclick="deleteFunc(${InctvId})">
+        <i class="fas fa-trash-alt"></i>
+    </button>
+</script>
+
+<!-- Scripts -->
+<script>
+    var createFunc = function () {
+        var url = "/Payroll/HrPrInctv/CreateNew";
+        $("#createModalBody").load(url, function () {
+            $("#modalCreate").modal("show");
+        });
+    };
+
+    var editFunc = function (id) {
+        var url = "/Payroll/HrPrInctv/EditGet?id=" + id;
+        $("#editModalBody").load(url, function () {
+            $("#modalEdit").modal("show");
+        });
+    };
+
+    var deleteFunc = function (id) {
+        var url = "/Payroll/HrPrInctv/DeleteGet?id=" + id;
+        $("#deleteModalBody").load(url, function () {
+            $("#modalDelete").modal("show");
+        });
+    };
+
+    function toolbarClick(args) {
+        var gridObj = document.getElementById("Grid").ej2_instances[0];
+        if (args.item.id === 'Grid_excelexport') {
+            gridObj.excelExport();
+        }
+    }
+</script>

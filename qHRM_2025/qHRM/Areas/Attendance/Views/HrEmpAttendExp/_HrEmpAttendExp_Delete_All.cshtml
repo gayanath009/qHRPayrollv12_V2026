@@ -1,0 +1,146 @@
+@model qHRM.Areas.Attendance.Models.HrEmpAttendExp
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+<h5>Are you sure you want to delete this?</h5>
+@using (Html.BeginForm("DeleteAll", "HrEmpAttendExp"))
+{
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label class="control-label">Employee Type</label>
+            <br />
+            <fieldset class="form-group">
+                <div class="row">
+                    <div class="col-sm-10">
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gridRadios" id="chkAllEmp" value="A" checked onclick="showReProcessOptions();">
+                            <label class="form-check-label" for="gridRadios1">
+                                All Employees
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdEmp" value="S" onclick="showReProcessOptions();">
+                            <label class="form-check-label" for="gridRadios2">
+                                Individual Employee
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdDpt" value="D" onclick="showReProcessOptions();">
+                            <label class="form-check-label" for="gridRadios3">
+                                Department
+                            </label>
+                        </div>
+                        <input id="txtempTyp" type="hidden" asp-for="empTyp" />
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="form-group col-md-6">
+            <br /> <br />
+            <div id="dvEmp">
+                <select asp-for="empSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmployee, "ESysId", "FulNme"))">
+                    <option value="">-- Select Employee --</option>
+                </select>
+            </div>
+            <div id="dvDpt">
+                <select asp-for="dptId" id="drpDpt" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstDepartment, "DeptId", "DeptName"))">
+                    <option value="">-- Select Department --</option>
+                </select>
+            </div>
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="form-group col-md-6">
+            <label asp-for="Del_StDate" class="control-label"></label>
+            <input asp-for="Del_StDate" value="@ViewBag.Today" class="form-control form-control-sm" />
+            <span asp-validation-for="Del_StDate" class="text-danger"></span>
+        </div>
+        <div class="form-group col-md-6">
+            <label asp-for="Del_EndDate" class="control-label"></label>
+            <input asp-for="Del_EndDate" value="@ViewBag.Today" class="form-control form-control-sm" />
+            <span asp-validation-for="Del_EndDate" class="text-danger"></span>
+
+            <input type="hidden" asp-for="Note" value="#" class="form-control form-control-sm" />
+        </div>
+    </div>
+
+    <div>
+        @if (ViewBag.RecDelete == true)
+        {
+            <input type="submit" value="Delete Multiple" class="btn btn-sm btn-danger" />
+        }
+        <input type="button" value="Back" class="btn btn-sm btn-outline-primary" data-dismiss="modal" />
+    </div>
+}
+
+<script>
+    $(document).ready(function () {
+        showReProcessOptions();
+
+        $('#modalDeleteAll').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalDeleteAll')
+        });
+
+        $('#modalDeleteAll').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+
+    function showReProcessOptions() {
+        var chkAllEmp = document.getElementById("chkAllEmp");
+        var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+        var chkSlctdDpt = document.getElementById("chkSlctdDpt");
+
+        var dvEmp = document.getElementById("dvEmp");
+        var dvDpt = document.getElementById("dvDpt");
+
+        if (chkAllEmp && chkAllEmp.checked == true) {
+            if (dvEmp) dvEmp.style.display = "none";
+            if (dvDpt) dvDpt.style.display = "none";
+            $('#txtempTyp').val('A');
+        }
+        else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+            if (dvEmp) dvEmp.style.display = "block";
+            if (dvDpt) dvDpt.style.display = "none";
+            $('#txtempTyp').val('S');
+        }
+        else if (chkSlctdDpt && chkSlctdDpt.checked == true) {
+            if (dvEmp) dvEmp.style.display = "none";
+            if (dvDpt) dvDpt.style.display = "block";
+            $('#txtempTyp').val('D');
+        }
+    }
+
+    $('form').on('submit', function (e) {
+        var chkAllEmp = document.getElementById("chkAllEmp");
+        var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+        var chkSlctdDpt = document.getElementById("chkSlctdDpt");
+
+        var empTyp = 'A';
+        var ref = null;
+        if (chkAllEmp && chkAllEmp.checked == true) {
+            empTyp = 'A';
+        }
+        else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+            empTyp = 'S';
+            ref = $('#drpEmp').val();
+            if (!ref) {
+                alert('Please choose an employee');
+                return false;
+            }
+        }
+        else if (chkSlctdDpt && chkSlctdDpt.checked == true) {
+            empTyp = 'D';
+            ref = $('#drpDpt').val();
+            if (!ref) {
+                alert('Please choose a department');
+                return false;
+            }
+        }
+        return true;
+    });
+</script>

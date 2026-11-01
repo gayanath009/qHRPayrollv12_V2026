@@ -1,0 +1,19 @@
+﻿
+@{
+    ViewData["Title"] = "Index";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h5>Index</h5>
+
+<ejs-pdfviewer id="container" style="height:600px" serviceUrl="/Payroll/HrPrPDFViewer" DocumentPath="PDF_Succinctly.pdf"></ejs-pdfviewer>
+
+@*<ejs-pdfviewer id="pdfviewer" style="height:641px;"></ejs-pdfviewer>
+
+<script type="text/javascript">
+    window.onload = function () {
+        var pdfViewer = document.getElementById('pdfviewer').ej2_instances[0];
+        pdfViewer.serviceUrl = window.baseurl + '/Payroll/HrPrPDFViewer/PdfViewer';
+        pdfViewer.load("PDF Succinctly.pdf", null);
+    }
+</script>*@

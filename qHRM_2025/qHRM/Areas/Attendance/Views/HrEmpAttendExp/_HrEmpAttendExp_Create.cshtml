@@ -1,0 +1,158 @@
+@model qHRM.Areas.Attendance.Models.HrEmpAttendExp
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+
+@using (Html.BeginForm("Create", "HrEmpAttendExp"))
+{    
+    <div class="dl-horizontal">        
+        <div class="form-group col-md-12">
+            <div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="control-label">Employee Type</label>
+                        <br />
+                        <fieldset class="form-group">
+                            <div class="row">
+                                <div class="col-sm-10">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gridRadios" id="chkAllEmp" value="A" checked onclick="showReProcessOptions();">
+                                        <label class="form-check-label" for="chkAllEmp">
+                                            All Employees
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdEmp" value="S" onclick="showReProcessOptions();">
+                                        <label class="form-check-label" for="chkSlctdEmp">
+                                            Individual Employee
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="gridRadios" id="chkSlctdDpt" value="D" onclick="showReProcessOptions();">
+                                        <label class="form-check-label" for="chkSlctdDpt">
+                                            Department
+                                        </label>
+                                    </div>
+                                    <input id="txtempTyp" type="hidden" asp-for="empTyp" />
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <div class="form-group col-md-6">
+                        <br /> <br />
+                        <div id="dvEmp">
+                            <select asp-for="EmpSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                                    asp-items="@(new SelectList(ViewBag.lstEmployee, "ESysId", "FulNme"))">
+                                <option value="">-- Select Employee --</option>
+                            </select>
+                        </div>
+                        <div id="dvDpt">
+                            <select asp-for="dptId" id="drpDpt" class="form-control form-control-sm select2-dropdown"
+                                    asp-items="@(new SelectList(ViewBag.lstDepartment, "DeptId", "DeptName"))">
+                                <option value="">-- Select Department --</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>              
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label asp-for="StDate" class="control-label"></label>
+                <input asp-for="StDate" value="@ViewBag.Today" class="form-control form-control-sm" />
+                <span asp-validation-for="StDate" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-6">
+                <label asp-for="EndDate" class="control-label"></label>
+                <input asp-for="EndDate" value="@ViewBag.Today" class="form-control form-control-sm" />
+                <span asp-validation-for="EndDate" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Note" class="control-label"></label>
+                <input asp-for="Note" class="form-control form-control-sm" />
+                <span asp-validation-for="Note" class="text-danger"></span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            @if (ViewBag.RecAdd == true)
+            {
+                <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            }
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    $(document).ready(function () {
+        showReProcessOptions();
+        
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+    });
+
+    function showReProcessOptions() {
+        var chkAllEmp = document.getElementById("chkAllEmp");
+        var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+        var chkSlctdDpt = document.getElementById("chkSlctdDpt");
+
+        var dvEmp = document.getElementById("dvEmp");
+        var dvDpt = document.getElementById("dvDpt");
+
+        if (chkAllEmp && chkAllEmp.checked == true) {
+            if (dvEmp) dvEmp.style.display = "none";
+            if (dvDpt) dvDpt.style.display = "none";
+            $('#txtempTyp').val('A');
+        }
+        else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+            if (dvEmp) dvEmp.style.display = "block";
+            if (dvDpt) dvDpt.style.display = "none";
+            $('#txtempTyp').val('S');
+        }
+        else if (chkSlctdDpt && chkSlctdDpt.checked == true) {
+            if (dvEmp) dvEmp.style.display = "none";
+            if (dvDpt) dvDpt.style.display = "block";
+            $('#txtempTyp').val('D');
+        }
+    }
+
+    $('form').on('submit', function (e) {
+        var chkAllEmp = document.getElementById("chkAllEmp");
+        var chkSlctdEmp = document.getElementById("chkSlctdEmp");
+        var chkSlctdDpt = document.getElementById("chkSlctdDpt");
+
+        var empTyp = 'A';
+        var ref = null;
+        if (chkAllEmp && chkAllEmp.checked == true) {
+            empTyp = 'A';
+        }
+        else if (chkSlctdEmp && chkSlctdEmp.checked == true) {
+            empTyp = 'S';
+            ref = $('#drpEmp').val();
+            if (!ref) {
+                alert('Please choose an employee');
+                return false;
+            }
+        }
+        else if (chkSlctdDpt && chkSlctdDpt.checked == true) {
+            empTyp = 'D';
+            ref = $('#drpDpt').val();
+            if (!ref) {
+                alert('Please choose a department');
+                return false;
+            }
+        }
+        return true;
+    });
+</script>
