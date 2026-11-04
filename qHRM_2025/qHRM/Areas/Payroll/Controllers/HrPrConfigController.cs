@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -125,6 +125,38 @@ namespace qHRM.Areas.Payroll.Controllers
             }
         }
         #endregion Validation
+
+        /// <summary>
+        /// Updates the Payroll Configuration starting month/year.
+        /// This controls which month the payroll process will begin from when no prior process exists.
+        /// </summary>
+        [HttpGet]
+        public JsonResult ResetSlryPrcStMonth(int stYear, int stMonth)
+        {
+            try
+            {
+                int empSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 1;
+                if (empSysId <= 0) empSysId = 1;
+
+                var hrPrConfig = _payrollContext.GetActiveHrPrConfig();
+                if (hrPrConfig == null)
+                    return Json(new { ok = false, data = 0, message = "No active payroll configuration found." });
+
+                hrPrConfig.SlryPrcStYear = stYear;
+                hrPrConfig.SlryPrcStMonth = stMonth;
+
+                int result = _payrollContext.SaveHrPrConfig(hrPrConfig, empSysId);
+
+                if (result == 1)
+                    return Json(new { ok = true, data = result, message = $"Payroll starting month updated to {new System.DateTime(stYear, stMonth, 1):MMMM yyyy} successfully." });
+                else
+                    return Json(new { ok = false, data = result, message = "No changes were saved (values may already be set to the requested month)." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, data = ex.Message, message = "failed" });
+            }
+        }
 
         #region Gratuity Functions
         // GET: HrEmpConfig/CreateGrtGet

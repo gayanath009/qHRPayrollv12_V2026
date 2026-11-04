@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using qHRM.Areas.Employee.Models;
 using System;
 using System.ComponentModel.DataAnnotations;
@@ -23,7 +23,6 @@ namespace qHRM.Areas.Payroll.Models
         public DateTime TrnDate { get; set; }
 
         [Display(Name = "Referance Number")]
-        [Required(ErrorMessage = "Referance Number cannot be blank")]
         [StringLength(20)]
         public string Ref { get; set; }
 

@@ -78,7 +78,10 @@ namespace qHRM.Models
         public virtual DbSet<HrLvRunningBalance> HrLvRunningBalance { get; set; }
         public virtual DbSet<HrLvBalanceTransaction> HrLvBalanceTransaction { get; set; }
         // ─────────────────────────────────────────────────────────────────────
+        public virtual DbSet<HrPrAirTicketPrice> HrPrAirTicketPrice { get; set; }
+        public virtual DbSet<HrPrStaffLvTktEncash> HrPrStaffLvTktEncash { get; set; }
         public virtual DbSet<HrPrAdHocTrns> HrPrAdHocTrns { get; set; }
+        public virtual DbSet<HrPrLopTrns> HrPrLopTrns { get; set; }
         public virtual DbSet<HrPrAdHocTrnType> HrPrAdHocTrnType { get; set; }
         public virtual DbSet<HrPrCnfGrtvtyLvl> HrPrCnfGrtvtyLvl { get; set; }
         public virtual DbSet<HrPrConfig> HrPrConfig { get; set; }
@@ -2176,6 +2179,78 @@ namespace qHRM.Models
                     .HasConstraintName("FK_HR_PrAdHocTrnType_ORG_Entity");
             });
 
+            modelBuilder.Entity<HrPrLopTrns>(entity =>
+            {
+                entity.HasKey(e => e.LopId);
+
+                entity.ToTable("HR_PrLopTrns");
+
+                entity.Property(e => e.LopId).HasColumnName("Lop_Id");
+
+                entity.Property(e => e.CrtBy).HasColumnName("Crt_By");
+
+                entity.Property(e => e.CrtDateTime)
+                    .HasColumnName("Crt_DateTime")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.Property(e => e.Desc)
+                    .IsRequired()
+                    .HasMaxLength(200);
+
+                entity.Property(e => e.EftMonth).HasColumnName("Eft_Month");
+
+                entity.Property(e => e.EftYear).HasColumnName("Eft_Year");
+
+                entity.Property(e => e.EmpSysId).HasColumnName("Emp_Sys_Id");
+
+                entity.Property(e => e.LvTypId).HasColumnName("LvTyp_Id");
+
+                entity.Property(e => e.PrcLogId).HasColumnName("PrcLog_Id");
+
+                entity.Property(e => e.RecStat)
+                    .HasColumnName("Rec_Stat")
+                    .HasDefaultValueSql("((1))");
+
+                entity.Property(e => e.Ref)
+                    .IsRequired()
+                    .HasMaxLength(20);
+
+                entity.Property(e => e.ShtRmk)
+                    .HasColumnName("Sht_Rmk")
+                    .HasMaxLength(35);
+
+                entity.Property(e => e.LopDays)
+                    .HasColumnName("Lop_Days")
+                    .HasColumnType("decimal(5, 2)");
+
+                entity.Property(e => e.LopAmt)
+                    .HasColumnName("Lop_Amt")
+                    .HasColumnType("decimal(9, 2)");
+
+                entity.Property(e => e.TrnDate)
+                    .HasColumnName("Trn_Date")
+                    .HasColumnType("datetime")
+                    .HasDefaultValueSql("(getdate())");
+
+                entity.HasOne(d => d.EmpSys)
+                    .WithMany()
+                    .HasForeignKey(d => d.EmpSysId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_HR_PrLopTrns_HR_EmpGenInfo");
+
+                entity.HasOne(d => d.PrcLog)
+                    .WithMany()
+                    .HasForeignKey(d => d.PrcLogId)
+                    .HasConstraintName("FK_HR_PrLopTrns_HR_PrSlryPrcLog");
+
+                entity.HasOne(d => d.LvTyp)
+                    .WithMany()
+                    .HasForeignKey(d => d.LvTypId)
+                    .OnDelete(DeleteBehavior.ClientSetNull)
+                    .HasConstraintName("FK_HR_PrLopTrns_HR_LvType");
+            });
+
             modelBuilder.Entity<HrPrAdHocTrns>(entity =>
             {
                 entity.HasKey(e => e.TrnId);
@@ -2436,6 +2511,10 @@ namespace qHRM.Models
                 entity.Property(e => e.PstnAlwnc)
                     .IsRequired()
                     .HasColumnName("Pstn_Alwnc");
+
+                entity.Property(e => e.ProjAlwnc)
+                    .IsRequired()
+                    .HasColumnName("Proj_Alwnc");
 
                 entity.Property(e => e.RecStat)
                     .HasColumnName("Rec_Stat")
@@ -2852,6 +2931,10 @@ namespace qHRM.Models
                 entity.Property(e => e.PstnAlwnc)
                     .IsRequired()
                     .HasColumnName("Pstn_Alwnc");
+
+                entity.Property(e => e.ProjAlwnc)
+                    .IsRequired()
+                    .HasColumnName("Proj_Alwnc");
 
                 entity.Property(e => e.RecStat)
                     .HasColumnName("Rec_Stat")

@@ -175,6 +175,8 @@ namespace qHRM.Areas.Employee.Data
         {
             public int ESysId { get; set; }
             public string FulNme { get; set; }
+            public string EmpId { get; set; }
+            public string DisplayText => !string.IsNullOrEmpty(EmpId) ? $"{EmpId} - {FulNme}" : FulNme;
         }
 
         public class EmpView2
@@ -380,7 +382,8 @@ namespace qHRM.Areas.Employee.Data
                                 .Select(z => new HrEmpGen
                                 {
                                     ESysId = z.p.emp.EmpSysId,
-                                    FulNme = z.p.emp.FirstName + "" + (z.p.emp.MdlName == null ? "" : " " + z.p.emp.MdlName) + " " + z.p.emp.LastName
+                                    FulNme = z.p.emp.FirstName + "" + (z.p.emp.MdlName == null ? "" : " " + z.p.emp.MdlName) + " " + z.p.emp.LastName,
+                                    EmpId = z.p.emp.EmpId,
                                 }).ToList().OrderBy(o => o.FulNme);
                 return x;
             }
@@ -564,7 +567,8 @@ namespace qHRM.Areas.Employee.Data
                         .Select(e => new HrEmpGen
                         {
                             ESysId = e.EmpSysId,
-                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim()
+                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim(),
+                            EmpId = e.EmpId,
                         })
                         .ToList();
                     return self;
@@ -581,7 +585,8 @@ namespace qHRM.Areas.Employee.Data
                         .Select(e => new HrEmpGen
                         {
                             ESysId = e.EmpSysId,
-                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim()
+                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim(),
+                            EmpId = e.EmpId,
                         })
                         .OrderBy(o => o.FulNme)
                         .ToList();
@@ -594,7 +599,8 @@ namespace qHRM.Areas.Employee.Data
                             osEmps.Add(new HrEmpGen
                             {
                                 ESysId = selfEmp.EmpSysId,
-                                FulNme = ((selfEmp.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(selfEmp.MdlName) ? "" : " " + selfEmp.MdlName.Trim()) + (string.IsNullOrWhiteSpace(selfEmp.LastName) ? "" : " " + selfEmp.LastName.Trim())).Trim()
+                                FulNme = ((selfEmp.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(selfEmp.MdlName) ? "" : " " + selfEmp.MdlName.Trim()) + (string.IsNullOrWhiteSpace(selfEmp.LastName) ? "" : " " + selfEmp.LastName.Trim())).Trim(),
+                                EmpId = selfEmp.EmpId,
                             });
                         }
                     }
@@ -606,7 +612,8 @@ namespace qHRM.Areas.Employee.Data
                             .Select(e => new HrEmpGen
                             {
                                 ESysId = e.EmpSysId,
-                                FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim()
+                                FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim(),
+                            EmpId = e.EmpId,
                             })
                             .OrderBy(o => o.FulNme)
                             .ToList();
@@ -628,7 +635,8 @@ namespace qHRM.Areas.Employee.Data
                             .Select(e => new HrEmpGen
                             {
                                 ESysId = e.EmpSysId,
-                                FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim()
+                                FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim(),
+                            EmpId = e.EmpId,
                             })
                             .OrderBy(o => o.FulNme)
                             .ToList();
@@ -641,7 +649,8 @@ namespace qHRM.Areas.Employee.Data
                                 emps.Add(new HrEmpGen
                                 {
                                     ESysId = self.EmpSysId,
-                                    FulNme = ((self.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(self.MdlName) ? "" : " " + self.MdlName.Trim()) + (string.IsNullOrWhiteSpace(self.LastName) ? "" : " " + self.LastName.Trim())).Trim()
+                                    FulNme = ((self.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(self.MdlName) ? "" : " " + self.MdlName.Trim()) + (string.IsNullOrWhiteSpace(self.LastName) ? "" : " " + self.LastName.Trim())).Trim(),
+                                    EmpId = self.EmpId,
                                 });
                             }
                         }
@@ -669,7 +678,8 @@ namespace qHRM.Areas.Employee.Data
                                                     select new HrEmpGen
                                                     {
                                                         ESysId = em.EmpSysId,
-                                                        FulNme = em.FirstName + "" + (em.MdlName == null ? "" : " " + em.MdlName) + " " + em.LastName
+                                                        FulNme = em.FirstName + "" + (em.MdlName == null ? "" : " " + em.MdlName) + " " + em.LastName,
+                                                        EmpId = em.EmpId,
                                                     };
                
                 return objFiltered.ToList().OrderBy(n => n.FulNme);
@@ -734,6 +744,34 @@ namespace qHRM.Areas.Employee.Data
                                 {
                                     EmpSysId = x.p.emp.EmpSysId,
                                     EmpDesc = x.p.emp.FirstName + "" + (x.p.emp.MdlName == null ? "" : " " + x.p.emp.MdlName) + " " + x.p.emp.LastName
+                                }).ToList().OrderBy(n => n.EmpDesc);
+        }
+
+        public IEnumerable<EmpSimpleView1> GetOutsourceEmployeeViewByEntId(int entId, DateTime curDate)
+        {
+            PayrollContext payrollContext = new PayrollContext(_hrmContext);
+
+            var lstSlryPrcHdr = payrollContext.GetLstSlryPrcHdr(entId);
+            var curSlryMnt = lstSlryPrcHdr != null
+                ? new DateTime(lstSlryPrcHdr.EftYear, lstSlryPrcHdr.EftMonth, 01)
+                : new DateTime(curDate.Year, curDate.Month, 01);
+
+            if (lstSlryPrcHdr != null && lstSlryPrcHdr.PrcStat == 3)
+            {
+                curSlryMnt = curSlryMnt.AddMonths(1);
+            }
+
+            return _hrmContext.HrEmpGenInfo
+                                .Join(_hrmContext.HrEmpJobAssign, jb => jb.EmpSysId, emp => emp.EmpSysId, (emp, jb) => new { emp, jb })
+                                .Join(_hrmContext.OrgDepartment, p => p.jb.DeptId, dp => dp.DeptId, (p, dp) => new { p, dp })
+                                .Where(z => z.p.emp.WrktypId == 2
+                                    && (z.p.emp.CurrStat == 0 || z.p.emp.SrvEndDate >= curSlryMnt)
+                                    && z.p.jb.WkStat == 1
+                                    && z.dp.EntId == entId)
+                                .Select(x => new EmpSimpleView1
+                                {
+                                    EmpSysId = x.p.emp.EmpSysId,
+                                    EmpDesc = x.p.emp.EmpId + " - " + x.p.emp.FirstName + (x.p.emp.MdlName == null ? "" : " " + x.p.emp.MdlName) + " " + x.p.emp.LastName
                                 }).ToList().OrderBy(n => n.EmpDesc);
         }
 
@@ -1113,7 +1151,8 @@ namespace qHRM.Areas.Employee.Data
                         .Select(e => new HrEmpGen
                         {
                             ESysId = e.EmpSysId,
-                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim()
+                            FulNme = ((e.FirstName ?? "").Trim() + (string.IsNullOrWhiteSpace(e.MdlName) ? "" : " " + e.MdlName.Trim()) + (string.IsNullOrWhiteSpace(e.LastName) ? "" : " " + e.LastName.Trim())).Trim(),
+                            EmpId = e.EmpId,
                         }).OrderBy(o => o.FulNme).ToList();
                 }
 
@@ -1158,7 +1197,8 @@ namespace qHRM.Areas.Employee.Data
                     result.Add(new HrEmpGen
                     {
                         ESysId = rootEmp.EmpSysId,
-                        FulNme = $"{rootEmp.FirstName} {(string.IsNullOrEmpty(rootEmp.MdlName) ? "" : rootEmp.MdlName + " ")}{rootEmp.LastName} (My Attendance)".Trim()
+                        FulNme = $"{rootEmp.FirstName} {(string.IsNullOrEmpty(rootEmp.MdlName) ? "" : rootEmp.MdlName + " ")}{rootEmp.LastName} (My Attendance)".Trim(),
+                        EmpId = rootEmp.EmpId,
                     });
                 }
                 else if (rootEmpSysId > 0)
@@ -1169,7 +1209,8 @@ namespace qHRM.Areas.Employee.Data
                         result.Add(new HrEmpGen
                         {
                             ESysId = emp.EmpSysId,
-                            FulNme = $"{emp.FirstName} {(string.IsNullOrEmpty(emp.MdlName) ? "" : emp.MdlName + " ")}{emp.LastName} (My Attendance)".Trim()
+                            FulNme = $"{emp.FirstName} {(string.IsNullOrEmpty(emp.MdlName) ? "" : emp.MdlName + " ")}{emp.LastName} (My Attendance)".Trim(),
+                            EmpId = emp.EmpId,
                         });
                     }
                 }
@@ -1183,7 +1224,8 @@ namespace qHRM.Areas.Employee.Data
                         return new HrEmpGen
                         {
                             ESysId = e.EmpSysId,
-                            FulNme = $"{e.FirstName} {(string.IsNullOrEmpty(e.MdlName) ? "" : e.MdlName + " ")}{e.LastName}".Trim()
+                            FulNme = $"{e.FirstName} {(string.IsNullOrEmpty(e.MdlName) ? "" : e.MdlName + " ")}{e.LastName}".Trim(),
+                            EmpId = e.EmpId,
                         };
                     })
                     .OrderBy(o => o.FulNme);

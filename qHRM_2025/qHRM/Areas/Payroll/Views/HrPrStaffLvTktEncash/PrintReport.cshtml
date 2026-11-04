@@ -1,0 +1,189 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>
+
+@{
+    Layout = null;
+    int selectedYear = ViewBag.Year;
+    int selectedMonth = ViewBag.Month;
+    string monthName = ViewBag.MonthName;
+
+    int prevMonth = selectedMonth == 1 ? 12 : selectedMonth - 1;
+    int prevYear = selectedMonth == 1 ? selectedYear - 1 : selectedYear;
+    string cutoffPeriodText = $"Cut off period 21/{prevMonth:D2}/{prevYear % 100:D2} to 20/{selectedMonth:D2}/{selectedYear % 100:D2}";
+
+    var internalStaff = Model?.Where(x => x.StaffCategory == "INTERNAL").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+    var outsourceStaff = Model?.Where(x => x.StaffCategory == "OUTSOURCE").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Internal/Outsource Staff Leave Salary & Air Ticket Encashment - @monthName @selectedYear</title>
+    <style>
+        body {
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 11px;
+            color: #000;
+            margin: 15px;
+        }
+        h2 {
+            text-align: center;
+            margin: 4px 0 2px 0;
+            font-size: 14px;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 11px;
+            margin-bottom: 12px;
+            font-weight: bold;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            border: 1px solid #777;
+            padding: 4px 5px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #f2f2f2;
+            text-align: center;
+            font-size: 10px;
+        }
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .font-weight-bold { font-weight: bold; }
+        .subtotal-row td {
+            font-weight: bold;
+            border-top: 2px solid #000;
+            border-bottom: 2px solid #000;
+            background-color: #fafafa;
+        }
+        .grandtotal-row td {
+            font-weight: bold;
+            font-size: 12px;
+            border-top: 2px solid #000;
+            border-bottom: 3px double #000;
+            background-color: #eee;
+        }
+        @@media print {
+            .no-print { display: none; }
+            @@page { size: landscape; margin: 10mm; }
+        }
+    </style>
+</head>
+<body>
+    <div class="no-print" style="margin-bottom: 15px;">
+        <button onclick="window.print();" style="padding: 6px 15px; font-size: 13px; font-weight: bold; cursor: pointer;">
+            🖨️ Print Report
+        </button>
+        <button onclick="window.close();" style="padding: 6px 15px; font-size: 13px; margin-left: 10px; cursor: pointer;">
+            Close
+        </button>
+    </div>
+
+    <h2>Internal/Outsource Staff Leave Salary & Air Ticket Encashment- @monthName @selectedYear</h2>
+    <div class="subtitle">(@cutoffPeriodText)</div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Employee ID</th>
+                <th>Courtesy Title</th>
+                <th>Full Name</th>
+                <th>Department</th>
+                <th>Designation</th>
+                <th>Joined Date</th>
+                <th>Join Date after Annual Vacation</th>
+                <th>Nationality</th>
+                <th>Next Leave Reset Date</th>
+                <th>Applicable Days</th>
+                <th>Eligible Leave Days</th>
+                <th style="color: red;">Eligible Leave Days Rounded (-) Paid Leave</th>
+                <th>Monthly Salary</th>
+                <th>Total Leave Salary</th>
+                <th>Air Ticket Value</th>
+                <th>Total Settlement</th>
+                <th>Remarks</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (internalStaff.Any())
+            {
+                foreach (var emp in internalStaff)
+                {
+                    <tr>
+                        <td class="text-center font-weight-bold">@emp.EmpId</td>
+                        <td class="text-center">@emp.CourtesyTitle</td>
+                        <td>@emp.FullName</td>
+                        <td>@emp.Department</td>
+                        <td>@emp.Designation</td>
+                        <td class="text-center">@emp.JoinedDateStr</td>
+                        <td class="text-center">@emp.VacationReturnDateStr</td>
+                        <td class="text-center">@emp.Nationality</td>
+                        <td class="text-center">@emp.NextResetDateStr</td>
+                        <td class="text-center">@emp.ApplicableDays</td>
+                        <td class="text-right">@emp.EligibleLeaveDays.ToString("0.#####")</td>
+                        <td class="text-center font-weight-bold" style="color: red;">@emp.NetLeaveDays</td>
+                        <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
+                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                        <td class="text-right">@emp.AirTicketValue.ToString("N2")</td>
+                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N2")</td>
+                        <td>@emp.Remarks</td>
+                    </tr>
+                }
+                <tr class="subtotal-row">
+                    <td colspan="13" class="text-right">Total Leave Salary & Air Ticket Encashment for Internal Staff:</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.InternalLeaveTotal ?? 0)</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.InternalTicketTotal ?? 0)</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.InternalSettlementTotal ?? 0)</td>
+                    <td></td>
+                </tr>
+                <tr><td colspan="17" style="border:none; height: 10px;"></td></tr>
+            }
+
+            @if (outsourceStaff.Any())
+            {
+                foreach (var emp in outsourceStaff)
+                {
+                    <tr>
+                        <td class="text-center font-weight-bold">@emp.EmpId</td>
+                        <td class="text-center">@emp.CourtesyTitle</td>
+                        <td>@emp.FullName</td>
+                        <td>@emp.Department</td>
+                        <td>@emp.Designation</td>
+                        <td class="text-center">@emp.JoinedDateStr</td>
+                        <td class="text-center">@emp.VacationReturnDateStr</td>
+                        <td class="text-center">@emp.Nationality</td>
+                        <td class="text-center">@emp.NextResetDateStr</td>
+                        <td class="text-center">@emp.ApplicableDays</td>
+                        <td class="text-right">@emp.EligibleLeaveDays.ToString("0.#####")</td>
+                        <td class="text-center font-weight-bold" style="color: red;">@emp.NetLeaveDays</td>
+                        <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
+                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                        <td class="text-right">@emp.AirTicketValue.ToString("N2")</td>
+                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N2")</td>
+                        <td>@emp.Remarks</td>
+                    </tr>
+                }
+                <tr class="subtotal-row">
+                    <td colspan="13" class="text-right">Total Leave Salary & Air Ticket Encashment for Outsource Staff:</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.OutsourceLeaveTotal ?? 0)</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.OutsourceTicketTotal ?? 0)</td>
+                    <td class="text-right">@string.Format("{0:N0}", ViewBag.OutsourceSettlementTotal ?? 0)</td>
+                    <td></td>
+                </tr>
+            }
+
+            <tr class="grandtotal-row">
+                <td colspan="15" class="text-right">Total:</td>
+                <td class="text-right">@string.Format("{0:N0}", ViewBag.GrandTotal ?? 0)</td>
+                <td></td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+</html>
+

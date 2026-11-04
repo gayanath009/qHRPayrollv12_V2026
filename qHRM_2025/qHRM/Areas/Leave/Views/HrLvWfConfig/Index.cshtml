@@ -1,4 +1,4 @@
-﻿@model IEnumerable<qHRM.Areas.Leave.Models.HrLvWfConfig>
+@model IEnumerable<qHRM.Areas.Leave.Models.HrLvWfConfig>
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
     ViewData["Title"] = "Leave Workflow Configuration";
@@ -19,7 +19,7 @@
             <div class="alert" style="background:rgba(153,0,73,0.08);border-left:4px solid #540033;border-radius:6px;padding:14px 18px;margin-bottom:20px;">
                 <i class="fas fa-info-circle" style="color:#540033;"></i>
                 <strong style="color:#540033;"> Configuration Guide:</strong>
-                Map each Leave Type to its Dynamic Workflow Code. Set approvers (HR Manager, Finance, CEO, BU Head)
+                Map each Leave Type to its Dynamic Workflow Code. Set designated approvers in workflow step order (Step 1 - Outsource Record Owner, Step 2 - Reporting Manager, Step 3 - HR, Step 4 - Finance, and Step 5 - CEO where applicable)
                 by selecting from the Employee Master. Policy rules (e.g. medical cert, payroll cutoff) are configured per leave type.
             </div>
 

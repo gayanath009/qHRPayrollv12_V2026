@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using qHRM.Areas.Employee.Models;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ namespace qHRM.Areas.Payroll.Models
         public decimal TrnsAlwnc { get; set; }
         public decimal Tra { get; set; }
         public decimal PstnAlwnc { get; set; }
+        [Column("Proj_Alwnc")]
+        public decimal ProjAlwnc { get; set; }
         public decimal MedAlwnc { get; set; }
         public decimal MobAlwnc { get; set; }
         public decimal SpcAlwnc { get; set; }
@@ -32,3 +35,4 @@ namespace qHRM.Areas.Payroll.Models
         public virtual HrPrOtrate Ot { get; set; }
     }
 }
+

@@ -1,0 +1,122 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrAirTicketPriceVw>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Air Ticket Prices by Country";
+}
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+
+<div>
+    <main>
+        <div class="container-fluid">
+            <h1 class="mt-4">Air Ticket Prices</h1>
+            <ol class="breadcrumb mb-4">
+                <li class="breadcrumb-item"><a href="#">Payroll</a></li>
+                <li class="breadcrumb-item active">Air Ticket Prices by Country</li>
+            </ol>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <p>
+                        <div>
+                            <button class="btn btn-sm btn-primary" id="btnCreate" onclick="createFunc();">
+                                <i class="fas fa-plus"></i> Add New Price
+                            </button>
+                        </div>
+                    </p>
+                    <!--Grid-->
+                    <div class="control-section">
+                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowSorting="true" allowFiltering="true">
+                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
+                            <e-grid-pagesettings pageCount="5" pageSize="15"></e-grid-pagesettings>
+                            <e-grid-columns>
+                                <e-grid-column field="CntryName" headerText="Country" width="180"></e-grid-column>
+                                <e-grid-column field="Price" headerText="Ticket Price (QAR)" width="150" format="N2" textAlign="Right"></e-grid-column>
+                                <e-grid-column field="EffectiveYear" headerText="Effective Year" width="130" textAlign="Center"></e-grid-column>
+                                <e-grid-column field="Note" headerText="Remarks / Note" width="220"></e-grid-column>
+                                <e-grid-column field="" headerText="Actions" template="#_actionTemplate" width="100" textAlign="Center"></e-grid-column>
+                            </e-grid-columns>
+                        </ejs-grid>
+                    </div>
+
+                    <!--Create Modal-->
+                    <div class="modal fade" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><i class="fas fa-plane"></i> Add Country Ticket Price</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="createModalBody"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Edit Modal-->
+                    <div class="modal fade" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Country Ticket Price</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body" id="editModalBody"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script id="_actionTemplate" type="text/x-template">
+    <div>
+        <button class="btn btn-sm btn-outline-info" onclick="editFunc(${TktPriceId});" title="Edit">
+            <i class="fas fa-pen"></i>
+        </button>
+        <button class="btn btn-sm btn-outline-danger ml-1" onclick="deleteFunc(${TktPriceId});" title="Delete">
+            <i class="fas fa-trash"></i>
+        </button>
+    </div>
+</script>
+
+<script>
+    function createFunc() {
+        $('#createModalBody').load('/Payroll/HrPrAirTicketPrice/CreateNew', function () {
+            $('#modalCreate').modal('show');
+        });
+    }
+
+    function editFunc(id) {
+        $('#editModalBody').load('/Payroll/HrPrAirTicketPrice/EditGet/' + id, function () {
+            $('#modalEdit').modal('show');
+        });
+    }
+
+    function deleteFunc(id) {
+        if (confirm("Are you sure you want to delete this ticket price record?")) {
+            $.ajax({
+                type: "POST",
+                url: "/Payroll/HrPrAirTicketPrice/Delete",
+                data: { id: id },
+                success: function (response) {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert("Delete failed: " + response.message);
+                    }
+                },
+                error: function (err) {
+                    alert("Error: " + err.statusText);
+                }
+            });
+        }
+    }
+</script>
+

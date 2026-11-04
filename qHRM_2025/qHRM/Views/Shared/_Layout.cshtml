@@ -124,6 +124,8 @@
                 string PR_INCTV = @HttpContextAccessor.HttpContext.Session.GetString("PR_INCTV");
                 string PRJ_ALWNC = @HttpContextAccessor.HttpContext.Session.GetString("PRJ_ALWNC");
                 string ZH_CVT = @HttpContextAccessor.HttpContext.Session.GetString("ZH_CVT");
+                string AIR_TKT = @HttpContextAccessor.HttpContext.Session.GetString("AIR_TKT");
+                string STF_LV_TKT = @HttpContextAccessor.HttpContext.Session.GetString("STF_LV_TKT");
 
 
                 //Admin Privileges//
@@ -136,7 +138,7 @@
                 bool hasAttnPrivs = (ATN_REG != null || ATN_EXP != null || ATN_EXP_RQ != null || ATN_EXP_AP != null);
                 bool hasWorkShiftPrivs = (WK_RST != null || WK_RST_EMP != null);
                 bool hasLeavePrivs = (LV_TYP != null || LV_REG != null || LV_WF_CFG != null || LV_WF_DLG != null);
-                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null);
+                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null || AIR_TKT != null || STF_LV_TKT != null);
                 bool hasSysAdminPrivs = (SY_ADM != null || SY_PRV != null || SY_USR != null);
 
                 // Settings Privileges
@@ -293,6 +295,10 @@
                         </a>
                         <div id="collapsePayroll" class="collapse" aria-labelledby="headingPayroll" data-parent="#accordionSidebar">
                             <div class="bg-white py-2 collapse-inner rounded">
+                                @if (AIR_TKT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrAirTicketPrice" asp-action="Index">Air Ticket Prices</a>
+                                }
                                 @if (STF_LN != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStfLoan" asp-action="Index">Staff Loans</a>
@@ -316,6 +322,7 @@
                                 @if (AD_HOC_TR != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrAdHocTrns" asp-action="Index">Adjustments</a>
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrLopTrns" asp-action="Index">Loss of Pay (LOP)</a>
                                 }
                                 @if (PR_INCTV != null)
                                 {
@@ -324,6 +331,10 @@
                                 @if (SLRY_PRC != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrSlryPrcDtl" asp-action="Index">Salary Process</a>
+                                }
+                                @if (STF_LV_TKT != null)
+                                {
+                                    <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStaffLvTktEncash" asp-action="Index">Staff Leave Salary & Air Ticket</a>
                                 }
                                 @if (SLRY_SHT != null)
                                 {

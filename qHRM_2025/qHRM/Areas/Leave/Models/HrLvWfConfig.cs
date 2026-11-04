@@ -35,7 +35,7 @@ namespace qHRM.Areas.Leave.Models
 
         /// <summary>
         /// JSON: stores specific employee IDs for named approvers
-        /// e.g. {"HrManagerEmpId":5,"FinanceEmpId":12,"CeoEmpId":1,"BuHeadEmpId":8}
+        /// e.g. {"OutsourceRecordOwnerEmpId":97,"ReportingManagerEmpId":405,"HrManagerEmpId":6,"FinanceEmpId":452,"CeoEmpId":11,"BuHeadEmpId":2}
         /// </summary>
         public string ApproverConfig { get; set; }
 
@@ -57,10 +57,12 @@ namespace qHRM.Areas.Leave.Models
         public virtual HrLvType LvTyp { get; set; }
 
         // Deserialized approver config (not mapped to DB)
-        [NotMapped] public int? HrManagerEmpId { get; set; }
-        [NotMapped] public int? FinanceEmpId   { get; set; }
-        [NotMapped] public int? CeoEmpId        { get; set; }
-        [NotMapped] public int? BuHeadEmpId     { get; set; }
+        [NotMapped] public int? OutsourceRecordOwnerEmpId { get; set; }
+        [NotMapped] public int? ReportingManagerEmpId     { get; set; }
+        [NotMapped] public int? HrManagerEmpId            { get; set; }
+        [NotMapped] public int? FinanceEmpId              { get; set; }
+        [NotMapped] public int? CeoEmpId                  { get; set; }
+        [NotMapped] public int? BuHeadEmpId               { get; set; }
 
         // Deserialized policy rules (not mapped to DB)
         [NotMapped] public bool   MedCertRequired  { get; set; }

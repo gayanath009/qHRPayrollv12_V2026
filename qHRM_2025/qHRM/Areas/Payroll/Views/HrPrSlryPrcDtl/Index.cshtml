@@ -816,7 +816,7 @@
         $.ajax({
             type: "GET", url: "@(Url.Action("GetLstSlryPrcHdr", "HrPrSlryPrcDtl"))",
             dataType: "json",
-            success: function (hdr) {
+            success: function (hdr) { $("#txtPrcId").val(hdr.data);
                 $.ajax({
                     type: "GET", url: "@(Url.Action("GetSalaryDtl", "HrPrSlryPrcDtl"))",
                     data: { prcId: hdr.data, eftYr: efYr, eftMnt: efMnt }, dataType: "json",
@@ -881,8 +881,8 @@
         if (errorCount > 0) return;
 
         var prcTyp   = "A";
-        var prcId    = $("#txtPrcId").val();
-        var refId    = $("#txtPrcLogId").val();
+        var prcId    = parseInt($("#txtPrcId").val()) || 0;
+        var refId    = parseInt($("#txtPrcLogId").val()) || 0;
         var efMnt    = $("#drpMonth").val();
         var efYr     = $("#drpYear").val();
         var staffTyp = "ALL";
@@ -1020,7 +1020,7 @@
     function btnReProcCreated() { progressBtn2 = ej.base.getComponent(document.querySelector("#btnReProcess"), "progress-btn"); }
 
     document.getElementById("btnProcess").addEventListener('click',   function () { runSalaryProcess(); });
-    document.getElementById("btnReProcess").addEventListener('click', function () { runSalaryReProcess(); });
+    // btnReProcess already has onclick="runSalaryReProcess();" on the button element
 </script>
 <style>
     @@font-face {

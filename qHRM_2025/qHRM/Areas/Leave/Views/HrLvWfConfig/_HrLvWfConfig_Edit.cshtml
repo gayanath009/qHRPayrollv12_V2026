@@ -1,4 +1,8 @@
 @model qHRM.Areas.Leave.Models.HrLvWfConfig
+@{
+    bool isSickOrCasual = (Model?.WfCode != null && (Model.WfCode.Contains("SICK", StringComparison.OrdinalIgnoreCase) || Model.WfCode.Contains("CSL", StringComparison.OrdinalIgnoreCase)))
+                       || (Model?.LvTypName != null && (Model.LvTypName.Contains("Sick", StringComparison.OrdinalIgnoreCase) || Model.LvTypName.Contains("Casual", StringComparison.OrdinalIgnoreCase)));
+}
 
 <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
@@ -9,6 +13,7 @@
     <span class="alert-success">@Html.ValidationSummary(true)</span>
     @Html.HiddenFor(m => m.WfCfgId)
     @Html.HiddenFor(m => m.LvTypId)   @* Leave Type not editable after creation *@
+    @Html.HiddenFor(m => m.BuHeadEmpId)
 
     <div class="row">
         <!-- LEFT COLUMN -->
@@ -25,8 +30,8 @@
 
             <div class="form-group">
                 <label asp-for="WfCode" class="control-label"></label>
-                <input asp-for="WfCode" class="form-control form-control-sm"
-                       placeholder="e.g. LV_SICK, LV_CASUAL" />
+                <input asp-for="WfCode" id="txtEditWfCode" class="form-control form-control-sm"
+                       placeholder="e.g. LV_SICK, LV_CSL" />
                 <span asp-validation-for="WfCode" class="text-danger"></span>
             </div>
 
@@ -55,34 +60,42 @@
             </h6>
 
             <div class="form-group">
-                <label class="control-label">HR Manager (Step 1)</label>
+                <label class="control-label">Step 1 - Outsource Record Owner</label>
+                <select asp-for="OutsourceRecordOwnerEmpId" id="drpOutsourceOwner" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.OutsourceRecordOwnerEmpId))">
+                    <option value="">-- Select Outsource Record Owner --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">Step 2 - Reporting Manager</label>
+                <select asp-for="ReportingManagerEmpId" id="drpRepMgr" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.ReportingManagerEmpId))">
+                    <option value="">-- Select Reporting Manager --</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="control-label">Step 3 - HR</label>
                 <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
                         asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
-                    <option value="">-- Select HR Manager --</option>
+                    <option value="">-- Select HR Approver --</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label class="control-label">BU Head (Step 3)</label>
-                <select asp-for="BuHeadEmpId" id="drpBuHead" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.BuHeadEmpId))">
-                    <option value="">-- Select BU Head --</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label class="control-label">Finance Approver</label>
+                <label class="control-label">Step 4 - Finance</label>
                 <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
                         asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
-                    <option value="">-- Select Finance Employee --</option>
+                    <option value="">-- Select Finance Approver --</option>
                 </select>
             </div>
 
-            <div class="form-group">
-                <label class="control-label">CEO (Final Approver)</label>
+            <div class="form-group" id="grpEditCeoStep" style="@(isSickOrCasual ? "display:none;" : "")">
+                <label class="control-label">Step 5 - CEO (Final Approver)</label>
                 <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
                         asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
-                    <option value="">-- Select CEO Employee --</option>
+                    <option value="">-- Select CEO Approver --</option>
                 </select>
             </div>
         </div>
@@ -166,6 +179,15 @@
 
         $('#modalEdit .select2-dropdown').on('change', function () {
             try { $(this).valid(); } catch (e) { }
+        });
+
+        $('#txtEditWfCode').on('input change', function () {
+            var code = ($(this).val() || '').toUpperCase();
+            if (code.indexOf('SICK') !== -1 || code.indexOf('CSL') !== -1) {
+                $('#grpEditCeoStep').hide();
+            } else {
+                $('#grpEditCeoStep').show();
+            }
         });
     });
 </script>

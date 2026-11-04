@@ -1,0 +1,516 @@
+@model IEnumerable<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Staff Leave Salary & Air Ticket Encashment";
+
+    int selectedYear = ViewBag.Year ?? DateTime.Now.Year;
+    int selectedMonth = ViewBag.Month ?? DateTime.Now.Month;
+    string selectedCat = ViewBag.StaffCat ?? "OUTSOURCE";
+    bool isLoaded = ViewBag.IsLoaded ?? false;
+
+    var internalStaff = Model?.Where(x => x.StaffCategory == "INTERNAL").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+    var outsourceStaff = Model?.Where(x => x.StaffCategory == "OUTSOURCE").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+
+    string monthName = new DateTime(selectedYear, selectedMonth, 1).ToString("MMMM");
+    int prevMonth = selectedMonth == 1 ? 12 : selectedMonth - 1;
+    int prevYear = selectedMonth == 1 ? selectedYear - 1 : selectedYear;
+    string cutoffPeriodText = $"Cut off period 21/{prevMonth:D2}/{prevYear % 100:D2} to 20/{selectedMonth:D2}/{selectedYear % 100:D2}";
+}
+
+<style>
+    .encash-table {
+        color: #111827 !important;
+        background-color: #ffffff !important;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    .encash-table th {
+        background-color: #550033 !important;
+        color: #ffffff !important;
+        font-size: 0.72rem !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        text-align: center;
+        vertical-align: middle !important;
+        border: 1px solid #440028 !important;
+        padding: 6px 4px !important;
+        white-space: normal !important;
+        word-break: normal;
+        line-height: 1.25;
+    }
+    .encash-table td {
+        color: #111827 !important;
+        font-size: 0.8rem !important;
+        vertical-align: middle !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 5px 6px !important;
+        background-color: #ffffff;
+    }
+    .encash-table td * {
+        color: #111827 !important;
+    }
+    .group-header-row td {
+        background-color: #f1f5f9 !important;
+        font-weight: 700 !important;
+        color: #550033 !important;
+        font-size: 0.85rem;
+    }
+    .group-header-row td * {
+        color: #550033 !important;
+    }
+    .subtotal-row td {
+        background-color: #faf5ff !important;
+        font-weight: 700 !important;
+        border-top: 2px solid #550033 !important;
+        border-bottom: 2px solid #550033 !important;
+    }
+    .grandtotal-row td {
+        background-color: #f3e8ff !important;
+        font-weight: 800 !important;
+        font-size: 0.92rem !important;
+        border-top: 2px solid #550033 !important;
+        border-bottom: 3px double #550033 !important;
+    }
+    .tkt-input {
+        width: 55px !important;
+        text-align: center !important;
+        font-weight: 700 !important;
+        color: #111827 !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #94a3b8 !important;
+        border-radius: 4px;
+        padding: 2px 4px !important;
+        display: inline-block;
+    }
+    .grid-container {
+        max-height: 440px;
+        overflow-y: auto;
+        overflow-x: auto;
+        border: 1px solid #e2e8f0;
+    }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3 mt-3">
+        <div>
+            <h1 class="h3 mb-0 text-gray-800">Staff Leave Salary & Air Ticket Encashment</h1>
+            <p class="text-muted small mb-0">Separate off-cycle payroll run for eligible internal & outsource staff</p>
+        </div>
+        <div>
+            <a href="/Payroll/HrPrStaffLvTktEncash/ExportExcel?year=@selectedYear&month=@selectedMonth&staffCat=@selectedCat" class="btn btn-sm btn-success shadow-sm">
+                <i class="fas fa-file-excel fa-sm text-white-50 mr-1"></i> Excel Export
+            </a>
+            <a href="/Payroll/HrPrStaffLvTktEncash/PrintReport?year=@selectedYear&month=@selectedMonth&staffCat=@selectedCat" target="_blank" class="btn btn-sm btn-info shadow-sm ml-1">
+                <i class="fas fa-print fa-sm text-white-50 mr-1"></i> Print Report
+            </a>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm ml-1" id="btnSaveAll" onclick="saveAllConfirm();">
+                <i class="fas fa-check-circle fa-sm text-white-50 mr-1"></i> Confirm & Save
+            </button>
+        </div>
+    </div>
+
+    <!-- Filter Card -->
+    <div class="card shadow mb-3">
+        <div class="card-body py-2">
+            <form method="get" action="/Payroll/HrPrStaffLvTktEncash/Index" class="form-inline">
+                <input type="hidden" name="load" value="true" />
+
+                <label class="mr-2 font-weight-bold small text-gray-700">Payroll Cycle Year:</label>
+                <select name="year" class="form-control form-control-sm mr-3">
+                    @for (int y = DateTime.Now.Year - 1; y <= DateTime.Now.Year + 1; y++)
+                    {
+                        <option value="@y" selected="@(y == selectedYear ? "selected" : null)">@y</option>
+                    }
+                </select>
+
+                <label class="mr-2 font-weight-bold small text-gray-700">Month:</label>
+                <select name="month" class="form-control form-control-sm mr-3">
+                    @for (int m = 1; m <= 12; m++)
+                    {
+                        string mName = new DateTime(2026, m, 1).ToString("MMMM");
+                        <option value="@m" selected="@(m == selectedMonth ? "selected" : null)">@m - @mName</option>
+                    }
+                </select>
+
+                <label class="mr-2 font-weight-bold small text-gray-700">Staff Category:</label>
+                <select name="staffCat" class="form-control form-control-sm mr-3">
+                    <option value="OUTSOURCE" selected="@(selectedCat == "OUTSOURCE" ? "selected" : null)">Outsourced Staff</option>
+                    <option value="INTERNAL" selected="@(selectedCat == "INTERNAL" ? "selected" : null)">In-House Staff</option>
+                    <option value="ALL" selected="@(selectedCat == "ALL" ? "selected" : null)">All Staff</option>
+                </select>
+
+                <button type="submit" class="btn btn-sm btn-primary">
+                    <i class="fas fa-calculator mr-1"></i> Calculate / Load
+                </button>
+                <span class="ml-3 badge badge-secondary font-weight-normal py-2 px-3">@cutoffPeriodText</span>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary KPI Cards -->
+    <div class="row mb-3">
+        <div class="col-xl-4 col-md-6 mb-2">
+            <div class="card border-left-primary shadow h-100 py-1">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">In-House Staff Settlement</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="cardInternalTotal">
+                                @string.Format("{0:N2} QAR", ViewBag.InternalSettlementTotal ?? 0)
+                            </div>
+                            <div class="small text-muted">Leave: <span id="cardInternalLeave">@string.Format("{0:N2}", ViewBag.InternalLeaveTotal ?? 0)</span> | Tickets: <span id="cardInternalTicket">@string.Format("{0:N2}", ViewBag.InternalTicketTotal ?? 0)</span></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-building fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-2">
+            <div class="card border-left-success shadow h-100 py-1">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Outsource Staff Settlement</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="cardOutsourceTotal">
+                                @string.Format("{0:N2} QAR", ViewBag.OutsourceSettlementTotal ?? 0)
+                            </div>
+                            <div class="small text-muted">Leave: <span id="cardOutsourceLeave">@string.Format("{0:N2}", ViewBag.OutsourceLeaveTotal ?? 0)</span> | Tickets: <span id="cardOutsourceTicket">@string.Format("{0:N2}", ViewBag.OutsourceTicketTotal ?? 0)</span></div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users-cog fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6 mb-2">
+            <div class="card border-left-warning shadow h-100 py-1">
+                <div class="card-body py-2">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Total Off-Cycle Settlement</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="cardGrandTotal">
+                                @string.Format("{0:N2} QAR", ViewBag.GrandTotal ?? 0)
+                            </div>
+                            <div class="small text-muted">Total for @monthName @selectedYear</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-plane-departure fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Grid Card -->
+    <div class="card shadow mb-4">
+        <div class="card-header py-2 d-flex justify-content-between align-items-center bg-light">
+            <h6 class="m-0 font-weight-bold text-primary">
+                Internal/Outsource Staff Leave Salary & Air Ticket Encashment - @monthName @selectedYear
+            </h6>
+            <span class="badge badge-info">Only ticket count is editable</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="grid-container">
+                <table class="table table-bordered table-sm encash-table mb-0" id="encashGridTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px; min-width: 80px;">Employee ID</th>
+                            <th style="width: 55px; min-width: 55px;">Courtesy Title</th>
+                            <th style="width: 150px; min-width: 150px;">Full Name</th>
+                            <th style="width: 130px; min-width: 130px;">Department</th>
+                            <th style="width: 140px; min-width: 140px;">Designation</th>
+                            <th style="width: 85px; min-width: 85px;">Joined Date</th>
+                            <th style="width: 95px; min-width: 95px;">Join Date after Annual Vacation</th>
+                            <th style="width: 85px; min-width: 85px;">Nationality</th>
+                            <th style="width: 85px; min-width: 85px;">Next Leave Reset Date</th>
+                            <th style="width: 70px; min-width: 70px;">Applicable Days</th>
+                            <th style="width: 75px; min-width: 75px;">Eligible Leave Days</th>
+                            <th style="width: 100px; min-width: 100px; color: #ffcdd2 !important;">Eligible Leave Days Rounded (-) Paid Leave</th>
+                            <th style="width: 90px; min-width: 90px;">Monthly Salary</th>
+                            <th style="width: 90px; min-width: 90px;">Total Leave Salary</th>
+                            <th style="width: 65px; min-width: 65px;">Tickets</th>
+                            <th style="width: 90px; min-width: 90px;">Air Ticket Value</th>
+                            <th style="width: 100px; min-width: 100px;">Total Settlement</th>
+                            <th style="width: 320px; min-width: 320px;">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!isLoaded)
+                        {
+                            <tr>
+                                <td colspan="18" class="text-center py-4 text-muted">
+                                    <i class="fas fa-info-circle text-primary mr-1"></i>
+                                    Please select the Payroll Cycle parameters above and click <strong>Calculate / Load</strong> to view eligible staff.
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @if (selectedCat == "ALL" || selectedCat == "INTERNAL")
+                            {
+                                <tr class="group-header-row">
+                                    <td colspan="18"><i class="fas fa-building mr-1"></i> In-House Staff</td>
+                                </tr>
+                                @if (!internalStaff.Any())
+                                {
+                                    <tr><td colspan="18" class="text-center text-muted py-2">No eligible internal staff found for this cycle.</td></tr>
+                                }
+                                @foreach (var emp in internalStaff)
+                                {
+                                    <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="INTERNAL"
+                                        data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary"
+                                        data-dailysalary="@emp.DailySalary" data-netdays="@emp.NetLeaveDays"
+                                        data-tktprice="@emp.TktPrice" data-leavesalary="@emp.TotalLeaveSalary"
+                                        data-year="@emp.PrcYear" data-month="@emp.PrcMonth"
+                                        data-joined="@emp.JoinedDate.ToString("yyyy-MM-dd")"
+                                        data-vacreturn="@(emp.VacationReturnDate.HasValue ? emp.VacationReturnDate.Value.ToString("yyyy-MM-dd") : "")"
+                                        data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
+                                        data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays"
+                                        data-paidleave="@emp.PaidLeaveDays">
+                                        <td class="text-center font-weight-bold">@emp.EmpId</td>
+                                        <td class="text-center">@emp.CourtesyTitle</td>
+                                        <td>@emp.FullName</td>
+                                        <td>@emp.Department</td>
+                                        <td>@emp.Designation</td>
+                                        <td class="text-center">@emp.JoinedDateStr</td>
+                                        <td class="text-center">@emp.VacationReturnDateStr</td>
+                                        <td>@emp.Nationality</td>
+                                        <td class="text-center">@emp.NextResetDateStr</td>
+                                        <td class="text-center">@emp.ApplicableDays</td>
+                                        <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
+                                        <td class="text-center font-weight-bold">@emp.NetLeaveDays</td>
+                                        <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
+                                        <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                                        <td class="text-center">
+                                            <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" />
+                                        </td>
+                                        <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N2")</td>
+                                        <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N2")</td>
+                                        <td class="small remarks-cell">@emp.Remarks</td>
+                                    </tr>
+                                }
+                                <!-- Internal Subtotal -->
+                                <tr class="subtotal-row" id="rowSubtotalInternal">
+                                    <td colspan="13" class="text-right">Total Leave Salary & Air Ticket Encashment for Internal Staff:</td>
+                                    <td class="text-right" id="subtotalInternalLeave">@string.Format("{0:N2}", ViewBag.InternalLeaveTotal ?? 0)</td>
+                                    <td></td>
+                                    <td class="text-right" id="subtotalInternalTicket">@string.Format("{0:N2}", ViewBag.InternalTicketTotal ?? 0)</td>
+                                    <td class="text-right font-weight-bold" id="subtotalInternalSettlement">@string.Format("{0:N2}", ViewBag.InternalSettlementTotal ?? 0)</td>
+                                    <td></td>
+                                </tr>
+                            }
+
+                            @if (selectedCat == "ALL" || selectedCat == "OUTSOURCE")
+                            {
+                                <tr class="group-header-row">
+                                    <td colspan="18"><i class="fas fa-users-cog mr-1"></i> Outsource Staff</td>
+                                </tr>
+                                @if (!outsourceStaff.Any())
+                                {
+                                    <tr><td colspan="18" class="text-center text-muted py-2">No eligible outsource staff found for this cycle.</td></tr>
+                                }
+                                @foreach (var emp in outsourceStaff)
+                                {
+                                    <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="OUTSOURCE"
+                                        data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary"
+                                        data-dailysalary="@emp.DailySalary" data-netdays="@emp.NetLeaveDays"
+                                        data-tktprice="@emp.TktPrice" data-leavesalary="@emp.TotalLeaveSalary"
+                                        data-year="@emp.PrcYear" data-month="@emp.PrcMonth"
+                                        data-joined="@emp.JoinedDate.ToString("yyyy-MM-dd")"
+                                        data-vacreturn="@(emp.VacationReturnDate.HasValue ? emp.VacationReturnDate.Value.ToString("yyyy-MM-dd") : "")"
+                                        data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
+                                        data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays"
+                                        data-paidleave="@emp.PaidLeaveDays">
+                                        <td class="text-center font-weight-bold">@emp.EmpId</td>
+                                        <td class="text-center">@emp.CourtesyTitle</td>
+                                        <td>@emp.FullName</td>
+                                        <td>@emp.Department</td>
+                                        <td>@emp.Designation</td>
+                                        <td class="text-center">@emp.JoinedDateStr</td>
+                                        <td class="text-center">@emp.VacationReturnDateStr</td>
+                                        <td>@emp.Nationality</td>
+                                        <td class="text-center">@emp.NextResetDateStr</td>
+                                        <td class="text-center">@emp.ApplicableDays</td>
+                                        <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
+                                        <td class="text-center font-weight-bold">@emp.NetLeaveDays</td>
+                                        <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
+                                        <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                                        <td class="text-center">
+                                            <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" />
+                                        </td>
+                                        <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N2")</td>
+                                        <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N2")</td>
+                                        <td class="small remarks-cell">@emp.Remarks</td>
+                                    </tr>
+                                }
+                                <!-- Outsource Subtotal -->
+                                <tr class="subtotal-row" id="rowSubtotalOutsource">
+                                    <td colspan="13" class="text-right">Total Leave Salary & Air Ticket Encashment for Outsource Staff:</td>
+                                    <td class="text-right" id="subtotalOutsourceLeave">@string.Format("{0:N2}", ViewBag.OutsourceLeaveTotal ?? 0)</td>
+                                    <td></td>
+                                    <td class="text-right" id="subtotalOutsourceTicket">@string.Format("{0:N2}", ViewBag.OutsourceTicketTotal ?? 0)</td>
+                                    <td class="text-right font-weight-bold" id="subtotalOutsourceSettlement">@string.Format("{0:N2}", ViewBag.OutsourceSettlementTotal ?? 0)</td>
+                                    <td></td>
+                                </tr>
+                            }
+
+                            <!-- Grand Total -->
+                            <tr class="grandtotal-row" id="rowGrandTotal">
+                                <td colspan="16" class="text-right">Total Settlement:</td>
+                                <td class="text-right text-primary font-weight-bold" id="grandTotalSettlement">@string.Format("{0:N2}", ViewBag.GrandTotal ?? 0)</td>
+                                <td></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function onTktCountChanged(input) {
+        var tr = $(input).closest('tr');
+        var tktCount = parseInt($(input).val()) || 0;
+        if (tktCount < 0) { tktCount = 0; $(input).val(0); }
+        if (tktCount > 4) { tktCount = 4; $(input).val(4); }
+
+        var tktPrice = parseFloat(tr.data('tktprice')) || 0;
+        var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
+        var netDays = parseInt(tr.data('netdays')) || 0;
+
+        var tktValue = tktCount * tktPrice;
+        var settlement = leaveSalary + tktValue;
+
+        tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        // Remarks update
+        var remarks = "-";
+        if (netDays > 0 && tktCount > 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + " Days Leave Salary & Air Fare Encashment (self & family)";
+        } else if (netDays > 0 && tktCount <= 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + (netDays > 1 ? " Days" : " Day") + " Leave Salary & Air Fare Encashment";
+        } else if (netDays === 0 && tktValue > 0) {
+            remarks = "Air Fare Encashment";
+        }
+        tr.find('.remarks-cell').text(remarks);
+
+        recalcTotals();
+    }
+
+    function recalcTotals() {
+        var intLeave = 0, intTkt = 0, intSettle = 0;
+        var outLeave = 0, outTkt = 0, outSettle = 0;
+
+        $('.emp-row').each(function () {
+            var tr = $(this);
+            var cat = tr.data('cat');
+            var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
+            var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
+            var tktPrice = parseFloat(tr.data('tktprice')) || 0;
+            var tktValue = tktCount * tktPrice;
+            var settlement = leaveSalary + tktValue;
+
+            if (cat === 'INTERNAL') {
+                intLeave += leaveSalary;
+                intTkt += tktValue;
+                intSettle += settlement;
+            } else if (cat === 'OUTSOURCE') {
+                outLeave += leaveSalary;
+                outTkt += tktValue;
+                outSettle += settlement;
+            }
+        });
+
+        $('#subtotalInternalLeave').text(intLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#subtotalInternalTicket').text(intTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#subtotalInternalSettlement').text(intSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        $('#subtotalOutsourceLeave').text(outLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#subtotalOutsourceTicket').text(outTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#subtotalOutsourceSettlement').text(outSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        var grand = intSettle + outSettle;
+        $('#grandTotalSettlement').text(grand.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        $('#cardInternalTotal').text(intSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' QAR');
+        $('#cardInternalLeave').text(intLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#cardInternalTicket').text(intTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        $('#cardOutsourceTotal').text(outSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' QAR');
+        $('#cardOutsourceLeave').text(outLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#cardOutsourceTicket').text(outTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        $('#cardGrandTotal').text(grand.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' QAR');
+    }
+
+    function saveAllConfirm() {
+        var items = [];
+        $('.emp-row').each(function () {
+            var tr = $(this);
+            var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
+            var tktPrice = parseFloat(tr.data('tktprice')) || 0;
+            var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
+            var tktValue = tktCount * tktPrice;
+            var settlement = leaveSalary + tktValue;
+
+            items.push({
+                encashId: parseInt(tr.data('encashid')) || 0,
+                prcYear: parseInt(tr.data('year')),
+                prcMonth: parseInt(tr.data('month')),
+                empSysId: parseInt(tr.data('sysid')),
+                staffCategory: tr.data('cat'),
+                joinedDate: tr.data('joined'),
+                vacationReturnDate: tr.data('vacreturn') ? tr.data('vacreturn') : null,
+                nextResetDate: tr.data('reset'),
+                applicableDays: parseInt(tr.data('appdays')),
+                eligibleLeaveDays: parseFloat(tr.data('eligdays')),
+                paidLeaveDays: parseFloat(tr.data('paidleave')),
+                netLeaveDays: parseInt(tr.data('netdays')),
+                monthlySalary: parseFloat(tr.data('salary')),
+                dailySalary: parseFloat(tr.data('dailysalary')),
+                totalLeaveSalary: leaveSalary,
+                tktCount: tktCount,
+                tktPrice: tktPrice,
+                airTicketValue: tktValue,
+                totalSettlement: settlement,
+                remarks: tr.find('.remarks-cell').text().trim()
+            });
+        });
+
+        if (items.length === 0) {
+            alert("No employee records to confirm.");
+            return;
+        }
+
+        $('#btnSaveAll').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Saving...');
+
+        $.ajax({
+            type: "POST",
+            url: "/Payroll/HrPrStaffLvTktEncash/SaveConfirm",
+            contentType: "application/json; charset=utf-8",
+            data: JSON.stringify(items),
+            success: function (res) {
+                $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check-circle fa-sm mr-1"></i> Confirm & Save');
+                if (res.ok) {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert("Error: " + res.message);
+                }
+            },
+            error: function (err) {
+                $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check-circle fa-sm mr-1"></i> Confirm & Save');
+                alert("Request error: " + err.statusText);
+            }
+        });
+    }
+</script>

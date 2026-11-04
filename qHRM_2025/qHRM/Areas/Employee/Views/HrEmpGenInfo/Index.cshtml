@@ -238,11 +238,11 @@
                     </div>
                     <div class="d-flex align-items-center">
                      @if (ViewBag.RecAdd == true)
-                            {
+                     {
                         <a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_CreateNew" class="btn org-btn-create" id="btnCreate">
                             <i class="fas fa-plus-circle mr-1"></i> Create New
                         </a>
-                            }
+                     }
                     </div>
                 </div>
             </div>
@@ -320,21 +320,14 @@
 </script>
 
 <script type="text/x-jsrender" id="_actions">
-
     <div class="org-actions-wrapper">
-    @if (ViewBag.RecEdit == true)
-        {
-            <a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=${EmpSysId}" class="org-action-btn org-action-edit" title="Edit Employee">
-                <i class="fas fa-pen"></i>
-            </a>                
-        }
-        @if (ViewBag.RecDelete == true)
-        {
-            <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${EmpSysId})" title="Deactivate Employee">
-                <i class="fas fa-trash-alt"></i>
-            </button>
-        }
-        </div>
+        <a href="/Employee/HrEmpGenInfo/HrEmpGenInfo_EditGet?id=${EmpSysId}" class="org-action-btn org-action-edit" title="Edit Employee">
+            <i class="fas fa-pen"></i>
+        </a>
+        <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${EmpSysId})" title="Deactivate Employee">
+            <i class="fas fa-trash-alt"></i>
+        </button>
+    </div>
 </script>
 
 <!-- Backward Compatibility Templates -->

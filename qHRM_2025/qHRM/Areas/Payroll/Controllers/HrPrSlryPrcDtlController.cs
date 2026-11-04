@@ -287,7 +287,7 @@ namespace qHRM.Areas.Payroll.Controllers
         }
 
         [HttpGet]
-        public IActionResult StrtReProc(int prcId, int refId, string prcTyp, int eftYr, int eftMnt, string note, string staffTyp = "ALL")
+        public IActionResult StrtReProc(int prcId = 0, int refId = 0, string prcTyp = "A", int eftYr = 0, int eftMnt = 0, string note = "Re-Process", string staffTyp = "ALL")
         {
             try
             {
@@ -317,7 +317,7 @@ namespace qHRM.Areas.Payroll.Controllers
             }
             catch (Exception ex)
             {
-                return RedirectToAction(nameof(Index)).WithWarning("Salary Process", ex.Message);
+                return Json(new { ok = false, data = ex.Message, message = "failed" });
             }
         }
 
@@ -372,7 +372,7 @@ namespace qHRM.Areas.Payroll.Controllers
             }
             catch (Exception ex)
             {
-                return RedirectToAction(nameof(Index)).WithWarning("Salary Process", ex.Message);
+                return Json(new { ok = false, data = ex.Message, message = "failed" });
             }
         }
 
@@ -424,7 +424,16 @@ namespace qHRM.Areas.Payroll.Controllers
                     toDate = new DateTime(eftYr, eftMn, 20);
                 }
 
-                ViewBag.dsOTNoPay = _attdContext.GetOTNoPayByEmpId(field, empSysId, fromDate.ToString("yyyy-MM-dd"), toDate.ToString("yyyy-MM-dd"));
+                var dsList = _attdContext.GetOTNoPayByEmpId(field, empSysId, fromDate.ToString("yyyy-MM-dd"), toDate.ToString("yyyy-MM-dd")).ToList();
+                if (field == "_nopay")
+                {
+                    var lopList = _payrollContext.GetLopNoPayDetailsByEmpId(empSysId, eftYr, eftMn);
+                    if (lopList != null && lopList.Any())
+                    {
+                        dsList.AddRange(lopList);
+                    }
+                }
+                ViewBag.dsOTNoPay = dsList;
                 var returnview = "";
                 if (field == "_overtime")
                     returnview = "_HrPrOvertime";
@@ -539,6 +548,31 @@ namespace qHRM.Areas.Payroll.Controllers
                 throw ex;
             }
 
+        }
+
+        /// <summary>
+        /// Deletes all payroll process records (header, details, logs) for a given month/year.
+        /// This resets the payroll so a fresh process can be started for that month.
+        /// </summary>
+        [HttpGet]
+        public JsonResult DeletePrcByMonth(int eftYr, int eftMnt)
+        {
+            try
+            {
+                int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+                if (entId <= 0) entId = 1;
+
+                int deleted = _payrollContext.DeleteSlryPrcByMonth(entId, eftYr, eftMnt);
+
+                if (deleted > 0)
+                    return Json(new { ok = true, data = deleted, message = $"Payroll data for {new DateTime(eftYr, eftMnt, 1):MMMM yyyy} deleted successfully. ({deleted} header record(s) removed)" });
+                else
+                    return Json(new { ok = false, data = 0, message = $"No payroll data found for {new DateTime(eftYr, eftMnt, 1):MMMM yyyy}." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, data = ex.Message, message = "failed" });
+            }
         }
 
         public JsonResult GetWPSFile(int eftYr, int eftMn)

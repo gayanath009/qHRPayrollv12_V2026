@@ -287,6 +287,159 @@ namespace qHRM.Areas.Payroll.Data
         }
         #endregion
 
+        #region ==============Loss of Pay (LOP) Transactions==============
+        public partial class HrLvTypeSimpleView
+        {
+            public int LvTypId { get; set; }
+            public string LvTypDesc { get; set; }
+        }
+
+        public partial class HrPrLopTrnView
+        {
+            public int LopId { get; set; }
+            public int LvTypId { get; set; }
+            public string LvTypCode { get; set; }
+            public string LvTypDesc { get; set; }
+            public int EmpSysId { get; set; }
+            public string EmpId { get; set; }
+            public string EmpDesc { get; set; }
+            public DateTime TrnDate { get; set; }
+            public string Ref { get; set; }
+            public string Desc { get; set; }
+            public decimal LopDays { get; set; }
+            public decimal LopAmt { get; set; }
+            public string EftMonth { get; set; }
+            public int EftMn { get; set; }
+            public int EftYear { get; set; }
+            public string ShtRmk { get; set; }
+            public int RecStat { get; set; }
+            public string RecStatTxt { get; set; }
+        }
+
+        public IEnumerable<HrLvTypeSimpleView> GetActiveLvTypesByEntId(int entId)
+        {
+            try
+            {
+                return _hrmContext.HrLvType
+                    .Where(z => z.EntId == entId && z.RecStat == 1)
+                    .OrderBy(z => z.LvTypId)
+                    .Select(x => new HrLvTypeSimpleView
+                    {
+                        LvTypId = x.LvTypId,
+                        LvTypDesc = x.NameEng + " - " + x.Desc
+                    }).ToList();
+            }
+            catch { throw; }
+        }
+
+        public IEnumerable<HrPrLopTrnView> GetHrPrLopTrnViewByEntId(int entId, int recStat)
+        {
+            try
+            {
+                var x = _hrmContext.HrPrLopTrns
+                    .Join(_hrmContext.HrLvType, trn => trn.LvTypId, typ => typ.LvTypId, (trn, typ) => new { trn, typ })
+                    .Join(_hrmContext.HrEmpGenInfo, p => p.trn.EmpSysId, emp => emp.EmpSysId, (p, emp) => new { p, emp })
+                    .Where(z => z.p.typ.EntId == entId && z.emp.WrktypId == 2 && (recStat == -1 || z.p.trn.RecStat == recStat))
+                    .Select(x => new HrPrLopTrnView
+                    {
+                        LopId = x.p.trn.LopId,
+                        LvTypId = x.p.trn.LvTypId,
+                        LvTypCode = x.p.typ.LvTypCode,
+                        LvTypDesc = x.p.typ.NameEng + " - " + x.p.typ.Desc,
+                        EmpSysId = x.p.trn.EmpSysId,
+                        EmpId = x.emp.EmpId,
+                        EmpDesc = x.emp.EmpId + " - " + x.emp.FullName,
+                        TrnDate = x.p.trn.TrnDate,
+                        Ref = x.p.trn.Ref,
+                        Desc = x.p.trn.Desc,
+                        LopDays = x.p.trn.LopDays,
+                        LopAmt = x.p.trn.LopAmt,
+                        EftMonth = x.p.trn.EftYear.ToString() + " - " + new DateTime(2000, x.p.trn.EftMonth, 1).ToString("MMMM", CultureInfo.InvariantCulture),
+                        EftYear = x.p.trn.EftYear,
+                        EftMn = x.p.trn.EftMonth,
+                        ShtRmk = x.p.trn.ShtRmk,
+                        RecStat = x.p.trn.RecStat,
+                        RecStatTxt = x.p.trn.ex_RecStatTxt
+                    }).OrderByDescending(o => o.TrnDate).ThenByDescending(o => o.LopId);
+                return x;
+            }
+            catch { throw; }
+        }
+
+        public HrPrLopTrns GetHrPrLopTrnById(string trnRef, int empSysId, int recStat)
+        {
+            try
+            {
+                return _hrmContext.HrPrLopTrns.Where(z => z.Ref == trnRef && z.EmpSysId == empSysId && z.RecStat == recStat).FirstOrDefault();
+            }
+            catch { throw; }
+        }
+
+        public HrPrLopTrns GetHrPrLopTrnById(int lopId)
+        {
+            try
+            {
+                return _hrmContext.HrPrLopTrns.Where(z => z.LopId == lopId).FirstOrDefault();
+            }
+            catch { throw; }
+        }
+
+        public List<qHRM.Areas.Attendance.Data.AttnContext.HrAttdOT_NoPayVw> GetLopNoPayDetailsByEmpId(int empSysId, int eftYr, int eftMn)
+        {
+            try
+            {
+                return (from trn in _hrmContext.HrPrLopTrns
+                        join emp in _hrmContext.HrEmpGenInfo on trn.EmpSysId equals emp.EmpSysId
+                        join typ in _hrmContext.HrLvType on trn.LvTypId equals typ.LvTypId
+                        where trn.EmpSysId == empSysId && trn.EftYear == eftYr && trn.EftMonth == eftMn && trn.RecStat == 1
+                        select new qHRM.Areas.Attendance.Data.AttnContext.HrAttdOT_NoPayVw
+                        {
+                            EmpSysId = trn.EmpSysId,
+                            FullName = emp.FullName + " (" + typ.NameEng + " - " + trn.LopDays.ToString("0.#") + "d)",
+                            EfctvDate = trn.TrnDate.ToString("yyyy-MM-dd"),
+                            No_Pay_Amt = trn.LopAmt
+                        }).ToList();
+            }
+            catch { return new List<qHRM.Areas.Attendance.Data.AttnContext.HrAttdOT_NoPayVw>(); }
+        }
+
+        public (decimal FixedGross, decimal DailyRate, decimal LopAmt) CalculateOutsourceLopAmount(int empSysId, decimal lopDays, int eftYear, int eftMonth)
+        {
+            try
+            {
+                var emp = _hrmContext.HrEmpGenInfo.FirstOrDefault(e => e.EmpSysId == empSysId && e.WrktypId == 2);
+                if (emp == null || lopDays <= 0)
+                    return (0m, 0m, 0m);
+
+                var slryStruc = _hrmContext.HrPrEmpSlryStruc
+                    .Where(s => s.EmpSysId == empSysId && s.RecStat == 1)
+                    .OrderByDescending(s => s.SlStrcId)
+                    .FirstOrDefault();
+
+                if (slryStruc == null)
+                    return (0m, 0m, 0m);
+
+                decimal fixedGross = slryStruc.Basic
+                                   + slryStruc.HrAlwnc
+                                   + slryStruc.TrnsAlwnc
+                                   + slryStruc.Tra
+                                   + slryStruc.PstnAlwnc
+                                   + slryStruc.ProjAlwnc
+                                   + slryStruc.MedAlwnc
+                                   + slryStruc.MobAlwnc
+                                   + slryStruc.SpcAlwnc
+                                   + slryStruc.PrfmAlwnc
+                                   + slryStruc.OthrAlwnc;
+
+                decimal dailyRate = Math.Round(fixedGross / 30m, 2, MidpointRounding.AwayFromZero);
+                decimal lopAmt = Math.Round((fixedGross / 30m) * lopDays, 0, MidpointRounding.AwayFromZero);
+
+                return (fixedGross, dailyRate, lopAmt);
+            }
+            catch { throw; }
+        }
+        #endregion
+
         #region ==============Ad-hoc Transactions==============
         public partial class HrPrAdHocTrnView
         {
@@ -493,7 +646,7 @@ namespace qHRM.Areas.Payroll.Data
                         .Join(_hrmContext.OrgDepartment, q => q.jb.DeptId, dp => dp.DeptId, (q, dp) => new { q, dp })
                         .Join(_hrmContext.OrgDesignation, r => r.q.jb.DesigId, ds => ds.DesigId, (r, ds) => new { r, ds })
                         .Join(_hrmContext.HrPrOtrate, s => s.r.q.p.ss.OtId, ot => ot.OtId, (s, ot) => new { s, ot })
-                        .Where(z => z.s.r.q.p.ss.RecStat == 1 && z.s.r.q.p.gi.CurrStat == 0 && z.s.r.q.jb.StDate <= curDate && (z.s.r.q.jb.EndDate == null || z.s.r.q.jb.EndDate > curDate) && z.s.r.dp.EntId == entId
+                        .Where(z => z.s.r.q.p.ss.RecStat == 1 && z.s.r.q.p.gi.CurrStat == 0 && z.s.r.q.jb.WkStat == 1 && z.s.r.q.jb.StDate <= curDate && (z.s.r.q.jb.EndDate == null || z.s.r.q.jb.EndDate > curDate) && z.s.r.dp.EntId == entId
                                && ((isSnglEmp == true && empSysId == z.s.r.q.p.ss.EmpSysId) || (isSnglEmp == false && _employeeContext.GetEmpSbrdnts(empSysId).Contains(z.s.r.q.p.ss.EmpSysId))))
                                     
                         .OrderBy(o => o.s.r.q.p.gi.SrtOrd)
@@ -534,22 +687,23 @@ namespace qHRM.Areas.Payroll.Data
         {
             try
             {
-                string sp = "[PR_EmpSlryStruc_Save] {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19}";
+                string sp = "[PR_EmpSlryStruc_Save] {0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17},{18},{19},{20}";
                 object[] param = { prcTyp.ToString()
                                    , hrPrEmpSlryStrucVw.SlStrcId
                                    , hrPrEmpSlryStrucVw.EmpSysId
-                                   , hrPrEmpSlryStrucVw.Basic
-                                   , hrPrEmpSlryStrucVw.HrAlwnc
-                                   , hrPrEmpSlryStrucVw.TrnsAlwnc
-                                   , hrPrEmpSlryStrucVw.Tra
-                                   , hrPrEmpSlryStrucVw.PstnAlwnc
-                                   , hrPrEmpSlryStrucVw.MedAlwnc
-                                   , hrPrEmpSlryStrucVw.MobAlwnc
-                                   , hrPrEmpSlryStrucVw.SpcAlwnc
-                                   , hrPrEmpSlryStrucVw.IncntvPrc
-                                   , hrPrEmpSlryStrucVw.PrfmAlwnc
-                                   , hrPrEmpSlryStrucVw.OthrAlwnc
-                                   , hrPrEmpSlryStrucVw.BonusRate
+                                   , hrPrEmpSlryStrucVw.Basic ?? 0
+                                   , hrPrEmpSlryStrucVw.HrAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.TrnsAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.Tra ?? 0
+                                   , hrPrEmpSlryStrucVw.PstnAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.ProjAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.MedAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.MobAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.SpcAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.IncntvPrc ?? 0
+                                   , hrPrEmpSlryStrucVw.PrfmAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.OthrAlwnc ?? 0
+                                   , hrPrEmpSlryStrucVw.BonusRate ?? 0
                                    , hrPrEmpSlryStrucVw.AirTcktFee ?? 0
                                    , hrPrEmpSlryStrucVw.OtId
                                    , hrPrEmpSlryStrucVw.RecStat
@@ -875,6 +1029,51 @@ namespace qHRM.Areas.Payroll.Data
 
             catch { throw; }
         }
+
+        /// <summary>
+        /// Deletes all salary process data (header, detail records, logs) for a given entity / month.
+        /// Returns the number of process header records deleted.
+        /// </summary>
+        public int DeleteSlryPrcByMonth(int entId, int eftYear, int eftMonth)
+        {
+            try
+            {
+                // Locate all process headers for this entity / month
+                var hdrs = _hrmContext.HrPrSlryPrcHdr
+                    .Where(z => z.EntId == entId && z.EftYear == eftYear && z.EftMonth == eftMonth)
+                    .ToList();
+
+                if (!hdrs.Any())
+                    return 0;
+
+                var prcIds = hdrs.Select(h => h.PrcId).ToList();
+
+                // Delete passive detail records
+                var dtlPsv = _hrmContext.HrPrSlryPrcDtlPsv
+                    .Where(d => prcIds.Contains(d.PrcId))
+                    .ToList();
+                _hrmContext.HrPrSlryPrcDtlPsv.RemoveRange(dtlPsv);
+
+                // Delete log detail records, then log headers
+                var logs = _hrmContext.HrPrSlryPrcLog
+                    .Where(l => prcIds.Contains(l.PrcId))
+                    .ToList();
+                var logIds = logs.Select(l => l.PrcLogId).ToList();
+
+                var logDtls = _hrmContext.HrPrSlryPrcLogDtl
+                    .Where(ld => logIds.Contains(ld.PrcLogId))
+                    .ToList();
+                _hrmContext.HrPrSlryPrcLogDtl.RemoveRange(logDtls);
+                _hrmContext.HrPrSlryPrcLog.RemoveRange(logs);
+
+                // Finally delete the process headers
+                _hrmContext.HrPrSlryPrcHdr.RemoveRange(hdrs);
+
+                _hrmContext.SaveChanges();
+                return hdrs.Count;
+            }
+            catch { throw; }
+        }
         #endregion
 
         #region ==============Salary Process Detail ==============    
@@ -991,7 +1190,7 @@ namespace qHRM.Areas.Payroll.Data
                        .Join(_hrmContext.HrEmpJobAssign, p => p.ss.EmpSysId, jb => jb.EmpSysId, (p, jb) => new { p, jb })
                        .Join(_hrmContext.OrgDepartment, q => q.jb.DeptId, dp => dp.DeptId, (q, dp) => new { q, dp })
                        .Join(_hrmContext.OrgDesignation, r => r.q.jb.DesigId, ds => ds.DesigId, (r, ds) => new { r, ds })
-                       .Where(z => z.r.q.p.ss.RecStat == 1 && z.r.q.jb.WkStat == 1 && z.r.dp.EntId == entId) //&& z.r.q.jb.WkStat == 1 &&  z.r.q.p.gi.CurrStat == 0 
+                       .Where(z => z.r.q.p.ss.RecStat == 1 && z.r.q.jb.WkStat == 1 && z.r.q.p.gi.CurrStat == 0 && z.r.dp.EntId == entId)
                        .OrderBy(o => o.r.q.p.gi.SrtOrd).ThenBy(m => m.r.q.p.gi.EmpId)
                        .Select((x, i) => new PrSalarySheetView
                        {
@@ -3020,6 +3219,329 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                 summary.StatusText = "Unavailable";
                 return summary;
             }
+        }
+        #endregion
+
+        #region ==============Air Ticket Prices by Country==============
+        public List<HrPrAirTicketPriceVw> GetAirTicketPrices()
+        {
+            var query = from p in _hrmContext.HrPrAirTicketPrice
+                        join c in _hrmContext.OrgCountry on p.CntryId equals c.CntryId
+                        where p.RecStat == 1
+                        orderby c.CntryNameEng
+                        select new HrPrAirTicketPriceVw
+                        {
+                            TktPriceId = p.TktPriceId,
+                            CntryId = p.CntryId,
+                            CntryName = c.CntryNameEng,
+                            Price = p.Price,
+                            EffectiveYear = p.EffectiveYear,
+                            Note = p.Note,
+                            RecStat = p.RecStat,
+                            CrtBy = p.CrtBy,
+                            CrtDateTime = p.CrtDateTime
+                        };
+            return query.ToList();
+        }
+
+        public HrPrAirTicketPrice GetAirTicketPriceById(int id)
+        {
+            return _hrmContext.HrPrAirTicketPrice.FirstOrDefault(x => x.TktPriceId == id);
+        }
+
+        public void SaveAirTicketPrice(HrPrAirTicketPrice model, int userId)
+        {
+            if (model.TktPriceId == 0)
+            {
+                var existing = _hrmContext.HrPrAirTicketPrice.FirstOrDefault(x => x.CntryId == model.CntryId && x.RecStat == 1);
+                if (existing != null)
+                {
+                    existing.Price = model.Price;
+                    existing.Note = model.Note;
+                    existing.EffectiveYear = model.EffectiveYear;
+                    existing.ModBy = userId;
+                    existing.ModDateTime = DateTime.Now;
+                }
+                else
+                {
+                    model.RecStat = 1;
+                    model.CrtBy = userId;
+                    model.CrtDateTime = DateTime.Now;
+                    _hrmContext.HrPrAirTicketPrice.Add(model);
+                }
+            }
+            else
+            {
+                var existing = _hrmContext.HrPrAirTicketPrice.FirstOrDefault(x => x.TktPriceId == model.TktPriceId);
+                if (existing != null)
+                {
+                    existing.CntryId = model.CntryId;
+                    existing.Price = model.Price;
+                    existing.Note = model.Note;
+                    existing.EffectiveYear = model.EffectiveYear;
+                    existing.ModBy = userId;
+                    existing.ModDateTime = DateTime.Now;
+                }
+            }
+            _hrmContext.SaveChanges();
+        }
+
+        public void DeleteAirTicketPrice(int id, int userId)
+        {
+            var item = _hrmContext.HrPrAirTicketPrice.FirstOrDefault(x => x.TktPriceId == id);
+            if (item != null)
+            {
+                item.RecStat = 0;
+                item.ModBy = userId;
+                item.ModDateTime = DateTime.Now;
+                _hrmContext.SaveChanges();
+            }
+        }
+        #endregion
+
+        #region ==============Staff Leave Salary & Air Ticket Encashment==============
+        public List<HrPrStaffLvTktEncashVw> CalculateStaffLvTktEncash(int year, int month, string staffCategory = "ALL")
+        {
+            int prevMonth = month == 1 ? 12 : month - 1;
+            int prevYear = month == 1 ? year - 1 : year;
+            DateTime cutoffStart = new DateTime(prevYear, prevMonth, 21);
+            DateTime cutoffEnd = new DateTime(year, month, 20);
+
+            var empQuery = (from e in _hrmContext.HrEmpGenInfo
+                            join j in _hrmContext.HrEmpJobAssign on e.EmpSysId equals j.EmpSysId into jGroup
+                            from j in jGroup.Where(x => x.WkStat == 1 && x.StDate <= cutoffEnd && (x.EndDate == null || x.EndDate >= cutoffStart)).DefaultIfEmpty()
+                            join d in _hrmContext.OrgDepartment on j.DeptId equals d.DeptId into dGroup
+                            from d in dGroup.DefaultIfEmpty()
+                            join ds in _hrmContext.OrgDesignation on j.DesigId equals ds.DesigId into dsGroup
+                            from ds in dsGroup.DefaultIfEmpty()
+                            join c in _hrmContext.OrgCountry on e.CntryId equals c.CntryId into cGroup
+                            from c in cGroup.DefaultIfEmpty()
+                            where e.CurrStat == 0
+                              && e.JoinedDate <= cutoffEnd.AddYears(-1)
+                              && ((e.JoinedDate.Month == prevMonth && e.JoinedDate.Day >= 21) || (e.JoinedDate.Month == month && e.JoinedDate.Day <= 20))
+                            select new
+                            {
+                                e.EmpSysId,
+                                e.EmpId,
+                                Title = e.Title ?? "Mr.",
+                                FullName = (e.FirstName + " " + (e.LastName ?? "")).Trim(),
+                                DeptName = d != null ? d.NameEng : "General",
+                                DesgName = ds != null ? ds.NameEng : "-",
+                                e.WrktypId,
+                                e.JoinedDate,
+                                CntryId = e.CntryId,
+                                Nationality = c != null ? c.CntryNameEng : "Unknown"
+                            }).ToList();
+
+            var empSysIds = empQuery.Select(x => x.EmpSysId).ToList();
+
+            var salaryStructures = _hrmContext.HrPrEmpSlryStruc
+                .Where(s => empSysIds.Contains(s.EmpSysId) && s.RecStat == 1)
+                .OrderByDescending(s => s.SlStrcId)
+                .ToList()
+                .GroupBy(s => s.EmpSysId)
+                .ToDictionary(g => g.Key, g => g.First());
+
+            int ym = year * 100 + month;
+            var projAllowances = _hrmContext.HrPrProjAlwnc
+                .Where(p => empSysIds.Contains(p.EmpSysId) && p.RecStat == 1 && (p.EftYear * 100 + p.EftMonth) <= ym && (p.EndYear * 100 + p.EndMonth) >= ym)
+                .ToList()
+                .GroupBy(p => p.EmpSysId)
+                .ToDictionary(g => g.Key, g => g.Sum(x => (decimal)x.ProjAlwncAmt));
+
+            var ticketPrices = _hrmContext.HrPrAirTicketPrice
+                .Where(x => x.RecStat == 1)
+                .ToDictionary(x => x.CntryId, x => x.Price);
+
+            var savedRecords = _hrmContext.HrPrStaffLvTktEncash
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
+                .ToDictionary(x => x.EmpSysId, x => x);
+
+            var leaveBooked = _hrmContext.HrLvOpeningBalance
+                .Where(x => x.LvTypId == 1 && x.LvYear == year)
+                .ToDictionary(x => x.EmpSysId, x => x.BookedDays);
+
+            var depCounts = _hrmContext.HrEmpDependent
+                .Where(x => x.RecStat == 1)
+                .GroupBy(x => x.EmpSysId)
+                .ToDictionary(g => g.Key, g => g.Count());
+
+            var vacationReturns = _hrmContext.HrLvRegister
+                .Where(x => x.LvTypId == 1 && x.RecStat == 1 && x.RjnDate != null && x.RjnDate <= cutoffEnd)
+                .GroupBy(x => x.EmpSysId)
+                .ToDictionary(g => g.Key, g => g.Max(x => x.RjnDate));
+
+            var result = new List<HrPrStaffLvTktEncashVw>();
+
+            foreach (var emp in empQuery)
+            {
+                bool isOutsource = emp.WrktypId == 2 || (emp.DeptName != null && emp.DeptName.IndexOf("Outsource", StringComparison.OrdinalIgnoreCase) >= 0);
+                string cat = isOutsource ? "OUTSOURCE" : "INTERNAL";
+
+                if (staffCategory != "ALL" && !string.Equals(staffCategory, cat, StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                DateTime nextResetDate;
+                try
+                {
+                    nextResetDate = new DateTime(year, emp.JoinedDate.Month, emp.JoinedDate.Day);
+                }
+                catch
+                {
+                    nextResetDate = new DateTime(year, emp.JoinedDate.Month, 28);
+                }
+
+                savedRecords.TryGetValue(emp.EmpSysId, out var saved);
+
+                DateTime? vacReturnDate = saved?.VacationReturnDate;
+                if (!vacReturnDate.HasValue && vacationReturns.TryGetValue(emp.EmpSysId, out var vr))
+                {
+                    vacReturnDate = vr;
+                }
+
+                int applicableDays = 0;
+                if (saved != null)
+                {
+                    applicableDays = saved.ApplicableDays;
+                    vacReturnDate = saved.VacationReturnDate;
+                }
+                else if (vacReturnDate.HasValue)
+                {
+                    applicableDays = (int)(nextResetDate - vacReturnDate.Value).TotalDays;
+                    if (applicableDays < 0) applicableDays = 0;
+                }
+                else
+                {
+                    applicableDays = 365;
+                }
+
+                decimal eligibleDays = Math.Round((decimal)applicableDays * 30.0m / 365.0m, 5);
+
+                decimal paidLeave = 0;
+                if (saved != null)
+                {
+                    paidLeave = saved.PaidLeaveDays;
+                }
+                else if (leaveBooked.TryGetValue(emp.EmpSysId, out var pb))
+                {
+                    paidLeave = pb;
+                }
+
+                int netLeaveDays = Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero));
+
+                decimal monthlySalary = 0m;
+                if (salaryStructures.TryGetValue(emp.EmpSysId, out var slry))
+                {
+                    monthlySalary = slry.Basic
+                                  + slry.HrAlwnc
+                                  + slry.TrnsAlwnc
+                                  + slry.Tra
+                                  + slry.PstnAlwnc
+                                  + slry.ProjAlwnc
+                                  + slry.MedAlwnc
+                                  + slry.MobAlwnc
+                                  + slry.SpcAlwnc
+                                  + slry.PrfmAlwnc
+                                  + slry.OthrAlwnc;
+                }
+
+                decimal dailySalary = Math.Round(monthlySalary / 30.0m, 2);
+                decimal totalLeaveSalary = Math.Round(netLeaveDays * dailySalary, 2);
+
+                int defaultTktCount = 1;
+                if (depCounts.TryGetValue(emp.EmpSysId, out int deps))
+                {
+                    defaultTktCount = 1 + Math.Min(3, deps);
+                }
+
+                int tktCount = saved != null ? saved.TktCount : defaultTktCount;
+
+                ticketPrices.TryGetValue(emp.CntryId, out decimal tktPrice);
+
+                decimal airTicketValue = Math.Round(tktCount * tktPrice, 2);
+                decimal totalSettlement = totalLeaveSalary + airTicketValue;
+
+                string remarks = "-";
+                if (netLeaveDays > 0 && tktCount > 1)
+                    remarks = $"{netLeaveDays:D2} Days Leave Salary & Air Fare Encashment (self & family)";
+                else if (netLeaveDays > 0 && tktCount <= 1)
+                    remarks = $"{netLeaveDays:D2} Day{(netLeaveDays > 1 ? "s" : "")} Leave Salary & Air Fare Encashment";
+                else if (netLeaveDays == 0 && airTicketValue > 0)
+                    remarks = "Air Fare Encashment";
+
+                result.Add(new HrPrStaffLvTktEncashVw
+                {
+                    EncashId = saved?.EncashId ?? 0,
+                    PrcYear = year,
+                    PrcMonth = month,
+                    EmpSysId = emp.EmpSysId,
+                    EmpId = emp.EmpId,
+                    CourtesyTitle = emp.Title,
+                    FullName = emp.FullName,
+                    Department = emp.DeptName,
+                    Designation = emp.DesgName,
+                    StaffCategory = cat,
+                    JoinedDate = emp.JoinedDate,
+                    VacationReturnDate = vacReturnDate,
+                    Nationality = emp.Nationality,
+                    NextResetDate = nextResetDate,
+                    ApplicableDays = applicableDays,
+                    EligibleLeaveDays = eligibleDays,
+                    PaidLeaveDays = paidLeave,
+                    NetLeaveDays = netLeaveDays,
+                    MonthlySalary = monthlySalary,
+                    DailySalary = dailySalary,
+                    TotalLeaveSalary = totalLeaveSalary,
+                    TktCount = tktCount,
+                    TktPrice = tktPrice,
+                    AirTicketValue = airTicketValue,
+                    TotalSettlement = totalSettlement,
+                    Remarks = remarks,
+                    PrcStat = saved?.PrcStat ?? 1
+                });
+            }
+
+            return result.OrderBy(x => x.StaffCategory == "INTERNAL" ? 0 : 1)
+                         .ThenBy(x => x.JoinedDate)
+                         .ToList();
+        }
+
+        public void SaveStaffLvTktEncashList(List<HrPrStaffLvTktEncash> records, int userId)
+        {
+            foreach (var rec in records)
+            {
+                var existing = _hrmContext.HrPrStaffLvTktEncash
+                    .FirstOrDefault(x => x.PrcYear == rec.PrcYear && x.PrcMonth == rec.PrcMonth && x.EmpSysId == rec.EmpSysId && x.RecStat == 1);
+
+                if (existing != null)
+                {
+                    existing.TktCount = rec.TktCount;
+                    existing.TktPrice = rec.TktPrice;
+                    existing.AirTicketValue = rec.TktCount * rec.TktPrice;
+                    existing.TotalSettlement = existing.TotalLeaveSalary + existing.AirTicketValue;
+                    existing.VacationReturnDate = rec.VacationReturnDate;
+                    existing.ApplicableDays = rec.ApplicableDays;
+                    existing.EligibleLeaveDays = rec.EligibleLeaveDays;
+                    existing.PaidLeaveDays = rec.PaidLeaveDays;
+                    existing.NetLeaveDays = rec.NetLeaveDays;
+                    existing.MonthlySalary = rec.MonthlySalary;
+                    existing.DailySalary = rec.DailySalary;
+                    existing.TotalLeaveSalary = rec.TotalLeaveSalary;
+                    existing.Remarks = rec.Remarks;
+                    existing.PrcStat = 2; // Confirmed
+                    existing.ModBy = userId;
+                    existing.ModDateTime = DateTime.Now;
+                }
+                else
+                {
+                    rec.PrcStat = 2; // Confirmed
+                    rec.CrtBy = userId;
+                    rec.CrtDateTime = DateTime.Now;
+                    rec.RecStat = 1;
+                    _hrmContext.HrPrStaffLvTktEncash.Add(rec);
+                }
+            }
+            _hrmContext.SaveChanges();
         }
         #endregion
     }

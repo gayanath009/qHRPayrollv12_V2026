@@ -1,0 +1,141 @@
+@model qHRM.Areas.Payroll.Models.HrPrLopTrns
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
+@using (Html.BeginForm("Create", "HrPrLopTrns", new { area = "Payroll" }, FormMethod.Post))
+{
+    @Html.AntiForgeryToken()
+    <span class="alert-success">
+        @Html.ValidationSummary(true)
+    </span>
+    <div class="dl-horizontal">
+        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        @Html.HiddenFor(model => model.LopId)
+    </div>
+    <div class="card-body">
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="EmpSysId" class="control-label"></label>
+                <select asp-for="EmpSysId" id="drpEmp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstEmp, "EmpSysId", "EmpDesc"))">
+                    <option value="">-- Select Outsourced Employee --</option>
+                </select>
+                <span asp-validation-for="EmpSysId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="LvTypId" class="control-label"></label>
+                <select asp-for="LvTypId" id="drpLvTyp" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstLvTyp, "LvTypId", "LvTypDesc"))">
+                    <option value="">-- Select Leave Type --</option>
+                </select>
+                <span asp-validation-for="LvTypId" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="TrnDate" class="control-label"></label>
+                <input asp-for="TrnDate" class="form-control form-control-sm" />
+                <span asp-validation-for="TrnDate" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="EftYear" class="control-label"></label>
+                <input asp-for="EftYear" id="txtEftYear" class="form-control form-control-sm" />
+                <span asp-validation-for="EftYear" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="EftMonth" class="control-label"></label>
+                <select asp-for="EftMonth" id="drpMonths" class="form-control form-control-sm select2-dropdown"
+                        asp-items="@(new SelectList(ViewBag.lstMonths, "Indx", "ElmntTxt"))">
+                    <option value="">-- Select Month --</option>
+                </select>
+                <span asp-validation-for="EftMonth" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label asp-for="LopDays" class="control-label"></label>
+                <input asp-for="LopDays" id="txtLopDays" type="number" step="0.5" min="0.5" max="31" class="form-control form-control-sm" style="text-align:right" />
+                <span asp-validation-for="LopDays" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="LopAmt" class="control-label"></label>
+                <input asp-for="LopAmt" id="txtLopAmt" class="form-control form-control-sm" style="text-align:right" />
+                <small id="lblLopCalcHint" class="form-text text-muted"></small>
+                <span asp-validation-for="LopAmt" class="text-danger"></span>
+            </div>
+            <div class="form-group col-md-4">
+                <label asp-for="Ref" class="control-label"></label>
+                <input asp-for="Ref" class="form-control form-control-sm" placeholder="Optional" />
+                
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="ShtRmk" class="control-label"></label>
+                <input asp-for="ShtRmk" class="form-control form-control-sm" placeholder="e.g. Excess Annual Leave" />
+                <span asp-validation-for="ShtRmk" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group col-md-12">
+                <label asp-for="Desc" class="control-label"></label>
+                <input asp-for="Desc" class="form-control form-control-sm" placeholder="e.g. No pay due to excess annual leave" />
+                <span asp-validation-for="Desc" class="text-danger"></span>
+            </div>
+        </div>
+        <div class="form-group"></div>
+
+        <div class="form-group">
+            <input type="submit" value="Create" class="btn btn-sm btn-primary btn-block" />
+            <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        </div>
+    </div>
+}
+
+<script>
+    function recalcLopCreate() {
+        var empSysId = $('#drpEmp').val();
+        var lopDays = parseFloat($('#txtLopDays').val()) || 0;
+        var eftYear = parseInt($('#txtEftYear').val()) || new Date().getFullYear();
+        var eftMonth = parseInt($('#drpMonths').val()) || (new Date().getMonth() + 1);
+
+        if (!empSysId || lopDays <= 0) {
+            $('#txtLopAmt').val('0.00');
+            $('#lblLopCalcHint').text('');
+            return;
+        }
+
+        $.getJSON('/Payroll/HrPrLopTrns/CalcLopAmt', {
+            empSysId: empSysId,
+            lopDays: lopDays,
+            eftYear: eftYear,
+            eftMonth: eftMonth
+        }, function (res) {
+            if (res && res.success) {
+                $('#txtLopAmt').val(parseFloat(res.lopAmt).toFixed(2));
+                $('#lblLopCalcHint').text('Gross: ' + parseFloat(res.fixedGross).toLocaleString() + ' QR (' + parseFloat(res.dailyRate).toFixed(2) + '/day)');
+                try { $('#txtLopAmt').valid(); } catch (e) { }
+            }
+        });
+    }
+
+    $(function () {
+        $('#modalCreate').find('.select2-dropdown').select2({
+            theme: 'bootstrap4',
+            width: '100%',
+            dropdownParent: $('#modalCreate')
+        });
+
+        $('#modalCreate').find('.select2-dropdown').on('change', function () {
+            try { $(this).valid(); } catch (e) { }
+        });
+
+        $('#drpEmp, #txtLopDays, #txtEftYear, #drpMonths').on('change input', function () {
+            recalcLopCreate();
+        });
+
+        recalcLopCreate();
+    });
+</script>
+

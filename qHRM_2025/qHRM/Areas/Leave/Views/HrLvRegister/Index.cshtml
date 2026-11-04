@@ -127,6 +127,22 @@
         color: var(--org-primary-hover) !important;
         border-color: var(--org-primary) !important;
     }
+    .select2-container--bootstrap4 .select2-selection--single {
+        height: calc(1.8125rem + 2px) !important;
+        font-size: 0.875rem !important;
+        line-height: 1.5 !important;
+        border-radius: 0.2rem !important;
+    }
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+        line-height: calc(1.8125rem + 2px) !important;
+        padding-left: 0.5rem !important;
+    }
+    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+        height: calc(1.8125rem + 2px) !important;
+    }
+    .select2-dropdown {
+        z-index: 1060 !important;
+    }
 </style>
 
 <div>
@@ -360,32 +376,38 @@
                                                     <label class="font-weight-bold text-secondary mb-1">Employee</label>
                                                     @if (ViewBag.IsRestrictedUser == true || (ViewBag.ShowAllEmployees == false && ViewBag.IsOutsourceAdmin != true && ViewBag.CanSelectEmployee != true))
                                                     {
-                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" disabled style="background-color: #e9ecef; cursor: not-allowed;">
+                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" disabled style="background-color: #e9ecef; cursor: not-allowed; width: 100%;">
                                                             @if (ViewBag.lstEmp != null)
                                                             {
                                                                 foreach (var item in (IEnumerable<dynamic>)ViewBag.lstEmp)
                                                                 {
-                                                                    <option value="@item.ESysId" selected>@item.FulNme</option>
+                                                                    string empCode = "";
+                                                                    try { empCode = item.EmpId ?? ""; } catch { }
+                                                                    string displayTxt = !string.IsNullOrEmpty(empCode) ? $"{empCode} - {item.FulNme}" : (string)item.FulNme;
+                                                                    <option value="@item.ESysId" data-empid="@empCode" selected>@displayTxt</option>
                                                                 }
                                                             }
                                                         </select>
                                                     }
                                                     else
                                                     {
-                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" onchange="onModalEmployeeChange();">
+                                                        <select id="modalBalEmpSelect" class="form-control form-control-sm" style="width: 100%;" onchange="onModalEmployeeChange();">
                                                             @if (ViewBag.lstEmp != null)
                                                             {
                                                                 int currentEmpId = Convert.ToInt32(ViewBag.CurrentEmpSysId ?? 0);
                                                                 foreach (var item in (IEnumerable<dynamic>)ViewBag.lstEmp)
                                                                 {
                                                                     int itemEmpId = Convert.ToInt32(item.ESysId);
+                                                                    string empCode = "";
+                                                                    try { empCode = item.EmpId ?? ""; } catch { }
+                                                                    string displayTxt = !string.IsNullOrEmpty(empCode) ? $"{empCode} - {item.FulNme}" : (string)item.FulNme;
                                                                     if (itemEmpId == currentEmpId)
                                                                     {
-                                                                        <option value="@item.ESysId" selected>@item.FulNme</option>
+                                                                        <option value="@item.ESysId" data-empid="@empCode" selected>@displayTxt</option>
                                                                     }
                                                                     else
                                                                     {
-                                                                        <option value="@item.ESysId">@item.FulNme</option>
+                                                                        <option value="@item.ESysId" data-empid="@empCode">@displayTxt</option>
                                                                     }
                                                                 }
                                                             }
@@ -908,7 +930,40 @@
         }
 
         $('#modalLeaveBalance').modal('show');
+        initModalBalEmpSelect2();
+        $('#modalBalEmpSelect').val(currentBalanceEmpSysId).trigger('change.select2');
         refreshModalBalances();
+    }
+
+    function initModalBalEmpSelect2() {
+        if ($('#modalBalEmpSelect').is(':disabled')) return;
+        if (!$('#modalBalEmpSelect').hasClass('select2-hidden-accessible')) {
+            $('#modalBalEmpSelect').select2({
+                theme: 'bootstrap4',
+                dropdownParent: $('#modalLeaveBalance'),
+                width: '100%',
+                placeholder: 'Search by Emp ID or Name...',
+                allowClear: false,
+                matcher: function(params, data) {
+                    if ($.trim(params.term) === '') {
+                        return data;
+                    }
+                    if (typeof data.text === 'undefined') {
+                        return null;
+                    }
+                    var term = params.term.toLowerCase();
+                    var text = data.text.toLowerCase();
+                    var empId = $(data.element).data('empid') ? $(data.element).data('empid').toString().toLowerCase() : '';
+                    if (text.indexOf(term) > -1 || empId.indexOf(term) > -1) {
+                        return data;
+                    }
+                    return null;
+                }
+            });
+            $('#modalBalEmpSelect').on('select2:select', function (e) {
+                onModalEmployeeChange();
+            });
+        }
     }
 
     function onModalEmployeeChange() {

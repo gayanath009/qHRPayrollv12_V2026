@@ -1,0 +1,45 @@
+@model qHRM.Areas.Payroll.Models.HrPrAirTicketPrice
+
+<form asp-area="Payroll" asp-controller="HrPrAirTicketPrice" asp-action="Create" method="post">
+    @Html.AntiForgeryToken()
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="form-group">
+        <label asp-for="CntryId" class="control-label font-weight-bold">Country</label>
+        <select asp-for="CntryId" class="form-control form-control-sm select2" required>
+            <option value="">-- Select Country --</option>
+            @if (ViewBag.lstCountry != null)
+            {
+                foreach (var item in ViewBag.lstCountry)
+                {
+                    <option value="@item.CntryId">@item.CntryName</option>
+                }
+            }
+        </select>
+        <span asp-validation-for="CntryId" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Price" class="control-label font-weight-bold">Ticket Price (QAR)</label>
+        <input asp-for="Price" type="number" step="0.01" min="0" class="form-control form-control-sm" required style="text-align:right" />
+        <span asp-validation-for="Price" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="EffectiveYear" class="control-label font-weight-bold">Effective Year (Optional)</label>
+        <input asp-for="EffectiveYear" type="number" min="2020" max="2050" class="form-control form-control-sm" placeholder="e.g. @DateTime.Now.Year" />
+        <span asp-validation-for="EffectiveYear" class="text-danger"></span>
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Note" class="control-label font-weight-bold">Note / Remarks</label>
+        <input asp-for="Note" class="form-control form-control-sm" placeholder="Optional notes" />
+        <span asp-validation-for="Note" class="text-danger"></span>
+    </div>
+
+    <div class="modal-footer px-0 pb-0">
+        <button type="submit" class="btn btn-sm btn-primary"><i class="fas fa-save"></i> Save</button>
+        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+    </div>
+</form>
+
