@@ -127,7 +127,7 @@
                     <select asp-for="InitiatorEmpId" id="drpPayrollInitiator" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.InitiatorEmpId ?? 6))">
                     </select>
-                    <small class="text-muted">Default: Kaushalya Fonseka (EmpSysId: 6)</small>
+                    <small class="text-muted">Select employee assigned to initiate & verify this workflow</small>
                 </div>
 
                 <div class="form-group">
@@ -135,7 +135,7 @@
                     <select asp-for="Level1ApproverEmpId" id="drpPayrollLevel1" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.Level1ApproverEmpId ?? 452))">
                     </select>
-                    <small class="text-muted">Default: Ashhar Zaeem (EmpSysId: 452)</small>
+                    <small class="text-muted">Select employee assigned to review and provide Level 1 approval</small>
                 </div>
 
                 <div class="form-group">
@@ -143,7 +143,7 @@
                     <select asp-for="FinalApproverEmpId" id="drpPayrollFinal" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinalApproverEmpId ?? 11))">
                     </select>
-                    <small class="text-muted">Default: Hasan Sayed (EmpSysId: 11)</small>
+                    <small class="text-muted">Select employee assigned to provide final sign-off</small>
                 </div>
             </div>
         </div>

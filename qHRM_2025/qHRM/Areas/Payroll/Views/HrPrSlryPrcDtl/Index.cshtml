@@ -857,7 +857,7 @@
             alert("No verified salary process found to submit.");
             return;
         }
-        if (confirm("Are you sure you want to submit this Salary Process for Level 1 Approval (Ashhar Zaeem)?")) {
+        if (confirm("Are you sure you want to submit this Salary Process for Level 1 Approval?")) {
             $("#btnSubmitApproval").attr("disabled", "");
             $.ajax({
                 type: "POST",

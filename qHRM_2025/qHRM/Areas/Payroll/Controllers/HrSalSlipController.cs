@@ -177,7 +177,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 var wfHdr = _payrollContext.GetTopSalaryHeader(entId, efYr, efMnt);
                 if (wfHdr == null || wfHdr.WfStat != "Approved")
                 {
-                    return Json(new { ok = false, message = "Payslip generation is disabled until the Salary Process receives final approval from Hasan Sayed." });
+                    return Json(new { ok = false, message = "Payslip generation is disabled until the Salary Process receives final approval." });
                 }
                 string targetDir = Path.Combine(_webHostEnvironment.WebRootPath, "attach", "empPaySlip", folderName);
                 if (!Directory.Exists(targetDir))
@@ -243,7 +243,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 var wfHdr = _payrollContext.GetTopSalaryHeader(entId, efYr, efMnt);
                 if (wfHdr == null || wfHdr.WfStat != "Approved")
                 {
-                    return Json(new { ok = false, data = "error", message = "Payslip emailing is disabled until the Salary Process receives final approval from Hasan Sayed." });
+                    return Json(new { ok = false, data = "error", message = "Payslip emailing is disabled until the Salary Process receives final approval." });
                 }
                 int n = await SendPaySlipLoop(efYr, efMnt, empIds); 
                 var data = _payrollContext.GetSlrySlipSndMail("#", 0, efMnt, efYr);
@@ -523,7 +523,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 var wfHdr = _payrollContext.GetTopSalaryHeader(entId, obj.EftYr, obj.EftMnt);
                 if (wfHdr != null && wfHdr.WfStat != "Approved")
                 {
-                    return BadRequest("Payslip printing is disabled until the Salary Process receives final approval from Hasan Sayed.");
+                    return BadRequest("Payslip printing is disabled until the Salary Process receives final approval.");
                 }
                 var ds = _payrollContext.GetSlryDtlByEmpSysIds(entId, "_paysheet", obj.Emp_Id, 0, obj.EftMnt, obj.EftYr);
                 var slryYrMnt = (obj.EftYr > 0 && obj.EftMnt > 0)

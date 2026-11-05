@@ -140,14 +140,14 @@ namespace qHRM.Areas.Payroll.Data
                     return (false, "Salary process record not found.");
 
                 if (hdr.PrcStat != 2)
-                    return (false, "Salary Process must be verified by Kaushalya Fonseka before submitting for approval.");
+                    return (false, "Salary Process must be verified before submitting for approval.");
 
                 var approvers = await GetWorkflowApproversAsync("Salary Process");
 
                 // Validate initiator
                 if (actorEmpSysId != approvers.InitiatorId && actorEmpSysId != 1)
                 {
-                    return (false, $"Only the configured initiator (EmpSysId: {approvers.InitiatorId}) can submit the Salary Process for approval.");
+                    return (false, "Only the designated initiator can submit the Salary Process for approval.");
                 }
 
                 var (initiatorName, _) = await GetEmployeeDetailsAsync(actorEmpSysId);
@@ -196,7 +196,7 @@ namespace qHRM.Areas.Payroll.Data
                 await SendEmailSafelyAsync(l1Email, subject, body);
                 await PushInAppNotificationSafelyAsync(approvers.Level1Id, subject, $"Salary process for {periodText} is pending your Level 1 approval.", prcId, approvalUrl);
 
-                return (true, $"Salary process submitted successfully for Level 1 approval ({l1Name}).");
+                return (true, "Salary process submitted successfully for Level 1 approval.");
             }
             catch (Exception ex)
             {
@@ -459,7 +459,7 @@ namespace qHRM.Areas.Payroll.Data
 
                 if (actorEmpSysId != approvers.InitiatorId && actorEmpSysId != 1)
                 {
-                    return (false, $"Only the configured initiator (EmpSysId: {approvers.InitiatorId}) can submit Encashments for approval.");
+                    return (false, "Only the designated initiator can submit Encashments for approval.");
                 }
 
                 var (initiatorName, _) = await GetEmployeeDetailsAsync(actorEmpSysId);
@@ -513,7 +513,7 @@ namespace qHRM.Areas.Payroll.Data
                 await SendEmailSafelyAsync(l1Email, subject, body);
                 await PushInAppNotificationSafelyAsync(approvers.Level1Id, subject, $"Leave Salary & Air Ticket Encashment for {periodText} requires your Level 1 approval.", hdr.EncashHdrId, approvalUrl);
 
-                return (true, $"Encashment batch submitted successfully for Level 1 approval ({l1Name}).");
+                return (true, "Encashment batch submitted successfully for Level 1 approval.");
             }
             catch (Exception ex)
             {
@@ -821,3 +821,4 @@ namespace qHRM.Areas.Payroll.Data
         }
     }
 }
+

@@ -83,3 +83,4 @@ namespace qHRM.Areas.Payroll.Models
         public short RecStat { get; set; } = 1;
     }
 }
+

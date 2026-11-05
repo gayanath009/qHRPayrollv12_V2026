@@ -259,7 +259,7 @@
             {
                 <div class="alert alert-warning p-2 mb-3" style="font-size:0.75rem;border-left:3px solid #f59e0b;background:#fef3c7;color:#92400e;">
                     <i class="fas fa-lock mr-1"></i>
-                    <strong>Payslips Locked:</strong> Printing is enabled once Salary Process receives Final Approval from Hasan Sayed.
+                    <strong>Payslips Locked:</strong> Printing is enabled once Salary Process receives Final Approval.
                 </div>
             }
 
@@ -515,7 +515,7 @@
 
     function validateReportForm(e) {
         if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
-            alert("Payslip printing is locked until the Salary Process receives final approval from Hasan Sayed.");
+            alert("Payslip printing is locked until the Salary Process receives final approval.");
             if (e) e.preventDefault();
             return false;
         }

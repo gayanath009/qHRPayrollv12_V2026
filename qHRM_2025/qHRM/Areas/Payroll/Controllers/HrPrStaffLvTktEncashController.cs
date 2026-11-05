@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -26,7 +28,7 @@ namespace qHRM.Areas.Payroll.Controllers
             _workflowService = workflowService;
         }
 
-        public IActionResult Index(int? year, int? month, string staffCat = "OUTSOURCE", bool load = false)
+        public async Task<IActionResult> Index(int? year, int? month, string staffCat = "OUTSOURCE", bool load = false)
         {
             if (HttpContext.Session.GetString("STF_LV_TKT") == null)
                 return RedirectToPage("/Account/Login", new { area = "Identity" });
@@ -67,10 +69,12 @@ namespace qHRM.Areas.Payroll.Controllers
                 ViewBag.GrandTotal = records.Sum(x => x.TotalSettlement);
             }
 
-            var encashHdr = _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefault(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
+            var encashHdr = await _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefaultAsync(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
             ViewBag.WfStat = encashHdr?.WfStat ?? "Draft";
             int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
-            ViewBag.CanSubmit = (userEmpSysId == 6 || userEmpSysId == 1) && (encashHdr == null || encashHdr.WfStat == "Draft" || encashHdr.WfStat == "Verified" || encashHdr.WfStat == "Rejected");
+            int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+            var encashApprovers = await _workflowService.GetWorkflowApproversAsync("Leave Salary & Air Ticket Encashment");
+            ViewBag.CanSubmit = (userEmpSysId == encashApprovers.InitiatorId || userGrpId == 1) && (encashHdr == null || encashHdr.WfStat == "Draft" || encashHdr.WfStat == "Verified" || encashHdr.WfStat == "Rejected");
 
             return View(records);
         }
@@ -151,7 +155,7 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
-                int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? 6;
+                int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
                 var allRecords = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL");
                 decimal inLv = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
                 decimal inTkt = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);

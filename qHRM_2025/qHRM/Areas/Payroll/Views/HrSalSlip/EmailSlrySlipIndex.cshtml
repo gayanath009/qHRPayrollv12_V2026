@@ -182,7 +182,7 @@
             {
                 <div class="alert alert-warning p-2 mb-3" style="font-size:0.75rem;border-left:3px solid #f59e0b;background:#fef3c7;color:#92400e;">
                     <i class="fas fa-lock mr-1"></i>
-                    <strong>Payslip Actions Locked:</strong> Generating and emailing salary slips is disabled until Salary Process receives Final Approval from Hasan Sayed.
+                    <strong>Payslip Actions Locked:</strong> Generating and emailing salary slips is disabled until Salary Process receives Final Approval.
                 </div>
             }
 
@@ -405,7 +405,7 @@
 
     function generateAllPaySlips() {
         if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
-            alert("Generating pay slips is disabled until the Salary Process receives final approval from Hasan Sayed.");
+            alert("Generating pay slips is disabled until the Salary Process receives final approval.");
             return;
         }
         var grid = document.getElementById('Grid').ej2_instances[0];
@@ -479,7 +479,7 @@
 
     function emailPaySlips() {
         if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
-            alert("Emailing pay slips is disabled until the Salary Process receives final approval from Hasan Sayed.");
+            alert("Emailing pay slips is disabled until the Salary Process receives final approval.");
             $('#conSndEmail').modal('hide');
             return;
         }

@@ -49,3 +49,4 @@ namespace qHRM.Areas.Payroll.Models
         public DateTime ActionDateTime { get; set; } = DateTime.Now;
     }
 }
+
