@@ -39,8 +39,8 @@ namespace qHRM.Areas.Payroll.Controllers
 
             var approvers = await _workflowService.GetWorkflowApproversAsync("Leave Salary & Air Ticket Encashment");
 
-            // Authorization: Ashhar (452), Hasan (11), Kaushalya (6), or Admin (userGrpId == 1)
-            bool isAuthorized = (userEmpSysId == approvers.Level1Id || userEmpSysId == approvers.FinalId || userEmpSysId == approvers.InitiatorId || userGrpId == 1);
+            // Authorization: Approver, Initiator, Admin (userGrpId == 1), or users with ENCSH_APP / STF_LV_TKT privilege
+            bool isAuthorized = (userEmpSysId == approvers.Level1Id || userEmpSysId == approvers.FinalId || userEmpSysId == approvers.InitiatorId || userGrpId == 1 || HttpContext.Session.GetString("ENCSH_APP") != null || HttpContext.Session.GetString("STF_LV_TKT") != null);
             if (!isAuthorized)
             {
                 ViewBag.ErrorMessage = "You are not authorized to view the Encashment Approval screen.";

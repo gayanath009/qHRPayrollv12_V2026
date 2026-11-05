@@ -126,6 +126,8 @@
                 string ZH_CVT = @HttpContextAccessor.HttpContext.Session.GetString("ZH_CVT");
                 string AIR_TKT = @HttpContextAccessor.HttpContext.Session.GetString("AIR_TKT");
                 string STF_LV_TKT = @HttpContextAccessor.HttpContext.Session.GetString("STF_LV_TKT");
+                string SLRY_APP = @HttpContextAccessor.HttpContext.Session.GetString("SLRY_APP");
+                string ENCSH_APP = @HttpContextAccessor.HttpContext.Session.GetString("ENCSH_APP");
 
 
                 //Admin Privileges//
@@ -138,7 +140,7 @@
                 bool hasAttnPrivs = (ATN_REG != null || ATN_EXP != null || ATN_EXP_RQ != null || ATN_EXP_AP != null);
                 bool hasWorkShiftPrivs = (WK_RST != null || WK_RST_EMP != null);
                 bool hasLeavePrivs = (LV_TYP != null || LV_REG != null || LV_WF_CFG != null || LV_WF_DLG != null);
-                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null || AIR_TKT != null || STF_LV_TKT != null);
+                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null || AIR_TKT != null || STF_LV_TKT != null || SLRY_APP != null || ENCSH_APP != null);
                 bool hasSysAdminPrivs = (SY_ADM != null || SY_PRV != null || SY_USR != null);
 
                 // Settings Privileges
@@ -331,11 +333,17 @@
                                 @if (SLRY_PRC != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrSlryPrcDtl" asp-action="Index">Salary Process</a>
+                                }
+                                @if (SLRY_APP != null)
+                                {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrSlryPrcApproval" asp-action="Index">Salary Process Approvals</a>
                                 }
                                 @if (STF_LV_TKT != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStaffLvTktEncash" asp-action="Index">Staff Leave Salary & Air Ticket</a>
+                                }
+                                @if (ENCSH_APP != null)
+                                {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrStaffLvTktEncashApproval" asp-action="Index">Encashment Approvals</a>
                                 }
                                 @if (SLRY_SHT != null)

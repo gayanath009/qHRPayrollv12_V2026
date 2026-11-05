@@ -32,6 +32,9 @@ namespace qHRM.Areas.Payroll.Controllers
 
         public async Task<IActionResult> Index(int? prcId, int? year, int? month)
         {
+            if (HttpContext.Session.GetString("SLRY_APP") == null && HttpContext.Session.GetString("SLRY_PRC") == null && (HttpContext.Session.GetInt32("userGrpId") ?? 0) != 1)
+                return RedirectToPage("/Account/Login", new { area = "Identity" });
+
             int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
             int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
             int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
