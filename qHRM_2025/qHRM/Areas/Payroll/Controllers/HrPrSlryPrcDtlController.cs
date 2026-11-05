@@ -354,6 +354,10 @@ namespace qHRM.Areas.Payroll.Controllers
                 int crtId = HttpContext.Session.GetInt32("userEmpSysId") ?? 1;
                 if (crtId <= 0) crtId = 1;
                 var obj = _payrollContext.GetTopSalaryHeader(entId, eftYr, eftMnt);
+                if (mthod == 3 && obj.WfStat != "Approved" && (HttpContext.Session.GetInt32("userGrpId") ?? 0) != 1)
+                {
+                    return Json(new { ok = false, message = "Salary process must be approved through the workflow before it can be completed." });
+                }
                 obj.PrcStat = Convert.ToInt16(mthod); //Update the Process Status | value '2' - Verified ,  value '3' - Completed;
                 if (mthod == 2) { obj.WfStat = "Verified"; }
                 obj.VrfdBy = crtId;

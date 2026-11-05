@@ -820,9 +820,10 @@
                                 var el = document.getElementById(id);
                                 if (el) el.setAttribute("disabled","");
                             });
+                            // Complete and Generate WPS must remain deactivated until workflow approval completes
                             ["btnCmpltd","btnWps"].forEach(id => {
                                 var el = document.getElementById(id);
-                                if (el) el.removeAttribute("disabled");
+                                if (el) el.setAttribute("disabled","");
                             });
                             loadSalryHeader();
                         }
@@ -870,9 +871,37 @@
             $("#btnSubmitApproval").attr("disabled", "");
             if (wf.wfStat === "PendingLevel1" || wf.wfStat === "PendingFinal" || wf.wfStat === "Approved") {
                 $("#btnSubmitApproval").hide();
-                ["btnPrc", "btnReProcess", "btnToggleReProcess", "btnVrfy", "btnCmpltd"].forEach(id => {
+            }
+        }
+
+        // Gating for "Complete" and "Generate WPS" buttons:
+        // Must remain deactivated until the Approval Workflow is Approved!
+        // Once approved, both "Complete" and "Generate WPS" buttons are activated.
+        if (wf.wfStat === "Approved" || wf.prcStat == 3) {
+            ["btnPrc", "btnReProcess", "btnToggleReProcess", "btnVrfy"].forEach(id => {
+                var el = document.getElementById(id);
+                if (el) el.setAttribute("disabled", "");
+            });
+            ["btnCmpltd", "btnWps"].forEach(id => {
+                var el = document.getElementById(id);
+                if (el) el.removeAttribute("disabled");
+            });
+        } else {
+            // Not yet approved through workflow -> deactivate Complete and Generate WPS
+            ["btnCmpltd", "btnWps"].forEach(id => {
+                var el = document.getElementById(id);
+                if (el) el.setAttribute("disabled", "");
+            });
+
+            if (wf.wfStat === "PendingLevel1" || wf.wfStat === "PendingFinal") {
+                ["btnPrc", "btnReProcess", "btnToggleReProcess", "btnVrfy"].forEach(id => {
                     var el = document.getElementById(id);
                     if (el) el.setAttribute("disabled", "");
+                });
+            } else if (wf.wfStat === "Rejected") {
+                ["btnReProcess", "btnToggleReProcess"].forEach(id => {
+                    var el = document.getElementById(id);
+                    if (el) el.removeAttribute("disabled");
                 });
             }
         }
@@ -1056,11 +1085,18 @@
             success: function (data) {
                 $("#crntStat").val(2);
                 ["btnReProcess","btnVrfy"].forEach(id => document.getElementById(id).setAttribute("disabled",""));
-                ["btnCmpltd","btnWps"].forEach(id => document.getElementById(id).removeAttribute("disabled"));
+                // Keep Complete and Generate WPS deactivated until workflow approval completes
+                ["btnCmpltd","btnWps"].forEach(id => document.getElementById(id).setAttribute("disabled",""));
                 setStatusBadge(2, getMonthName(efMnt) + " " + efYr);
                 $("#modalVerify").modal('hide');
                 loadSalryHeader();
                 toastObj.show(toasts[5]);
+                // Refresh workflow status so Submit for Approval button appears
+                $.ajax({
+                    type: "GET", url: "/Payroll/HrPrSlryPrcDtl/GetWfStatus",
+                    data: { eftYr: efYr, eftMnt: efMnt }, dataType: "json",
+                    success: function (wf) { updateWfUi(wf, getMonthName(efMnt) + " " + efYr); }
+                });
             },
             error: function () { toastObj.show(toasts[1]); }
         });
