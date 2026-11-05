@@ -137,35 +137,45 @@
         box-shadow: var(--shadow-sm);
     }
     .btn-approve {
-        background: #16a34a;
-        color: #ffffff;
-        border: none;
-        padding: 0.5rem 1.25rem;
+        background-color: #1cc88a !important;
+        border: 1px solid #1cc88a !important;
+        color: #ffffff !important;
+        padding: 0.45rem 1rem;
         border-radius: 6px;
-        font-weight: 700;
-        font-size: 0.85rem;
+        font-weight: 600;
+        font-size: 0.82rem;
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
         cursor: pointer;
-        transition: background 0.15s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        transition: background-color 0.15s, border-color 0.15s;
     }
-    .btn-approve:hover { background: #15803d; color: #fff; }
+    .btn-approve:hover {
+        background-color: #17a673 !important;
+        border-color: #169b6b !important;
+        color: #ffffff !important;
+    }
     .btn-reject {
-        background: #dc2626;
-        color: #ffffff;
-        border: none;
-        padding: 0.5rem 1.25rem;
+        background-color: #e74a3b !important;
+        border: 1px solid #e74a3b !important;
+        color: #ffffff !important;
+        padding: 0.45rem 1rem;
         border-radius: 6px;
-        font-weight: 700;
-        font-size: 0.85rem;
+        font-weight: 600;
+        font-size: 0.82rem;
         display: inline-flex;
         align-items: center;
         gap: 0.4rem;
         cursor: pointer;
-        transition: background 0.15s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        transition: background-color 0.15s, border-color 0.15s;
     }
-    .btn-reject:hover { background: #b91c1c; color: #fff; }
+    .btn-reject:hover {
+        background-color: #d52a1a !important;
+        border-color: #ca2819 !important;
+        color: #ffffff !important;
+    }
     .btn-report {
         background: #f8fafc;
         border: 1px solid #cbd5e1;
@@ -390,10 +400,16 @@
 
             <!-- Right: Approval / Rejection Buttons -->
             <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                @if (ViewBag.CanReject == true)
+                {
+                    <button type="button" class="btn btn-danger btn-reject" onclick="openRejectModal();">
+                        <i class="fas fa-times mr-1"></i> Reject Process
+                    </button>
+                }
                 @if (ViewBag.CanApprove == true)
                 {
-                    <button type="button" class="btn-approve" onclick="openApprovalModal();">
-                        <i class="fas fa-check-circle"></i>
+                    <button type="button" class="btn btn-success btn-approve" onclick="openApprovalModal();">
+                        <i class="fas fa-check mr-1"></i>
                         @if (ViewBag.CanApproveFinal == true)
                         {
                             <span>Approve Salary Process (Final Approval)</span>
@@ -402,12 +418,6 @@
                         {
                             <span>Approve Salary Process (Level 1)</span>
                         }
-                    </button>
-                }
-                @if (ViewBag.CanReject == true)
-                {
-                    <button type="button" class="btn-reject" onclick="openRejectModal();">
-                        <i class="fas fa-times-circle"></i> Reject Process
                     </button>
                 }
             </div>
