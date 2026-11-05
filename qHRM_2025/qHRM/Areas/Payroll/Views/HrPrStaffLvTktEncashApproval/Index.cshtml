@@ -168,6 +168,35 @@
         transition: background 0.15s;
     }
     .btn-reject:hover { background: #b91c1c; color: #fff; }
+    .btn-report {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 0.45rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+        transition: all 0.15s ease;
+    }
+    .btn-report:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+    .btn-report-burgundy {
+        border-color: #540033 !important;
+        color: #540033 !important;
+        background: #ffffff !important;
+    }
+    .btn-report-burgundy:hover {
+        background: #fdf2f8 !important;
+        color: #540033 !important;
+        border-color: #540033 !important;
+        text-decoration: none;
+    }
+    .btn-report-burgundy i {
+        color: #540033 !important;
+    }
 
     /* ─── Grid Panel & Table (Look and Feel of HrPrSlryPrcDtl with Black Font) ─── */
     .grid-panel {
@@ -348,11 +377,11 @@
         <!-- ACTION TOOLBAR -->
         <div class="action-toolbar">
             <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
-                <a href="/Payroll/HrPrStaffLvTktEncash/ExportExcel?year=@year&month=@month&staffCat=ALL" class="btn btn-sm btn-success">
-                    <i class="fas fa-file-excel mr-1"></i> Excel Export
+                <a href="/Payroll/HrPrStaffLvTktEncash/ExportExcel?year=@year&month=@month&staffCat=ALL" class="btn-report btn-report-burgundy" style="border-color:#540033;color:#540033;">
+                    <i class="fas fa-file-excel" style="color:#540033;"></i> Excel Export
                 </a>
-                <a href="/Payroll/HrPrStaffLvTktEncash/PrintReport?year=@year&month=@month&staffCat=ALL" target="_blank" class="btn btn-sm btn-info">
-                    <i class="fas fa-print mr-1"></i> Print Settlement Report
+                <a href="/Payroll/HrPrStaffLvTktEncash/PrintReport?year=@year&month=@month&staffCat=ALL" target="_blank" class="btn-report btn-report-burgundy" style="border-color:#540033;color:#540033;">
+                    <i class="fas fa-print" style="color:#540033;"></i> Print Settlement Report
                 </a>
             </div>
 
