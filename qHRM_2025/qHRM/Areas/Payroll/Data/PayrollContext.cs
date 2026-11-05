@@ -3447,9 +3447,9 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
 
                 decimal dailySalary = Math.Round(monthlySalary / 30.0m, 2);
                 decimal totalLeaveSalary;
-                if (netLeaveDays == 30)
+                if (netLeaveDays % 30 == 0 && netLeaveDays > 0)
                 {
-                    totalLeaveSalary = monthlySalary;
+                    totalLeaveSalary = (netLeaveDays / 30) * monthlySalary;
                 }
                 else
                 {
@@ -3521,9 +3521,9 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                 var existing = _hrmContext.HrPrStaffLvTktEncash
                     .FirstOrDefault(x => x.PrcYear == rec.PrcYear && x.PrcMonth == rec.PrcMonth && x.EmpSysId == rec.EmpSysId && x.RecStat == 1);
 
-                if (rec.NetLeaveDays == 30)
+                if (rec.NetLeaveDays % 30 == 0 && rec.NetLeaveDays > 0)
                 {
-                    rec.TotalLeaveSalary = rec.MonthlySalary;
+                    rec.TotalLeaveSalary = (rec.NetLeaveDays / 30) * rec.MonthlySalary;
                 }
                 else
                 {

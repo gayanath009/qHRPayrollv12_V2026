@@ -403,7 +403,7 @@
         tr.data('netdays', netDays);
 
         var monthlySalary = parseFloat(tr.data('salary')) || 0;
-        var leaveSalary = (netDays === 30) ? monthlySalary : Math.round((monthlySalary / 30.0) * netDays * 100) / 100;
+        var leaveSalary = (netDays % 30 === 0 && netDays > 0) ? (netDays / 30) * monthlySalary : Math.round((monthlySalary / 30.0) * netDays * 100) / 100;
         tr.data('leavesalary', leaveSalary);
 
         tr.find('.leave-salary-cell').text(leaveSalary > 0 ? leaveSalary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-");

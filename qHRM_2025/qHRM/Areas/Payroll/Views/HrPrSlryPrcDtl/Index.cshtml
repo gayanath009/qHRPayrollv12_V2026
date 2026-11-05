@@ -192,6 +192,7 @@
     .ci-process  { background: rgba(153,0,73,0.18); color: #990049; }
     .ci-verify   { background: rgba(6,182,212,0.18);  color: #22d3ee; }
     .ci-complete { background: rgba(34,197,94,0.18);  color: #4ade80; }
+    .ci-submit   { background: rgba(84,0,51,0.18); color: #540033; }
 
     .underline { text-decoration: underline; }
 </style>
@@ -291,26 +292,7 @@
                 Run Salary Process
             </button>
 
-            <button type="button" id="btnVrfy" class="action-btn btn-verify" data-toggle="modal" data-target="#modalVerify" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
-                Verify
-            </button>
-
-            <button type="button" id="btnSubmitApproval" class="action-btn" style="background:#540033;color:#ffffff;display:none;" onclick="submitSalaryForApproval();" disabled>
-                <i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow
-            </button>
-
-            <button type="button" id="btnCmpltd" class="action-btn btn-complete" data-toggle="modal" data-target="#modalComplete" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>
-                Complete
-            </button>
-
-            <button type="button" id="btnWps" class="action-btn btn-wps" onclick="runWPSProcess();" disabled>
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
-                Generate WPS
-            </button>
-
-            <!-- Action 5: Salary Re-Process -->
+            <!-- Action: Salary Re-Process -->
             <button type="button" id="btnToggleReProcess" class="action-btn btn-repro" onclick="toggleReProcessPanel();" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/><path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/></svg>
                 Salary Re-Process
@@ -357,6 +339,25 @@
                     Run Re-Process
                 </button>
             </div>
+
+            <button type="button" id="btnVrfy" class="action-btn btn-verify" data-toggle="modal" data-target="#modalVerify" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M13.854 3.646a.5.5 0 0 1 0 .708l-7 7a.5.5 0 0 1-.708 0l-3.5-3.5a.5.5 0 1 1 .708-.708L6.5 10.293l6.646-6.647a.5.5 0 0 1 .708 0z"/></svg>
+                Verify
+            </button>
+
+            <button type="button" id="btnSubmitApproval" class="action-btn" style="background:#540033;color:#ffffff;display:none;" onclick="submitSalaryForApproval();" disabled>
+                <i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow
+            </button>
+
+            <button type="button" id="btnCmpltd" class="action-btn btn-complete" data-toggle="modal" data-target="#modalComplete" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>
+                Complete
+            </button>
+
+            <button type="button" id="btnWps" class="action-btn btn-wps" onclick="runWPSProcess();" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/><path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/></svg>
+                Generate WPS
+            </button>
         </div>
 
         <!-- ─── Grid Panel ─── -->
@@ -557,6 +558,32 @@
             <div class="modal-footer" style="border:none; justify-content:center; gap:0.75rem;">
                 <button type="button" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:var(--clr-surface2); color:var(--clr-muted); border:1px solid var(--clr-border);" data-dismiss="modal">Cancel</button>
                 <button type="button" class="action-btn btn-complete" style="width:auto; padding: 0.55rem 1.5rem;" onclick="runCmpltProcess();">Complete</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Submit for Approval Workflow Confirmation -->
+<div class="modal fade" id="modalSubmitApproval" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="text-align:center; padding-bottom:1rem;">
+            <div class="modal-header" style="border:none; justify-content:flex-end;">
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body" style="padding-top:0;">
+                <div class="confirm-icon ci-submit">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.338L14.13 2.576 6.636 10.07zm-.78-.78L13.424 1.87 1.592 6.603l4.264 2.687z"/>
+                    </svg>
+                </div>
+                <h5 style="color:var(--clr-text); margin-bottom:0.5rem;">Submit for Approval Workflow</h5>
+                <p style="color:var(--clr-muted); font-size:0.85rem;">Are you sure you want to submit this Salary Process for Level 1 Approval?</p>
+            </div>
+            <div class="modal-footer" style="border:none; justify-content:center; gap:0.75rem;">
+                <button type="button" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:var(--clr-surface2); color:var(--clr-muted); border:1px solid var(--clr-border);" data-dismiss="modal">Cancel</button>
+                <button type="button" id="btnConfirmSubmitApproval" class="action-btn" style="width:auto; padding: 0.55rem 1.5rem; background:#540033; color:#ffffff; border:none;" onclick="runSubmitApprovalProcess();">
+                    <i class="fas fa-paper-plane mr-1"></i> Submit for Approval
+                </button>
             </div>
         </div>
     </div>
@@ -857,28 +884,43 @@
             alert("No verified salary process found to submit.");
             return;
         }
-        if (confirm("Are you sure you want to submit this Salary Process for Level 1 Approval?")) {
-            $("#btnSubmitApproval").attr("disabled", "");
-            $.ajax({
-                type: "POST",
-                url: "/Payroll/HrPrSlryPrcDtl/SubmitForApproval",
-                data: { prcId: prcId },
-                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
-                success: function (res) {
-                    if (res.ok) {
-                        alert(res.message);
-                        location.reload();
-                    } else {
-                        alert("Error: " + res.message);
-                        $("#btnSubmitApproval").removeAttr("disabled");
-                    }
-                },
-                error: function () {
-                    alert("Error submitting salary process for approval.");
-                    $("#btnSubmitApproval").removeAttr("disabled");
-                }
-            });
+        $("#modalSubmitApproval").modal("show");
+    }
+
+    function runSubmitApprovalProcess() {
+        var prcId = $("#txtPrcId").val();
+        if (!prcId || prcId == 0) {
+            alert("No verified salary process found to submit.");
+            $("#modalSubmitApproval").modal("hide");
+            return;
         }
+
+        $("#btnConfirmSubmitApproval").prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...');
+        $("#btnSubmitApproval").prop("disabled", true);
+
+        $.ajax({
+            type: "POST",
+            url: "/Payroll/HrPrSlryPrcDtl/SubmitForApproval",
+            data: { prcId: prcId },
+            headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+            success: function (res) {
+                $("#modalSubmitApproval").modal("hide");
+                $("#btnConfirmSubmitApproval").prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval');
+                if (res.ok) {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert("Error: " + res.message);
+                    $("#btnSubmitApproval").prop("disabled", false);
+                }
+            },
+            error: function () {
+                $("#modalSubmitApproval").modal("hide");
+                $("#btnConfirmSubmitApproval").prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval');
+                alert("Error submitting salary process for approval.");
+                $("#btnSubmitApproval").prop("disabled", false);
+            }
+        });
     }
 
     function loadSalryHeader() {
