@@ -72,7 +72,7 @@
         border-top: 2px solid #550033 !important;
         border-bottom: 3px double #550033 !important;
     }
-    .tkt-input {
+    .tkt-input, .netdays-input {
         width: 55px !important;
         text-align: center !important;
         font-weight: 700 !important;
@@ -214,7 +214,7 @@
             <h6 class="m-0 font-weight-bold text-primary">
                 Internal/Outsource Staff Leave Salary & Air Ticket Encashment - @monthName @selectedYear
             </h6>
-            <span class="badge badge-info">Only ticket count is editable</span>
+            <span class="badge badge-info">Eligible leave days and ticket count are editable</span>
         </div>
         <div class="card-body p-0">
             <div class="grid-container">
@@ -285,7 +285,9 @@
                                         <td class="text-center">@emp.NextResetDateStr</td>
                                         <td class="text-center">@emp.ApplicableDays</td>
                                         <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
-                                        <td class="text-center font-weight-bold">@emp.NetLeaveDays</td>
+                                        <td class="text-center">
+                                            <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" />
+                                        </td>
                                         <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
                                         <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
                                         <td class="text-center">
@@ -339,7 +341,9 @@
                                         <td class="text-center">@emp.NextResetDateStr</td>
                                         <td class="text-center">@emp.ApplicableDays</td>
                                         <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
-                                        <td class="text-center font-weight-bold">@emp.NetLeaveDays</td>
+                                        <td class="text-center">
+                                            <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" />
+                                        </td>
                                         <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
                                         <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
                                         <td class="text-center">
@@ -376,6 +380,39 @@
 </div>
 
 <script>
+    function onNetDaysChanged(input) {
+        var tr = $(input).closest('tr');
+        var netDays = parseInt($(input).val());
+        if (isNaN(netDays) || netDays < 0) { netDays = 0; $(input).val(0); }
+        tr.data('netdays', netDays);
+
+        var monthlySalary = parseFloat(tr.data('salary')) || 0;
+        var leaveSalary = (netDays === 30) ? monthlySalary : Math.round((monthlySalary / 30.0) * netDays * 100) / 100;
+        tr.data('leavesalary', leaveSalary);
+
+        tr.find('.leave-salary-cell').text(leaveSalary > 0 ? leaveSalary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-");
+
+        var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
+        var tktPrice = parseFloat(tr.data('tktprice')) || 0;
+        var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
+        var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
+
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+
+        // Remarks update
+        var remarks = "-";
+        if (netDays > 0 && tktCount > 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + " Days Leave Salary & Air Fare Encashment (self & family)";
+        } else if (netDays > 0 && tktCount <= 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + (netDays > 1 ? " Days" : " Day") + " Leave Salary & Air Fare Encashment";
+        } else if (netDays === 0 && tktValue > 0) {
+            remarks = "Air Fare Encashment";
+        }
+        tr.find('.remarks-cell').text(remarks);
+
+        recalcTotals();
+    }
+
     function onTktCountChanged(input) {
         var tr = $(input).closest('tr');
         var tktCount = parseInt($(input).val()) || 0;
@@ -384,10 +421,10 @@
 
         var tktPrice = parseFloat(tr.data('tktprice')) || 0;
         var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
-        var netDays = parseInt(tr.data('netdays')) || 0;
+        var netDays = parseInt(tr.find('.netdays-input').val()) || 0;
 
-        var tktValue = tktCount * tktPrice;
-        var settlement = leaveSalary + tktValue;
+        var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
+        var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
 
         tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
         tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
@@ -416,8 +453,8 @@
             var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
             var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
             var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-            var tktValue = tktCount * tktPrice;
-            var settlement = leaveSalary + tktValue;
+            var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
+            var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
 
             if (cat === 'INTERNAL') {
                 intLeave += leaveSalary;
@@ -456,11 +493,12 @@
         var items = [];
         $('.emp-row').each(function () {
             var tr = $(this);
+            var netDays = parseInt(tr.find('.netdays-input').val()) || 0;
             var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
             var tktPrice = parseFloat(tr.data('tktprice')) || 0;
             var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
-            var tktValue = tktCount * tktPrice;
-            var settlement = leaveSalary + tktValue;
+            var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
+            var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
 
             items.push({
                 encashId: parseInt(tr.data('encashid')) || 0,
@@ -474,7 +512,7 @@
                 applicableDays: parseInt(tr.data('appdays')),
                 eligibleLeaveDays: parseFloat(tr.data('eligdays')),
                 paidLeaveDays: parseFloat(tr.data('paidleave')),
-                netLeaveDays: parseInt(tr.data('netdays')),
+                netLeaveDays: netDays,
                 monthlySalary: parseFloat(tr.data('salary')),
                 dailySalary: parseFloat(tr.data('dailysalary')),
                 totalLeaveSalary: leaveSalary,

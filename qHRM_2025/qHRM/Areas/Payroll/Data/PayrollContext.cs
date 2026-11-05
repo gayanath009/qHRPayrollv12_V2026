@@ -3427,7 +3427,7 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                     paidLeave = pb;
                 }
 
-                int netLeaveDays = Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero));
+                int netLeaveDays = saved != null ? saved.NetLeaveDays : Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero));
 
                 decimal monthlySalary = 0m;
                 if (salaryStructures.TryGetValue(emp.EmpSysId, out var slry))
@@ -3446,7 +3446,15 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                 }
 
                 decimal dailySalary = Math.Round(monthlySalary / 30.0m, 2);
-                decimal totalLeaveSalary = Math.Round(netLeaveDays * dailySalary, 2);
+                decimal totalLeaveSalary;
+                if (netLeaveDays == 30)
+                {
+                    totalLeaveSalary = monthlySalary;
+                }
+                else
+                {
+                    totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 2);
+                }
 
                 int defaultTktCount = 1;
                 if (depCounts.TryGetValue(emp.EmpSysId, out int deps))
@@ -3513,12 +3521,19 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                 var existing = _hrmContext.HrPrStaffLvTktEncash
                     .FirstOrDefault(x => x.PrcYear == rec.PrcYear && x.PrcMonth == rec.PrcMonth && x.EmpSysId == rec.EmpSysId && x.RecStat == 1);
 
+                if (rec.NetLeaveDays == 30)
+                {
+                    rec.TotalLeaveSalary = rec.MonthlySalary;
+                }
+                else
+                {
+                    rec.TotalLeaveSalary = Math.Round((rec.MonthlySalary / 30.0m) * rec.NetLeaveDays, 2);
+                }
+                rec.AirTicketValue = Math.Round(rec.TktCount * rec.TktPrice, 2);
+                rec.TotalSettlement = rec.TotalLeaveSalary + rec.AirTicketValue;
+
                 if (existing != null)
                 {
-                    existing.TktCount = rec.TktCount;
-                    existing.TktPrice = rec.TktPrice;
-                    existing.AirTicketValue = rec.TktCount * rec.TktPrice;
-                    existing.TotalSettlement = existing.TotalLeaveSalary + existing.AirTicketValue;
                     existing.VacationReturnDate = rec.VacationReturnDate;
                     existing.ApplicableDays = rec.ApplicableDays;
                     existing.EligibleLeaveDays = rec.EligibleLeaveDays;
@@ -3527,6 +3542,10 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                     existing.MonthlySalary = rec.MonthlySalary;
                     existing.DailySalary = rec.DailySalary;
                     existing.TotalLeaveSalary = rec.TotalLeaveSalary;
+                    existing.TktCount = rec.TktCount;
+                    existing.TktPrice = rec.TktPrice;
+                    existing.AirTicketValue = rec.AirTicketValue;
+                    existing.TotalSettlement = rec.TotalSettlement;
                     existing.Remarks = rec.Remarks;
                     existing.PrcStat = 2; // Confirmed
                     existing.ModBy = userId;
