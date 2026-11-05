@@ -21,7 +21,7 @@
         --clr-surface: #ffffff;
         --clr-surface2: #f1f5f9;
         --clr-border: #e2e8f0;
-        --clr-text: #0f172a;
+        --clr-text: #000000;
         --clr-muted: #64748b;
         --clr-accent: #6366f1;
         --clr-accent2: #4f46e5;
@@ -34,7 +34,7 @@
     .approval-wrap {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         padding: 0.5rem 1.5rem 2rem;
-        color: var(--clr-text);
+        color: #000000 !important;
     }
 
     .org-hero-card {
@@ -68,7 +68,7 @@
     .sb-rejected { background: rgba(239,68,68,0.15); color: #b91c1c; border: 1px solid #fecaca; }
     .sb-draft { background: rgba(100,116,139,0.15); color: #334155; border: 1px solid #cbd5e1; }
 
-    /* ─── Stat Cards (Identical to HrPrSlryPrcDtl) ─── */
+    /* ─── Stat Cards (Look, color, and feel of HrPrSlryPrcDtl) ─── */
     .stat-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -114,7 +114,7 @@
     .stat-card-val {
         font-size: 1.35rem;
         font-weight: 700;
-        color: var(--clr-text);
+        color: #0f172a;
         margin-top: 0.25rem;
         font-variant-numeric: tabular-nums;
     }
@@ -169,7 +169,7 @@
     }
     .btn-reject:hover { background: #b91c1c; color: #fff; }
 
-    /* ─── Grid Panel & Table (Look and Feel of HrPrSlryPrcDtl) ─── */
+    /* ─── Grid Panel & Table (Look and Feel of HrPrSlryPrcDtl with Black Font) ─── */
     .grid-panel {
         background: var(--clr-surface);
         border: 1px solid var(--clr-border);
@@ -189,7 +189,7 @@
     .grid-panel-hdr h3 {
         font-size: 0.85rem;
         font-weight: 700;
-        color: var(--clr-text);
+        color: #000000 !important;
         margin: 0;
     }
     .grid-inner { padding: 0; }
@@ -202,11 +202,11 @@
     }
     .slry-grid-table th {
         background: #f8fafc !important;
-        color: #64748b !important;
+        color: #475569 !important;
         font-size: 0.72rem !important;
-        font-weight: 600 !important;
+        font-weight: 700 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
+        letter-spacing: 0.05em !important;
         border-top: none !important;
         border-bottom: 1px solid var(--clr-border) !important;
         border-left: 1px solid var(--clr-border) !important;
@@ -216,22 +216,27 @@
         white-space: nowrap !important;
     }
     .slry-grid-table td {
-        background: #ffffff !important;
+        background-color: #ffffff !important;
         border: 1px solid var(--clr-border) !important;
-        color: var(--clr-text) !important;
+        color: #000000 !important;
         font-size: 0.8rem !important;
         padding: 0.55rem 0.75rem !important;
         vertical-align: middle !important;
     }
+    .slry-grid-table td strong {
+        color: #000000 !important;
+    }
     .slry-grid-table tbody tr:nth-child(even) td {
-        background: #f8fafc !important;
+        background-color: #f8fafc !important;
+        color: #000000 !important;
     }
     .slry-grid-table tbody tr:hover td {
-        background: rgba(99,102,241,0.06) !important;
+        background-color: rgba(99,102,241,0.06) !important;
+        color: #000000 !important;
     }
     .slry-grid-table tfoot td {
-        background: #f1f5f9 !important;
-        color: var(--clr-text) !important;
+        background-color: #f1f5f9 !important;
+        color: #000000 !important;
         font-size: 0.8rem !important;
         font-weight: 700 !important;
         border-top: 2px solid var(--clr-border) !important;
@@ -375,7 +380,7 @@
             </div>
         </div>
 
-        <!-- GRID OF EMPLOYEES (Look and feel of HrPrSlryPrcDtl) -->
+        <!-- GRID OF EMPLOYEES (Look and feel of HrPrSlryPrcDtl with Black Text) -->
         <div class="grid-panel">
             <div class="grid-panel-hdr">
                 <h3>
@@ -384,7 +389,7 @@
             </div>
             <div class="grid-inner">
                 <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
-                    <table class="table slry-grid-table mb-0">
+                    <table class="slry-grid-table">
                         <thead style="position: sticky; top: 0; z-index: 10;">
                             <tr>
                                 <th style="width: 80px;">Emp ID</th>
@@ -426,8 +431,8 @@
                                     <td class="text-right font-weight-bold">@r.TotalLeaveSalary.ToString("N2")</td>
                                     <td class="text-center">@r.TktCount</td>
                                     <td class="text-right">@r.AirTicketValue.ToString("N2")</td>
-                                    <td class="text-right font-weight-bold" style="color:#540033;">@r.TotalSettlement.ToString("N2")</td>
-                                    <td style="color: #64748b; font-size: 0.78rem;">@r.Remarks</td>
+                                    <td class="text-right font-weight-bold" style="color:#540033 !important;">@r.TotalSettlement.ToString("N2")</td>
+                                    <td style="color: #000000 !important; font-size: 0.78rem;">@r.Remarks</td>
                                 </tr>
                             }
                         </tbody>
@@ -437,7 +442,7 @@
                                 <td class="text-right font-weight-bold">@records.Sum(x => x.TotalLeaveSalary).ToString("N2")</td>
                                 <td class="text-center">@records.Sum(x => x.TktCount)</td>
                                 <td class="text-right font-weight-bold">@records.Sum(x => x.AirTicketValue).ToString("N2")</td>
-                                <td class="text-right font-weight-bold" style="color:#540033; font-size:0.9rem;">@records.Sum(x => x.TotalSettlement).ToString("N2")</td>
+                                <td class="text-right font-weight-bold" style="color:#540033 !important; font-size:0.9rem;">@records.Sum(x => x.TotalSettlement).ToString("N2")</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -446,7 +451,7 @@
             </div>
         </div>
 
-        <!-- WORKFLOW AUDIT TRAIL / TIMELINE -->
+        <!-- WORKFLOW AUDIT TRAIL / TIMELINE (Black Text) -->
         <div class="grid-panel">
             <div class="grid-panel-hdr">
                 <h3>
@@ -463,7 +468,7 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table class="table slry-grid-table mb-0">
+                        <table class="slry-grid-table">
                             <thead>
                                 <tr>
                                     <th style="width: 140px;">Step</th>
@@ -494,7 +499,7 @@
                                         </td>
                                         <td>@h.ActorName</td>
                                         <td>@h.ActionDateTime.ToString("dd MMM yyyy, hh:mm tt")</td>
-                                        <td style="color: #334155;">@(string.IsNullOrWhiteSpace(h.Comments) ? "—" : h.Comments)</td>
+                                        <td style="color: #000000 !important;">@(string.IsNullOrWhiteSpace(h.Comments) ? "—" : h.Comments)</td>
                                     </tr>
                                 }
                             </tbody>
