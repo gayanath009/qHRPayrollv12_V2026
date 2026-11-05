@@ -114,6 +114,8 @@ namespace qHRM.Areas.Payroll.Controllers
 
                     ViewBag.lstMonth = lstMonth;
                     ViewBag.lstYear = lstYear;
+                    ViewBag.IsWfApproved = (slryPrcHdr != null && slryPrcHdr.WfStat == "Approved");
+                    ViewBag.WfStat = slryPrcHdr?.WfStat ?? "Draft";
                     ViewBag.SelectedMonth = slryPrcHdr.EftMonth;
                     ViewBag.SelectedYear = slryPrcHdr.EftYear;
                     return View();
@@ -151,6 +153,8 @@ namespace qHRM.Areas.Payroll.Controllers
 
                 ViewBag.lstMonth = lstMonth;
                 ViewBag.lstYear = lstYear;
+                ViewBag.IsWfApproved = (slryPrcHdr != null && slryPrcHdr.WfStat == "Approved");
+                ViewBag.WfStat = slryPrcHdr?.WfStat ?? "Draft";
                 ViewBag.SelectedMonth = selMonth;
                 ViewBag.SelectedYear = selYear;
                 ViewBag.DataSource = _payrollContext.GetSlrySlipSndMail("#", 0, selMonth, selYear);
@@ -170,6 +174,11 @@ namespace qHRM.Areas.Payroll.Controllers
             {
                 int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
                 string folderName = $"{efYr}-{efMnt:D2}";
+                var wfHdr = _payrollContext.GetTopSalaryHeader(entId, efYr, efMnt);
+                if (wfHdr == null || wfHdr.WfStat != "Approved")
+                {
+                    return Json(new { ok = false, message = "Payslip generation is disabled until the Salary Process receives final approval from Hasan Sayed." });
+                }
                 string targetDir = Path.Combine(_webHostEnvironment.WebRootPath, "attach", "empPaySlip", folderName);
                 if (!Directory.Exists(targetDir))
                 {
@@ -230,6 +239,12 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
+                int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
+                var wfHdr = _payrollContext.GetTopSalaryHeader(entId, efYr, efMnt);
+                if (wfHdr == null || wfHdr.WfStat != "Approved")
+                {
+                    return Json(new { ok = false, data = "error", message = "Payslip emailing is disabled until the Salary Process receives final approval from Hasan Sayed." });
+                }
                 int n = await SendPaySlipLoop(efYr, efMnt, empIds); 
                 var data = _payrollContext.GetSlrySlipSndMail("#", 0, efMnt, efYr);
                 return Json(new { ok = true, data = data, message = "ok" });
@@ -505,6 +520,11 @@ namespace qHRM.Areas.Payroll.Controllers
             try
             {
                 int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
+                var wfHdr = _payrollContext.GetTopSalaryHeader(entId, obj.EftYr, obj.EftMnt);
+                if (wfHdr != null && wfHdr.WfStat != "Approved")
+                {
+                    return BadRequest("Payslip printing is disabled until the Salary Process receives final approval from Hasan Sayed.");
+                }
                 var ds = _payrollContext.GetSlryDtlByEmpSysIds(entId, "_paysheet", obj.Emp_Id, 0, obj.EftMnt, obj.EftYr);
                 var slryYrMnt = (obj.EftYr > 0 && obj.EftMnt > 0)
                     ? new DateTime(obj.EftYr, obj.EftMnt, 1).ToString("MMMM yyyy")
@@ -582,6 +602,7 @@ namespace qHRM.Areas.Payroll.Controllers
         //}
 
         [HttpPost]
+        [AcceptVerbs("GET", "POST")]
         public IActionResult PrintSlrySht(PrSalarySheetView obj)
         {
             try
@@ -626,6 +647,7 @@ namespace qHRM.Areas.Payroll.Controllers
         }
 
         [HttpPost]
+        [AcceptVerbs("GET", "POST")]
         public IActionResult PrintStaffSalarySheet(PrSalarySheetView obj, int sctn = 0)
         {
             try

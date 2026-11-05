@@ -296,6 +296,10 @@
                 Verify
             </button>
 
+            <button type="button" id="btnSubmitApproval" class="action-btn" style="background:#540033;color:#ffffff;display:none;" onclick="submitSalaryForApproval();" disabled>
+                <i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow
+            </button>
+
             <button type="button" id="btnCmpltd" class="action-btn btn-complete" data-toggle="modal" data-target="#modalComplete" disabled>
                 <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M10.97 4.97a.235.235 0 0 0-.02.022L7.477 9.417 5.384 7.323a.75.75 0 0 0-1.06 1.06L6.97 11.03a.75.75 0 0 0 1.079-.02l3.992-4.99a.75.75 0 0 0-1.071-1.05z"/></svg>
                 Complete
@@ -794,7 +798,13 @@
                                 if (el) el.removeAttribute("disabled");
                             });
                             loadSalryHeader();
-                        } else if (data.data == 3) {
+                        }
+                        $.ajax({
+                            type: "GET", url: "/Payroll/HrPrSlryPrcDtl/GetWfStatus",
+                            data: { eftYr: efYr, eftMnt: efMnt }, dataType: "json",
+                            success: function (wf) { updateWfUi(wf, period); }
+                        });
+                        if (data.data == 3) {
                             ["btnReProcess","btnToggleReProcess","btnVrfy","btnCmpltd"].forEach(id => {
                                 var el = document.getElementById(id);
                                 if (el) el.setAttribute("disabled","");
@@ -805,6 +815,70 @@
                 });
             }
         });
+    }
+
+    function updateWfUi(wf, period) {
+        if (!wf) return;
+        if (wf.prcId) $("#txtPrcId").val(wf.prcId);
+
+        var badgeHtml = "";
+        if (wf.wfStat === "PendingLevel1") {
+            badgeHtml = '<span class="status-badge" style="background:rgba(245,158,11,0.15);color:#b45309;"><span class="dot" style="background:#f59e0b;"></span>Pending Level 1 (Ashhar Zaeem)</span>';
+        } else if (wf.wfStat === "PendingFinal") {
+            badgeHtml = '<span class="status-badge" style="background:rgba(6,182,212,0.15);color:#0e7490;"><span class="dot" style="background:#06b6d4;"></span>Pending Final (Hasan Sayed)</span>';
+        } else if (wf.wfStat === "Approved") {
+            badgeHtml = '<span class="status-badge sb-complete"><span class="dot"></span>Approved (Completed)</span>';
+        } else if (wf.wfStat === "Rejected") {
+            badgeHtml = '<span class="status-badge" style="background:rgba(239,68,68,0.15);color:#b91c1c;"><span class="dot" style="background:#ef4444;"></span>Rejected: ' + (wf.comments || '') + '</span>';
+        }
+
+        if (badgeHtml) {
+            document.getElementById('statStatus').innerHTML = badgeHtml;
+            document.getElementById('gridStatusBadge').innerHTML = badgeHtml;
+        }
+
+        if (wf.canSubmit) {
+            $("#btnSubmitApproval").show().removeAttr("disabled");
+        } else {
+            $("#btnSubmitApproval").attr("disabled", "");
+            if (wf.wfStat === "PendingLevel1" || wf.wfStat === "PendingFinal" || wf.wfStat === "Approved") {
+                $("#btnSubmitApproval").hide();
+                ["btnPrc", "btnReProcess", "btnToggleReProcess", "btnVrfy", "btnCmpltd"].forEach(id => {
+                    var el = document.getElementById(id);
+                    if (el) el.setAttribute("disabled", "");
+                });
+            }
+        }
+    }
+
+    function submitSalaryForApproval() {
+        var prcId = $("#txtPrcId").val();
+        if (!prcId || prcId == 0) {
+            alert("No verified salary process found to submit.");
+            return;
+        }
+        if (confirm("Are you sure you want to submit this Salary Process for Level 1 Approval (Ashhar Zaeem)?")) {
+            $("#btnSubmitApproval").attr("disabled", "");
+            $.ajax({
+                type: "POST",
+                url: "/Payroll/HrPrSlryPrcDtl/SubmitForApproval",
+                data: { prcId: prcId },
+                headers: { "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val() },
+                success: function (res) {
+                    if (res.ok) {
+                        alert(res.message);
+                        location.reload();
+                    } else {
+                        alert("Error: " + res.message);
+                        $("#btnSubmitApproval").removeAttr("disabled");
+                    }
+                },
+                error: function () {
+                    alert("Error submitting salary process for approval.");
+                    $("#btnSubmitApproval").removeAttr("disabled");
+                }
+            });
+        }
     }
 
     function loadSalryHeader() {

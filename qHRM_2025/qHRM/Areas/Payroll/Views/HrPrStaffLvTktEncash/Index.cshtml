@@ -95,7 +95,7 @@
     <div class="d-sm-flex align-items-center justify-content-between mb-3 mt-3">
         <div>
             <h1 class="h3 mb-0 text-gray-800">Staff Leave Salary & Air Ticket Encashment</h1>
-            <p class="text-muted small mb-0">Separate off-cycle payroll run for eligible internal & outsource staff</p>
+            <p class="text-muted small mb-0">Off-cycle payroll run for eligible internal & outsource staff</p>
         </div>
         <div>
             <a href="/Payroll/HrPrStaffLvTktEncash/ExportExcel?year=@selectedYear&month=@selectedMonth&staffCat=@selectedCat" class="btn btn-sm btn-success shadow-sm">
@@ -107,6 +107,22 @@
             <button type="button" class="btn btn-sm btn-primary shadow-sm ml-1" id="btnSaveAll" onclick="saveAllConfirm();">
                 <i class="fas fa-check-circle fa-sm text-white-50 mr-1"></i> Confirm & Save
             </button>
+            @{
+                string wfStat = ViewBag.WfStat as string ?? "Draft";
+                bool canSubmit = ViewBag.CanSubmit == true;
+                string badgeClass = "badge-secondary";
+                if (wfStat == "PendingLevel1" || wfStat == "PendingFinal") { badgeClass = "badge-warning"; }
+                else if (wfStat == "Approved") { badgeClass = "badge-success"; }
+                else if (wfStat == "Rejected") { badgeClass = "badge-danger"; }
+                else if (wfStat == "Verified") { badgeClass = "badge-info"; }
+            }
+            <span class="badge @badgeClass py-2 px-3 ml-2 font-weight-normal"><i class="fas fa-tasks mr-1"></i> Status: @wfStat</span>
+            @if (canSubmit)
+            {
+                <button type="button" class="btn btn-sm btn-warning shadow-sm ml-1" id="btnSubmitEncashWf" onclick="submitEncashmentWorkflow();">
+                    <i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow
+                </button>
+            }
         </div>
     </div>
 
@@ -548,6 +564,31 @@
             error: function (err) {
                 $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check-circle fa-sm mr-1"></i> Confirm & Save');
                 alert("Request error: " + err.statusText);
+            }
+        });
+    }
+
+    function submitEncashmentWorkflow() {
+        if (!confirm("Are you sure you want to submit this Leave Salary & Air Ticket Encashment for Level 1 Approval (Ashhar Zaeem)?")) {
+            return;
+        }
+        $('#btnSubmitEncashWf').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...');
+        $.ajax({
+            type: "POST",
+            url: "/Payroll/HrPrStaffLvTktEncash/SubmitForApproval",
+            data: { year: @selectedYear, month: @selectedMonth },
+            success: function (res) {
+                if (res.ok) {
+                    alert(res.message);
+                    location.reload();
+                } else {
+                    alert("Error: " + res.message);
+                    $('#btnSubmitEncashWf').prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow');
+                }
+            },
+            error: function (err) {
+                alert("Request error: " + err.statusText);
+                $('#btnSubmitEncashWf').prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow');
             }
         });
     }

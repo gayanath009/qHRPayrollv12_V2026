@@ -76,7 +76,8 @@ public class WorkflowController : ApiControllerBase
                 WorkflowName = version.WorkflowDefinition.Name,
                 WorkflowCode = version.WorkflowDefinition.Code,
                 AssociatedLeaveTypes = version.WorkflowDefinition.AssociatedLeaveTypes,
-                TargetWorkType = version.WorkflowDefinition.TargetWorkType
+                TargetWorkType = version.WorkflowDefinition.TargetWorkType,
+                WorkflowType = version.WorkflowDefinition.WorkflowType
             };
         }
         return Ok(dto);
@@ -170,7 +171,8 @@ public class WorkflowController : ApiControllerBase
             Module = dto.Module,
             Category = dto.Category,
             AssociatedLeaveTypes = dto.AssociatedLeaveTypes,
-            TargetWorkType = !string.IsNullOrWhiteSpace(dto.TargetWorkType) ? dto.TargetWorkType : "ALL"
+            TargetWorkType = !string.IsNullOrWhiteSpace(dto.TargetWorkType) ? dto.TargetWorkType : "ALL",
+            WorkflowType = !string.IsNullOrWhiteSpace(dto.WorkflowType) ? dto.WorkflowType : "Leave Approval"
         };
 
         await _context.WorkflowDefinitions.AddAsync(workflow);
@@ -203,6 +205,10 @@ public class WorkflowController : ApiControllerBase
         if (!string.IsNullOrWhiteSpace(dto.TargetWorkType))
         {
             workflow.TargetWorkType = dto.TargetWorkType;
+        }
+        if (!string.IsNullOrWhiteSpace(dto.WorkflowType))
+        {
+            workflow.WorkflowType = dto.WorkflowType;
         }
 
         _context.WorkflowDefinitions.Update(workflow);

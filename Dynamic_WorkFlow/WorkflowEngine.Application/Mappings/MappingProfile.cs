@@ -18,7 +18,7 @@ public class MappingProfile : Profile
             .ForMember(d => d.WorkflowName, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.Name : string.Empty))
             .ForMember(d => d.WorkflowCode, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.Code : string.Empty))
             .ForMember(d => d.AssociatedLeaveTypes, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.AssociatedLeaveTypes : null))
-            .ForMember(d => d.TargetWorkType, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.TargetWorkType : null));
+            .ForMember(d => d.TargetWorkType, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.TargetWorkType : null))`r`n            .ForMember(d => d.WorkflowType, opt => opt.MapFrom(s => s.WorkflowDefinition != null ? s.WorkflowDefinition.WorkflowType : "Leave Approval"));
         
         CreateMap<WorkflowStep, WorkflowStepDto>()
             .ForMember(d => d.SkipConditionGroups, opt => opt.MapFrom(s => s.SkipConditionGroups))

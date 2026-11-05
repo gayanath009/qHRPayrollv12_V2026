@@ -29,6 +29,7 @@ namespace qHRM.Areas.Payroll.Controllers
         private readonly AttnContext _attdContext;
         private readonly DbCommitContext<HrPrSlryPrcHdr> _dbCommitContext;
         private readonly IHostingEnvironment _host;
+        private readonly PayrollWorkflowService _workflowService;
         
 
         public HrPrSlryPrcDtlController(EmployeeContext empContext,
@@ -36,7 +37,8 @@ namespace qHRM.Areas.Payroll.Controllers
                                     PayrollContext payrollContext,
                                     AttnContext attdContext,
                                     DbCommitContext<HrPrSlryPrcHdr> dbCommitContext,
-                                    IHostingEnvironment host
+                                    IHostingEnvironment host,
+                                    PayrollWorkflowService workflowService
 
             )
         {
@@ -46,6 +48,7 @@ namespace qHRM.Areas.Payroll.Controllers
             _attdContext = attdContext;
             _dbCommitContext = dbCommitContext;
             _host = host;
+            _workflowService = workflowService;
         }
 
         public partial class Month
@@ -352,6 +355,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 if (crtId <= 0) crtId = 1;
                 var obj = _payrollContext.GetTopSalaryHeader(entId, eftYr, eftMnt);
                 obj.PrcStat = Convert.ToInt16(mthod); //Update the Process Status | value '2' - Verified ,  value '3' - Completed;
+                if (mthod == 2) { obj.WfStat = "Verified"; }
                 obj.VrfdBy = crtId;
                 obj.VrfdDateTime = DateTime.Now;
                 var x = _dbCommitContext.commitChanges(LogEventTypes.UPD, obj, crtId);
@@ -373,6 +377,51 @@ namespace qHRM.Areas.Payroll.Controllers
             catch (Exception ex)
             {
                 return Json(new { ok = false, data = ex.Message, message = "failed" });
+            }
+        }
+
+        [HttpGet]
+        public async System.Threading.Tasks.Task<JsonResult> GetWfStatus(int eftYr, int eftMnt)
+        {
+            try
+            {
+                int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+                var hdr = _payrollContext.GetTopSalaryHeader(entId, eftYr, eftMnt);
+                if (hdr != null)
+                {
+                    var approvers = await _workflowService.GetWorkflowApproversAsync("Salary Process");
+                    int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                    return Json(new
+                    {
+                        ok = true,
+                        prcId = hdr.PrcId,
+                        prcStat = hdr.PrcStat,
+                        wfStat = string.IsNullOrEmpty(hdr.WfStat) ? (hdr.PrcStat == 2 ? "Verified" : (hdr.PrcStat == 3 ? "Approved" : "Draft")) : hdr.WfStat,
+                        comments = hdr.WfComments,
+                        submittedBy = hdr.WfSubmittedBy,
+                        canSubmit = (userEmpSysId == approvers.InitiatorId || userEmpSysId == 1) && hdr.PrcStat == 2 && (hdr.WfStat == null || hdr.WfStat == "Draft" || hdr.WfStat == "Verified" || hdr.WfStat == "Rejected")
+                    });
+                }
+                return Json(new { ok = false, prcStat = 0, wfStat = "None", canSubmit = false });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async System.Threading.Tasks.Task<IActionResult> SubmitForApproval(int prcId)
+        {
+            try
+            {
+                int crtId = HttpContext.Session.GetInt32("userEmpSysId") ?? 1;
+                var res = await _workflowService.SubmitSalaryProcessAsync(prcId, crtId);
+                return Json(new { ok = res.Success, message = res.Message });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, message = ex.Message });
             }
         }
 

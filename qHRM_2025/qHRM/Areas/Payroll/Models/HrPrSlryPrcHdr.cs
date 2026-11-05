@@ -1,4 +1,4 @@
-﻿using qHRM.Areas.General.Models;
+using qHRM.Areas.General.Models;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -30,6 +30,14 @@ namespace qHRM.Areas.Payroll.Models
         public int? CmpdBy { get; set; }
         public DateTime? VrfdDateTime { get; set; }
         public int? VrfdBy { get; set; }
+
+        public string WfStat { get; set; } = "Draft";
+        public Guid? WfInstId { get; set; }
+        public string WfComments { get; set; }
+        public int? WfSubmittedBy { get; set; }
+        public DateTime? WfSubmittedDateTime { get; set; }
+        public int? WfApprovedBy { get; set; }
+        public DateTime? WfApprovedDateTime { get; set; }
 
         [NotMapped] 
         public string lstEmps { get; set; }

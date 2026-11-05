@@ -14,6 +14,7 @@ public class WorkflowDefinition : BaseEntity
     public string? Category { get; set; }
     public string? AssociatedLeaveTypes { get; set; } // Comma-separated or JSON list of leave codes e.g. "LV_ANL,LV_EMG_PD,LV_EMG_UPD"
     public string? TargetWorkType { get; set; } = "ALL"; // ALL, IN_HOUSE, OUTSOURCED
+    public string? WorkflowType { get; set; } = "Leave Approval"; // Leave Approval, Salary Process, Leave Salary & Air Ticket Encashment
     
     public ICollection<WorkflowVersion> Versions { get; set; } = new List<WorkflowVersion>();
 }

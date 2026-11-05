@@ -13,9 +13,13 @@ namespace qHRM.Areas.Leave.Models
         [Key]
         public int WfCfgId { get; set; }
 
+        [Display(Name = "Workflow Type")]
+        [Required(ErrorMessage = "Please select a Workflow Type")]
+        [StringLength(50)]
+        public string WfType { get; set; } = "Leave Approval";
+
         [Display(Name = "Leave Type")]
-        [Required(ErrorMessage = "Please select a Leave Type")]
-        public int LvTypId { get; set; }
+        public int? LvTypId { get; set; }
 
         [Display(Name = "Workflow Code")]
         [Required(ErrorMessage = "Please enter the Workflow Code")]
@@ -63,6 +67,12 @@ namespace qHRM.Areas.Leave.Models
         [NotMapped] public int? FinanceEmpId              { get; set; }
         [NotMapped] public int? CeoEmpId                  { get; set; }
         [NotMapped] public int? BuHeadEmpId               { get; set; }
+
+        // Payroll & Encashment specific approvers (not mapped to DB)
+        [NotMapped] public int? InitiatorEmpId            { get; set; }
+        [NotMapped] public int? VerifierEmpId             { get; set; }
+        [NotMapped] public int? Level1ApproverEmpId       { get; set; }
+        [NotMapped] public int? FinalApproverEmpId        { get; set; }
 
         // Deserialized policy rules (not mapped to DB)
         [NotMapped] public bool   MedCertRequired  { get; set; }

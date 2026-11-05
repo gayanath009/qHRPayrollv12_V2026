@@ -259,6 +259,7 @@ namespace qHR
             //-------------Payroll----------------//
             services.AddScoped<PayrollContext>();
             services.AddScoped<PrStfLoanContext>();
+            services.AddScoped<qHRM.Areas.Payroll.Data.PayrollWorkflowService>();
 
             //-------------Notification-----------------//
             services.AddScoped<NotifyContext>();

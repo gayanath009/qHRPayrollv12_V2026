@@ -42,26 +42,27 @@ namespace qHRM.Areas.Leave.Controllers
 
             SetPrivileges("LV_WF_CFG");
 
-            var configs = _hrmContext.HrLvWfConfig
-                .Join(_hrmContext.HrLvType,
-                      c => c.LvTypId,
-                      t => t.LvTypId,
-                      (c, t) => new HrLvWfConfig
-                      {
-                          WfCfgId        = c.WfCfgId,
-                          LvTypId        = c.LvTypId,
-                          WfCode         = c.WfCode,
-                          IsEnabled      = c.IsEnabled,
-                          EffDate        = c.EffDate,
-                          ExpDate        = c.ExpDate,
-                          ApproverConfig = c.ApproverConfig,
-                          PolicyRules    = c.PolicyRules,
-                          RecStat        = c.RecStat,
-                          CrtDateTime    = c.CrtDateTime,
-                          LvTypName      = t.NameEng
-                      })
-                .OrderBy(c => c.LvTypName)
-                .ToList();
+            var configs = (from c in _hrmContext.HrLvWfConfig
+                           join t in _hrmContext.HrLvType on c.LvTypId equals t.LvTypId into lj
+                           from t in lj.DefaultIfEmpty()
+                           where c.RecStat == 1
+                           select new HrLvWfConfig
+                           {
+                               WfCfgId        = c.WfCfgId,
+                               WfType         = c.WfType ?? "Leave Approval",
+                               LvTypId        = c.LvTypId,
+                               WfCode         = c.WfCode,
+                               IsEnabled      = c.IsEnabled,
+                               EffDate        = c.EffDate,
+                               ExpDate        = c.ExpDate,
+                               ApproverConfig = c.ApproverConfig,
+                               PolicyRules    = c.PolicyRules,
+                               RecStat        = c.RecStat,
+                               CrtDateTime    = c.CrtDateTime,
+                               LvTypName      = c.LvTypId.HasValue ? (t != null ? t.NameEng : "—") : (c.WfType ?? "—")
+                           })
+                           .OrderBy(c => c.WfType).ThenBy(c => c.LvTypName)
+                           .ToList();
 
             ViewBag.DataSource = configs;
             return View();
@@ -100,31 +101,46 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                // Check for duplicate (same leave type + workflow code)
-                bool exists = _hrmContext.HrLvWfConfig
-                    .Any(c => c.LvTypId == cfg.LvTypId && c.RecStat == 1);
+                if (string.IsNullOrEmpty(cfg.WfType)) cfg.WfType = "Leave Approval";
+
+                // Check for duplicate
+                bool exists = cfg.WfType == "Leave Approval"
+                    ? _hrmContext.HrLvWfConfig.Any(c => (c.WfType == null || c.WfType == "Leave Approval") && c.LvTypId == cfg.LvTypId && c.RecStat == 1)
+                    : _hrmContext.HrLvWfConfig.Any(c => c.WfType == cfg.WfType && c.RecStat == 1);
 
                 if (exists)
                     return RedirectToAction(nameof(Index))
-                        .WithWarning("Leave Workflow Config",
-                            "An active workflow configuration already exists for this leave type. " +
+                        .WithWarning("Workflow Configuration",
+                            $"An active workflow configuration already exists for '{cfg.WfType}'. " +
                             "Please deactivate the existing one first.");
 
-                // Build ApproverConfig JSON from submitted individual employee IDs
-                var approverConfig = new
+                if (cfg.WfType == "Leave Approval")
                 {
-                    OutsourceRecordOwnerEmpId = cfg.OutsourceRecordOwnerEmpId,
-                    ReportingManagerEmpId     = cfg.ReportingManagerEmpId,
-                    HrManagerEmpId            = cfg.HrManagerEmpId,
-                    FinanceEmpId              = cfg.FinanceEmpId,
-                    CeoEmpId                  = cfg.CeoEmpId,
-                    BuHeadEmpId               = cfg.BuHeadEmpId
-                };
-                cfg.ApproverConfig = JsonSerializer.Serialize(approverConfig);
-
-                // Build PolicyRules JSON from submitted rule fields
-                var policyRules = BuildPolicyRulesJson(cfg);
-                cfg.PolicyRules = JsonSerializer.Serialize(policyRules);
+                    var approverConfig = new
+                    {
+                        OutsourceRecordOwnerEmpId = cfg.OutsourceRecordOwnerEmpId,
+                        ReportingManagerEmpId     = cfg.ReportingManagerEmpId,
+                        HrManagerEmpId            = cfg.HrManagerEmpId,
+                        FinanceEmpId              = cfg.FinanceEmpId,
+                        CeoEmpId                  = cfg.CeoEmpId,
+                        BuHeadEmpId               = cfg.BuHeadEmpId
+                    };
+                    cfg.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    cfg.PolicyRules = JsonSerializer.Serialize(BuildPolicyRulesJson(cfg));
+                }
+                else
+                {
+                    var approverConfig = new
+                    {
+                        InitiatorEmpId      = cfg.InitiatorEmpId ?? 6,
+                        VerifierEmpId       = cfg.VerifierEmpId ?? 6,
+                        Level1ApproverEmpId = cfg.Level1ApproverEmpId ?? 452,
+                        FinalApproverEmpId  = cfg.FinalApproverEmpId ?? 11
+                    };
+                    cfg.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    cfg.PolicyRules = "{}";
+                    cfg.LvTypId = null;
+                }
 
                 cfg.CrtId       = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
                 cfg.CrtDateTime = DateTime.Now;
@@ -133,15 +149,18 @@ namespace qHRM.Areas.Leave.Controllers
                 _hrmContext.HrLvWfConfig.Add(cfg);
                 _hrmContext.SaveChanges();
 
-                SyncWorkflowEngineApprovers(cfg);
+                if (cfg.WfType == "Leave Approval")
+                {
+                    SyncWorkflowEngineApprovers(cfg);
+                }
 
                 return RedirectToAction(nameof(Index))
-                    .WithSuccess("Leave Workflow Config", "Configuration saved successfully.");
+                    .WithSuccess("Workflow Configuration", "Configuration saved successfully.");
             }
             catch (Exception ex)
             {
                 return RedirectToAction(nameof(Index))
-                    .WithWarning("Leave Workflow Config", ex.Message);
+                    .WithWarning("Workflow Configuration", ex.Message);
             }
         }
 
@@ -159,7 +178,34 @@ namespace qHRM.Areas.Leave.Controllers
                 return RedirectToAction(nameof(Index)).WithWarning("Leave Workflow Config", "Record not found.");
 
             // Populate Leave Type Name for display
-            cfg.LvTypName = _hrmContext.HrLvType.FirstOrDefault(t => t.LvTypId == cfg.LvTypId)?.NameEng;
+            cfg.LvTypName = cfg.LvTypId.HasValue 
+                ? _hrmContext.HrLvType.FirstOrDefault(t => t.LvTypId == cfg.LvTypId)?.NameEng 
+                : (cfg.WfType ?? "—");
+
+            if (cfg.WfType != "Leave Approval")
+            {
+                if (!string.IsNullOrEmpty(cfg.ApproverConfig) && cfg.ApproverConfig.Trim() != "{}")
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(cfg.ApproverConfig);
+                        var root = doc.RootElement;
+                        cfg.InitiatorEmpId      = GetIntOrNull(root, "InitiatorEmpId") ?? 6;
+                        cfg.VerifierEmpId       = GetIntOrNull(root, "VerifierEmpId") ?? 6;
+                        cfg.Level1ApproverEmpId = GetIntOrNull(root, "Level1ApproverEmpId") ?? 452;
+                        cfg.FinalApproverEmpId  = GetIntOrNull(root, "FinalApproverEmpId") ?? 11;
+                    }
+                    catch { }
+                }
+                if (!cfg.InitiatorEmpId.HasValue) cfg.InitiatorEmpId = 6;
+                if (!cfg.VerifierEmpId.HasValue) cfg.VerifierEmpId = 6;
+                if (!cfg.Level1ApproverEmpId.HasValue) cfg.Level1ApproverEmpId = 452;
+                if (!cfg.FinalApproverEmpId.HasValue) cfg.FinalApproverEmpId = 11;
+
+                SetPrivileges("LV_WF_CFG");
+                LoadDropdowns();
+                return PartialView("_HrLvWfConfig_Edit", cfg);
+            }
 
             // Deserialize stored JSON back into individual fields for the form
             if (!string.IsNullOrEmpty(cfg.ApproverConfig) && cfg.ApproverConfig.Trim() != "{}")
@@ -293,25 +339,43 @@ namespace qHRM.Areas.Leave.Controllers
                 existing.MdfId       = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
                 existing.MdfDateTime = DateTime.Now;
 
-                var approverConfig = new
+                if (existing.WfType == "Leave Approval" || string.IsNullOrEmpty(existing.WfType))
                 {
-                    OutsourceRecordOwnerEmpId = cfg.OutsourceRecordOwnerEmpId,
-                    ReportingManagerEmpId     = cfg.ReportingManagerEmpId,
-                    HrManagerEmpId            = cfg.HrManagerEmpId,
-                    FinanceEmpId              = cfg.FinanceEmpId,
-                    CeoEmpId                  = cfg.CeoEmpId,
-                    BuHeadEmpId               = cfg.BuHeadEmpId
-                };
-                existing.ApproverConfig = JsonSerializer.Serialize(approverConfig);
-                existing.PolicyRules    = JsonSerializer.Serialize(BuildPolicyRulesJson(cfg));
+                    var approverConfig = new
+                    {
+                        OutsourceRecordOwnerEmpId = cfg.OutsourceRecordOwnerEmpId,
+                        ReportingManagerEmpId     = cfg.ReportingManagerEmpId,
+                        HrManagerEmpId            = cfg.HrManagerEmpId,
+                        FinanceEmpId              = cfg.FinanceEmpId,
+                        CeoEmpId                  = cfg.CeoEmpId,
+                        BuHeadEmpId               = cfg.BuHeadEmpId
+                    };
+                    existing.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    existing.PolicyRules    = JsonSerializer.Serialize(BuildPolicyRulesJson(cfg));
 
-                _hrmContext.HrLvWfConfig.Update(existing);
-                _hrmContext.SaveChanges();
+                    _hrmContext.HrLvWfConfig.Update(existing);
+                    _hrmContext.SaveChanges();
 
-                SyncWorkflowEngineApprovers(cfg);
+                    SyncWorkflowEngineApprovers(cfg);
+                }
+                else
+                {
+                    var approverConfig = new
+                    {
+                        InitiatorEmpId      = cfg.InitiatorEmpId ?? 6,
+                        VerifierEmpId       = cfg.VerifierEmpId ?? 6,
+                        Level1ApproverEmpId = cfg.Level1ApproverEmpId ?? 452,
+                        FinalApproverEmpId  = cfg.FinalApproverEmpId ?? 11
+                    };
+                    existing.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    existing.PolicyRules    = "{}";
+
+                    _hrmContext.HrLvWfConfig.Update(existing);
+                    _hrmContext.SaveChanges();
+                }
 
                 return RedirectToAction(nameof(Index))
-                    .WithSuccess("Leave Workflow Config", "Configuration updated successfully.");
+                    .WithSuccess("Workflow Configuration", "Configuration updated successfully.");
             }
             catch (Exception ex)
             {

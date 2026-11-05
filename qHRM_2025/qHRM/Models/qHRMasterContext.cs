@@ -79,6 +79,8 @@ namespace qHRM.Models
         public virtual DbSet<HrLvBalanceTransaction> HrLvBalanceTransaction { get; set; }
         // ─────────────────────────────────────────────────────────────────────
         public virtual DbSet<HrPrAirTicketPrice> HrPrAirTicketPrice { get; set; }
+        public virtual DbSet<HrPrStaffLvTktEncashHdr> HrPrStaffLvTktEncashHdr { get; set; }
+        public virtual DbSet<HrPrWfHistory> HrPrWfHistory { get; set; }
         public virtual DbSet<HrPrStaffLvTktEncash> HrPrStaffLvTktEncash { get; set; }
         public virtual DbSet<HrPrAdHocTrns> HrPrAdHocTrns { get; set; }
         public virtual DbSet<HrPrLopTrns> HrPrLopTrns { get; set; }
@@ -3045,6 +3047,13 @@ namespace qHRM.Models
                     .HasDefaultValueSql("((1))");
 
                 entity.Property(e => e.VrfdBy).HasColumnName("Vrfd_By");
+                entity.Property(e => e.WfStat).HasColumnName("Wf_Stat").HasMaxLength(30);
+                entity.Property(e => e.WfInstId).HasColumnName("Wf_Inst_Id");
+                entity.Property(e => e.WfComments).HasColumnName("Wf_Comments");
+                entity.Property(e => e.WfSubmittedBy).HasColumnName("Wf_Submitted_By");
+                entity.Property(e => e.WfSubmittedDateTime).HasColumnName("Wf_Submitted_DateTime").HasColumnType("datetime");
+                entity.Property(e => e.WfApprovedBy).HasColumnName("Wf_Approved_By");
+                entity.Property(e => e.WfApprovedDateTime).HasColumnName("Wf_Approved_DateTime").HasColumnType("datetime");
 
                 entity.Property(e => e.VrfdDateTime)
                     .HasColumnName("Vrfd_DateTime")
@@ -5574,7 +5583,8 @@ namespace qHRM.Models
                 entity.ToTable("HrLvWfConfig");
 
                 entity.Property(e => e.WfCfgId).HasColumnName("WfCfg_Id");
-                entity.Property(e => e.LvTypId).HasColumnName("LvTyp_Id");
+                entity.Property(e => e.WfType).HasColumnName("Wf_Type").HasMaxLength(50);
+                entity.Property(e => e.LvTypId).HasColumnName("LvTyp_Id").IsRequired(false);
                 entity.Property(e => e.WfCode).HasColumnName("WfCode");
                 entity.Property(e => e.IsEnabled).HasColumnName("Is_Enabled");
                 entity.Property(e => e.EffDate).HasColumnName("Eff_Date").HasColumnType("date");

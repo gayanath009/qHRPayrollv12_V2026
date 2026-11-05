@@ -17,11 +17,13 @@ namespace qHRM.Areas.Payroll.Controllers
     {
         private readonly PayrollContext _payrollContext;
         private readonly qHRMasterContext _hrmContext;
+        private readonly PayrollWorkflowService _workflowService;
 
-        public HrPrStaffLvTktEncashController(PayrollContext payrollContext, qHRMasterContext hrmContext)
+        public HrPrStaffLvTktEncashController(PayrollContext payrollContext, qHRMasterContext hrmContext, PayrollWorkflowService workflowService)
         {
             _payrollContext = payrollContext;
             _hrmContext = hrmContext;
+            _workflowService = workflowService;
         }
 
         public IActionResult Index(int? year, int? month, string staffCat = "OUTSOURCE", bool load = false)
@@ -64,6 +66,11 @@ namespace qHRM.Areas.Payroll.Controllers
 
                 ViewBag.GrandTotal = records.Sum(x => x.TotalSettlement);
             }
+
+            var encashHdr = _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefault(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
+            ViewBag.WfStat = encashHdr?.WfStat ?? "Draft";
+            int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+            ViewBag.CanSubmit = (userEmpSysId == 6 || userEmpSysId == 1) && (encashHdr == null || encashHdr.WfStat == "Draft" || encashHdr.WfStat == "Verified" || encashHdr.WfStat == "Rejected");
 
             return View(records);
         }
@@ -132,6 +139,27 @@ namespace qHRM.Areas.Payroll.Controllers
                 _payrollContext.SaveStaffLvTktEncashList(entities, userId);
 
                 return Json(new { ok = true, message = "Staff Leave Salary & Air Ticket Encashment confirmed successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        public async System.Threading.Tasks.Task<IActionResult> SubmitForApproval(int year, int month)
+        {
+            try
+            {
+                int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? 6;
+                var allRecords = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL");
+                decimal inLv = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
+                decimal inTkt = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
+                decimal outLv = allRecords.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
+                decimal outTkt = allRecords.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.AirTicketValue);
+
+                var res = await _workflowService.SubmitEncashmentAsync(year, month, userId, inLv, inTkt, outLv, outTkt);
+                return Json(new { ok = res.Success, message = res.Message });
             }
             catch (Exception ex)
             {

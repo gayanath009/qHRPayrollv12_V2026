@@ -18,6 +18,15 @@
             </h6>
 
             <div class="form-group">
+                <label asp-for="WfType" class="control-label font-weight-bold">Workflow Type</label>
+                <select asp-for="WfType" id="drpCreateWfType" class="form-control form-control-sm">
+                    <option value="Leave Approval">Leave Approval</option>
+                    <option value="Salary Process">Salary Process</option>
+                    <option value="Leave Salary & Air Ticket Encashment">Leave Salary & Air Ticket Encashment</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="grpCreateLvTyp">
                 <label asp-for="LvTypId" class="control-label"></label>
                 <select asp-for="LvTypId" id="drpLvTyp" class="form-control form-control-sm select2-dropdown"
                         asp-items="@(new SelectList(ViewBag.lstLvTyp, "LvTypId", "NameEng"))">
@@ -29,8 +38,8 @@
             <div class="form-group">
                 <label asp-for="WfCode" class="control-label"></label>
                 <input asp-for="WfCode" id="txtCreateWfCode" class="form-control form-control-sm"
-                       placeholder="e.g. LV_SICK, LV_CSL, LV_ANL" />
-                <small class="text-muted">Must match the Workflow Code in the Dynamic Workflow Engine.</small>
+                       placeholder="e.g. LV_SICK, LV_CSL, SALARY_PROCESS, ENCASH_PROCESS" />
+                <small class="text-muted">Must match the Workflow Code in the Workflow Engine.</small>
                 <span asp-validation-for="WfCode" class="text-danger"></span>
             </div>
 
@@ -54,108 +63,145 @@
 
         <!-- RIGHT COLUMN: Approver Config -->
         <div class="col-md-6">
-            <h6 class="text-muted font-weight-bold mb-3" style="color:#540033!important;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
-                <i class="fas fa-users"></i> Designated Approvers
-            </h6>
-            <small class="text-muted d-block mb-2">
-                Select the specific employee for each workflow step role in execution order.
-            </small>
+            <!-- LEAVE APPROVERS (5 STEPS) -->
+            <div id="secLeaveApprovers">
+                <h6 class="text-muted font-weight-bold mb-3" style="color:#540033!important;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                    <i class="fas fa-users"></i> Designated Approvers (Leave)
+                </h6>
+                <small class="text-muted d-block mb-2">
+                    Select the specific employee for each workflow step role in execution order.
+                </small>
 
-            <div class="form-group">
-                <label class="control-label">Step 1 - Outsource Record Owner</label>
-                <select asp-for="OutsourceRecordOwnerEmpId" id="drpOutsourceOwner" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.OutsourceRecordOwnerEmpId))">
-                    <option value="">-- Select Outsource Record Owner --</option>
-                </select>
+                <div class="form-group">
+                    <label class="control-label">Step 1 - Outsource Record Owner</label>
+                    <select asp-for="OutsourceRecordOwnerEmpId" id="drpOutsourceOwner" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.OutsourceRecordOwnerEmpId))">
+                        <option value="">-- Select Outsource Record Owner --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Step 2 - Reporting Manager</label>
+                    <select asp-for="ReportingManagerEmpId" id="drpRepMgr" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.ReportingManagerEmpId))">
+                        <option value="">-- Select Reporting Manager --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Step 3 - HR</label>
+                    <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
+                        <option value="">-- Select HR Approver --</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label">Step 4 - Finance</label>
+                    <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
+                        <option value="">-- Select Finance Approver --</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="grpCreateCeoStep">
+                    <label class="control-label">Step 5 - CEO (Final Approver)</label>
+                    <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
+                        <option value="">-- Select CEO Approver --</option>
+                    </select>
+                </div>
             </div>
 
-            <div class="form-group">
-                <label class="control-label">Step 2 - Reporting Manager</label>
-                <select asp-for="ReportingManagerEmpId" id="drpRepMgr" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.ReportingManagerEmpId))">
-                    <option value="">-- Select Reporting Manager --</option>
-                </select>
-            </div>
+            <!-- PAYROLL & ENCASHMENT APPROVERS (3 STEPS) -->
+            <div id="secPayrollApprovers" style="display:none;">
+                <h6 class="text-muted font-weight-bold mb-3" style="color:#540033!important;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                    <i class="fas fa-users-cog"></i> Designated Approvers (Payroll / Encashment)
+                </h6>
+                <small class="text-muted d-block mb-2">
+                    Approval flow: Step 1 (Initiator & Verifier) &rarr; Step 2 (Level 1 Approver) &rarr; Step 3 (Final Approver).
+                </small>
 
-            <div class="form-group">
-                <label class="control-label">Step 3 - HR</label>
-                <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
-                    <option value="">-- Select HR Approver --</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label class="control-label">Step 1 - Initiator & Verifier</label>
+                    <select asp-for="InitiatorEmpId" id="drpPayrollInitiator" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.InitiatorEmpId ?? 6))">
+                    </select>
+                    <small class="text-muted">Default: Kaushalya Fonseka (EmpSysId: 6)</small>
+                </div>
 
-            <div class="form-group">
-                <label class="control-label">Step 4 - Finance</label>
-                <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
-                    <option value="">-- Select Finance Approver --</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label class="control-label">Step 2 - Level 1 Approver</label>
+                    <select asp-for="Level1ApproverEmpId" id="drpPayrollLevel1" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.Level1ApproverEmpId ?? 452))">
+                    </select>
+                    <small class="text-muted">Default: Ashhar Zaeem (EmpSysId: 452)</small>
+                </div>
 
-            <div class="form-group" id="grpCreateCeoStep">
-                <label class="control-label">Step 5 - CEO (Final Approver)</label>
-                <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
-                        asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
-                    <option value="">-- Select CEO Approver --</option>
-                </select>
+                <div class="form-group">
+                    <label class="control-label">Step 3 - Final Approver</label>
+                    <select asp-for="FinalApproverEmpId" id="drpPayrollFinal" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinalApproverEmpId ?? 11))">
+                    </select>
+                    <small class="text-muted">Default: Hasan Sayed (EmpSysId: 11)</small>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- POLICY RULES -->
-    <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
-    <h6 class="font-weight-bold mb-3" style="color:#540033;">
-        <i class="fas fa-shield-alt"></i> Policy Rules
-    </h6>
-    <div class="row">
-        <div class="col-md-4">
-            <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <input asp-for="MedCertRequired" type="checkbox" class="custom-control-input" id="chkMedCert" />
-                    <label class="custom-control-label" for="chkMedCert">Medical Certificate Required</label>
+    <div id="secPolicyRules">
+        <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
+        <h6 class="font-weight-bold mb-3" style="color:#540033;">
+            <i class="fas fa-shield-alt"></i> Policy Rules
+        </h6>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input asp-for="MedCertRequired" type="checkbox" class="custom-control-input" id="chkMedCert" />
+                        <label class="custom-control-label" for="chkMedCert">Medical Certificate Required</label>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <div class="custom-control custom-checkbox">
-                    <input asp-for="NoPay" type="checkbox" class="custom-control-input" id="chkNoPay" />
-                    <label class="custom-control-label" for="chkNoPay">No Pay Leave</label>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input asp-for="NoPay" type="checkbox" class="custom-control-input" id="chkNoPay" />
+                        <label class="custom-control-label" for="chkNoPay">No Pay Leave</label>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
                 <div class="custom-control custom-checkbox">
                     <input asp-for="OnceInService" type="checkbox" class="custom-control-input" id="chkOnce" />
                     <label class="custom-control-label" for="chkOnce">Once in Service Only</label>
                 </div>
             </div>
-        </div>
-        <div class="col-md-4">
-            <div class="form-group">
-                <label class="control-label">Payroll Cutoff Day</label>
-                <input asp-for="PayrollCutoffDay" type="number" min="1" max="31" class="form-control form-control-sm" placeholder="20" />
-                <small class="text-muted">Day of month (e.g. 20). Used for Casual Leave.</small>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label class="control-label">Payroll Cutoff Day</label>
+                    <input asp-for="PayrollCutoffDay" type="number" min="1" max="31" class="form-control form-control-sm" placeholder="20" />
+                    <small class="text-muted">Day of month (e.g. 20). Used for Casual Leave.</small>
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Full Pay Days (Sick)</label>
+                    <input asp-for="FullPayDays" type="number" min="0" class="form-control form-control-sm" placeholder="14" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Half Pay Days (Sick)</label>
+                    <input asp-for="HalfPayDays" type="number" min="0" class="form-control form-control-sm" placeholder="28" />
+                </div>
             </div>
-            <div class="form-group">
-                <label class="control-label">Full Pay Days (Sick)</label>
-                <input asp-for="FullPayDays" type="number" min="0" class="form-control form-control-sm" placeholder="14" />
-            </div>
-            <div class="form-group">
-                <label class="control-label">Half Pay Days (Sick)</label>
-                <input asp-for="HalfPayDays" type="number" min="0" class="form-control form-control-sm" placeholder="28" />
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="form-group">
-                <label class="control-label">Max Days per Application</label>
-                <input asp-for="MaxDays" type="number" min="0" class="form-control form-control-sm" placeholder="e.g. 14 for Hajj" />
-            </div>
-            <div class="form-group">
-                <label class="control-label">Annual Entitlement (Days)</label>
-                <input asp-for="AnnualEntitlement" type="number" min="0" class="form-control form-control-sm" placeholder="e.g. 3 for Casual" />
-            </div>
-            <div class="form-group">
-                <label class="control-label">Gender Required (M/F blank=any)</label>
-                <input asp-for="GenderRequired" class="form-control form-control-sm" placeholder="F" maxlength="1" />
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label class="control-label">Max Days per Application</label>
+                    <input asp-for="MaxDays" type="number" min="0" class="form-control form-control-sm" placeholder="e.g. 14 for Hajj" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Annual Entitlement (Days)</label>
+                    <input asp-for="AnnualEntitlement" type="number" min="0" class="form-control form-control-sm" placeholder="e.g. 3 for Casual" />
+                </div>
+                <div class="form-group">
+                    <label class="control-label">Gender Required (M/F blank=any)</label>
+                    <input asp-for="GenderRequired" class="form-control form-control-sm" placeholder="F" maxlength="1" />
+                </div>
             </div>
         </div>
     </div>
@@ -184,6 +230,26 @@
             try { $(this).valid(); } catch (e) { }
         });
 
+        function toggleWfTypeCreate() {
+            var wfType = $('#drpCreateWfType').val();
+            if (wfType === 'Leave Approval') {
+                $('#grpCreateLvTyp').show();
+                $('#secLeaveApprovers').show();
+                $('#secPolicyRules').show();
+                $('#secPayrollApprovers').hide();
+            } else {
+                $('#grpCreateLvTyp').hide();
+                $('#secLeaveApprovers').hide();
+                $('#secPolicyRules').hide();
+                $('#secPayrollApprovers').show();
+                if (wfType === 'Salary Process' && !$('#txtCreateWfCode').val()) {
+                    $('#txtCreateWfCode').val('SALARY_PROCESS');
+                } else if (wfType === 'Leave Salary & Air Ticket Encashment' && !$('#txtCreateWfCode').val()) {
+                    $('#txtCreateWfCode').val('ENCASH_PROCESS');
+                }
+            }
+        }
+
         function toggleCreateCeoStep() {
             var code = ($('#txtCreateWfCode').val() || '').toUpperCase();
             var lvText = ($('#drpLvTyp option:selected').text() || '').toUpperCase();
@@ -194,7 +260,10 @@
             }
         }
 
+        $('#drpCreateWfType').on('change', toggleWfTypeCreate);
         $('#txtCreateWfCode, #drpLvTyp').on('input change', toggleCreateCeoStep);
+
+        toggleWfTypeCreate();
         toggleCreateCeoStep();
     });
 </script>

@@ -178,9 +178,17 @@
 
             <div class="ctrl-divider"></div>
 
+            @if (ViewBag.IsWfApproved != true)
+            {
+                <div class="alert alert-warning p-2 mb-3" style="font-size:0.75rem;border-left:3px solid #f59e0b;background:#fef3c7;color:#92400e;">
+                    <i class="fas fa-lock mr-1"></i>
+                    <strong>Payslip Actions Locked:</strong> Generating and emailing salary slips is disabled until Salary Process receives Final Approval from Hasan Sayed.
+                </div>
+            }
+
             <!-- Action 1: Generate All Pay Slips -->
             <div>
-                <button type="button" class="action-btn btn-generate" id="btnGenerateSlips" onclick="generateAllPaySlips();">
+                <button type="button" class="action-btn btn-generate" id="btnGenerateSlips" onclick="generateAllPaySlips();" @(ViewBag.IsWfApproved == true ? "" : "disabled")>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M14 4.5V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2h5.5L14 4.5zm-3 0A1.5 1.5 0 0 1 9.5 3V1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V4.5h-2z"/>
                         <path d="M4.5 10.5A.5.5 0 0 1 5 10h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 8h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5zm0-2A.5.5 0 0 1 5 6h6a.5.5 0 0 1 0 1H5a.5.5 0 0 1-.5-.5z"/>
@@ -194,7 +202,7 @@
 
             <!-- Action 2: Send Emails -->
             <div style="margin-top: 0.5rem;">
-                <button type="button" class="action-btn btn-send-email" id="btnSendEmails" data-toggle="modal" data-target="#conSndEmail">
+                <button type="button" class="action-btn btn-send-email" id="btnSendEmails" data-toggle="modal" data-target="#conSndEmail" @(ViewBag.IsWfApproved == true ? "" : "disabled")>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.8 14.5a.5.5 0 0 1-.928.028l-3.39-5.932-5.932-3.39a.5.5 0 0 1 .028-.928L15.314.036a.5.5 0 0 1 .54.11zM6.636 10.07l2.761 4.831L14.12 2.066 6.636 10.07zm-.92-1.026L1.099 6.283 13.934 1.88 5.716 9.044z"/>
                     </svg>
@@ -396,6 +404,10 @@
     }
 
     function generateAllPaySlips() {
+        if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
+            alert("Generating pay slips is disabled until the Salary Process receives final approval from Hasan Sayed.");
+            return;
+        }
         var grid = document.getElementById('Grid').ej2_instances[0];
         var efMnt = $("#drpMonth").val();
         var efYr = $("#drpYear").val();
@@ -466,6 +478,11 @@
     var generateAllPaySlps = generateAllPaySlips;
 
     function emailPaySlips() {
+        if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
+            alert("Emailing pay slips is disabled until the Salary Process receives final approval from Hasan Sayed.");
+            $('#conSndEmail').modal('hide');
+            return;
+        }
         var grid = document.getElementById('Grid').ej2_instances[0];
         var empIds = $("#txtEmps").val();
 

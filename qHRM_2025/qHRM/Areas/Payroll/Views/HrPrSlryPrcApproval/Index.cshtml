@@ -1,0 +1,508 @@
+@model qHRM.Areas.Payroll.Models.HrPrSlryPrcHdr
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Salary Process Approval";
+    var hdr = ViewBag.Header as qHRM.Areas.Payroll.Models.HrPrSlryPrcHdr;
+    var salaryList = ViewBag.SalaryList as List<qHRM.Areas.Payroll.Models.PrSlryShtVw> ?? new List<qHRM.Areas.Payroll.Models.PrSlryShtVw>();
+    var history = ViewBag.History as List<qHRM.Areas.Payroll.Models.HrPrWfHistory> ?? new List<qHRM.Areas.Payroll.Models.HrPrWfHistory>();
+    string periodText = hdr != null ? new DateTime(hdr.EftYear, hdr.EftMonth, 1).ToString("MMMM yyyy") : "";
+}
+
+<script src="~/js/ej2.min.js"></script>
+<ejs-scripts></ejs-scripts>
+
+@Html.AntiForgeryToken()
+
+<style>
+    .approval-wrap { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0.5rem 1.5rem 2rem; }
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        position: relative;
+        overflow: hidden;
+    }
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; width: 4px; height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+    .stat-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.03em;
+    }
+    .sb-l1 { background: rgba(245,158,11,0.15); color: #b45309; border: 1px solid #fde68a; }
+    .sb-final { background: rgba(6,182,212,0.15); color: #0e7490; border: 1px solid #a5f3fc; }
+    .sb-approved { background: rgba(34,197,94,0.15); color: #15803d; border: 1px solid #bbf7d0; }
+    .sb-rejected { background: rgba(239,68,68,0.15); color: #b91c1c; border: 1px solid #fecaca; }
+    .sb-draft { background: rgba(100,116,139,0.15); color: #334155; border: 1px solid #cbd5e1; }
+
+    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem; }
+    .metric-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    }
+    .metric-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; }
+    .metric-val { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; }
+    .metric-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 0.1rem; }
+
+    .action-toolbar {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 0.85rem 1.25rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 0.75rem;
+    }
+    .btn-approve {
+        background: #16a34a;
+        color: #ffffff;
+        border: none;
+        padding: 0.5rem 1.25rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .btn-approve:hover { background: #15803d; color: #fff; }
+    .btn-reject {
+        background: #dc2626;
+        color: #ffffff;
+        border: none;
+        padding: 0.5rem 1.25rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        cursor: pointer;
+        transition: background 0.15s;
+    }
+    .btn-reject:hover { background: #b91c1c; color: #fff; }
+    .btn-report {
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: #334155;
+        padding: 0.45rem 0.9rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        text-decoration: none;
+    }
+    .btn-report:hover { background: #f1f5f9; color: #0f172a; text-decoration: none; }
+</style>
+
+<div class="approval-wrap">
+
+    @if (ViewBag.ErrorMessage != null)
+    {
+        <div class="alert alert-danger mt-3">
+            <i class="fas fa-exclamation-triangle mr-2"></i> @ViewBag.ErrorMessage
+        </div>
+    }
+    else
+    {
+        <!-- HERO CARD -->
+        <div class="org-hero-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap" style="gap: 1rem;">
+                <div class="d-flex align-items-center">
+                    <div style="width:42px;height:42px;border-radius:8px;background:linear-gradient(135deg, #540033 0%, #830050 100%);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.15rem;margin-right:1rem;">
+                        <i class="fas fa-file-invoice-dollar"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                            <h2 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin: 0;">
+                                Salary Process Approval &ndash; @periodText
+                            </h2>
+                            @if (hdr.WfStat == "PendingLevel1")
+                            {
+                                <span class="stat-badge sb-l1"><i class="fas fa-clock mr-1"></i> Pending Level 1 Approval (@ViewBag.L1ApproverName)</span>
+                            }
+                            else if (hdr.WfStat == "PendingFinal")
+                            {
+                                <span class="stat-badge sb-final"><i class="fas fa-user-check mr-1"></i> Pending Final Approval (@ViewBag.FinalApproverName)</span>
+                            }
+                            else if (hdr.WfStat == "Approved")
+                            {
+                                <span class="stat-badge sb-approved"><i class="fas fa-check-circle mr-1"></i> Approved (Completed)</span>
+                            }
+                            else if (hdr.WfStat == "Rejected")
+                            {
+                                <span class="stat-badge sb-rejected"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+                            }
+                            else
+                            {
+                                <span class="stat-badge sb-draft"><i class="fas fa-pencil-alt mr-1"></i> Verified (Draft)</span>
+                            }
+                        </div>
+                        <div style="font-size: 0.78rem; color: #64748b; margin-top: 0.2rem;">
+                            Initiator: <strong>@ViewBag.InitiatorName</strong> &bull;
+                            Level 1 Approver: <strong>@ViewBag.L1ApproverName</strong> &bull;
+                            Final Approver: <strong>@ViewBag.FinalApproverName</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <a href="/Payroll/HrPrSlryPrcDtl" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left mr-1"></i> Back to Processing Screen
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- STAT METRICS ROW -->
+        <div class="stat-row">
+            <div class="metric-card">
+                <div class="metric-label">Staff Count</div>
+                <div class="metric-val">@salaryList.Count</div>
+                <div class="metric-sub">Processed Employees</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Gross</div>
+                <div class="metric-val">QAR @(((decimal)ViewBag.GrossTotal).ToString("N2"))</div>
+                <div class="metric-sub">Basic + Allowances</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Total Deductions</div>
+                <div class="metric-val" style="color:#b91c1c;">QAR @(((decimal)ViewBag.DeductionsTotal).ToString("N2"))</div>
+                <div class="metric-sub">Advances, Loans, LOP</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">In-House Staff Net</div>
+                <div class="metric-val" style="color:#0284c7;">QAR @(((decimal)ViewBag.InHouseTotal).ToString("N2"))</div>
+                <div class="metric-sub">Direct Employees</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Outsource Staff Net</div>
+                <div class="metric-val" style="color:#7c3aed;">QAR @(((decimal)ViewBag.OutsourceTotal).ToString("N2"))</div>
+                <div class="metric-sub">Outsourced Staff</div>
+            </div>
+            <div class="metric-card" style="background:#fdf2f8;border-color:#fbcfe8;">
+                <div class="metric-label" style="color:#540033;">Grand Total Net</div>
+                <div class="metric-val" style="color:#540033;">QAR @(((decimal)ViewBag.GrandTotal).ToString("N2"))</div>
+                <div class="metric-sub" style="color:#830050;">Total Payable</div>
+            </div>
+        </div>
+
+        <!-- ACTION TOOLBAR -->
+        <div class="action-toolbar">
+            <!-- Left: Reports Viewing Buttons -->
+            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #475569; margin-right: 0.4rem;">
+                    <i class="fas fa-file-pdf text-danger mr-1"></i> Reports:
+                </span>
+                <a href="/Payroll/HrSalSlip/PrintStaffSalarySheet?EftYr=@hdr.EftYear&EftMnt=@hdr.EftMonth&sctn=0" target="_blank" class="btn-report">
+                    <i class="fas fa-users text-primary"></i> Detailed Staff Sheet (In-House)
+                </a>
+                <a href="/Payroll/HrSalSlip/PrintStaffSalarySheet?EftYr=@hdr.EftYear&EftMnt=@hdr.EftMonth&sctn=1" target="_blank" class="btn-report">
+                    <i class="fas fa-user-friends text-info"></i> Detailed Staff Sheet (Outsource)
+                </a>
+                <a href="/Payroll/HrSalSlip/PrintStaffSalarySheet?EftYr=@hdr.EftYear&EftMnt=@hdr.EftMonth&sctn=2" target="_blank" class="btn-report">
+                    <i class="fas fa-building text-secondary"></i> Detailed Staff Sheet (All)
+                </a>
+                <a href="/Payroll/HrSalSlip/PrintSlrySht?EftYr=@hdr.EftYear&EftMnt=@hdr.EftMonth" target="_blank" class="btn-report" style="border-color:#540033;color:#540033;">
+                    <i class="fas fa-chart-pie" style="color:#540033;"></i> Salary Summary Sheet
+                </a>
+            </div>
+
+            <!-- Right: Approval / Rejection Buttons -->
+            <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                @if (ViewBag.CanApprove == true)
+                {
+                    <button type="button" class="btn-approve" onclick="openApprovalModal();">
+                        <i class="fas fa-check-circle"></i>
+                        @if (ViewBag.CanApproveFinal == true)
+                        {
+                            <span>Approve Salary Process (Final Approval)</span>
+                        }
+                        else
+                        {
+                            <span>Approve Salary Process (Level 1)</span>
+                        }
+                    </button>
+                }
+                @if (ViewBag.CanReject == true)
+                {
+                    <button type="button" class="btn-reject" onclick="openRejectModal();">
+                        <i class="fas fa-times-circle"></i> Reject Process
+                    </button>
+                }
+            </div>
+        </div>
+
+        <!-- SALARY DETAILS GRID -->
+        <div class="card mb-4" style="border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 6px rgba(0,0,0,0.03);">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center" style="border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
+                <h6 style="font-weight: 700; color: #0f172a; margin: 0;">
+                    <i class="fas fa-table mr-1 text-muted"></i> Salary Breakdown Details (@salaryList.Count Employees)
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
+                    <table class="table table-hover table-striped mb-0" style="font-size: 0.8rem;">
+                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                            <tr>
+                                <th>Emp ID</th>
+                                <th>Employee Name</th>
+                                <th>Category</th>
+                                <th>Department</th>
+                                <th>Designation</th>
+                                <th class="text-right">Basic</th>
+                                <th class="text-right">Allowances</th>
+                                <th class="text-right">Gross</th>
+                                <th class="text-right">Deductions</th>
+                                <th class="text-right font-weight-bold" style="color:#540033;">Net Salary</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var emp in salaryList)
+                            {
+                                decimal allowances = emp.HrAlwnc + emp.TrnsAlwnc + emp.PstnAlwnc + emp.ProjAlwnc + emp.IncntvAmt + emp.MobAlwnc + emp.OtAmt + emp.MedAlwnc + emp.BonusAmt + emp.OthrAlwnc + emp.OthrPmt;
+                                <tr>
+                                    <td><strong>@emp.EmpId</strong></td>
+                                    <td>@emp.FullName</td>
+                                    <td>
+                                        @if (emp.InHouse)
+                                        {
+                                            <span class="badge badge-info" style="font-size:0.65rem;">In-House</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-purple" style="font-size:0.65rem;background:#8b5cf6;color:#fff;">Outsource</span>
+                                        }
+                                    </td>
+                                    <td>@emp.DeptName</td>
+                                    <td>@emp.DesigName</td>
+                                    <td class="text-right">@emp.Basic.ToString("N2")</td>
+                                    <td class="text-right">@allowances.ToString("N2")</td>
+                                    <td class="text-right font-weight-bold">@emp.GrsSlry.ToString("N2")</td>
+                                    <td class="text-right text-danger">@emp.TotDctAmt.ToString("N2")</td>
+                                    <td class="text-right font-weight-bold" style="color:#540033;">@emp.NtSlry.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                        <tfoot style="background: #f1f5f9; font-weight: 800;">
+                            <tr>
+                                <td colspan="5">Totals:</td>
+                                <td class="text-right">@salaryList.Sum(x => x.Basic).ToString("N2")</td>
+                                <td class="text-right">@salaryList.Sum(x => x.HrAlwnc + x.TrnsAlwnc + x.PstnAlwnc + x.ProjAlwnc + x.IncntvAmt + x.MobAlwnc + x.OtAmt + x.MedAlwnc + x.BonusAmt + x.OthrAlwnc + x.OthrPmt).ToString("N2")</td>
+                                <td class="text-right">@(((decimal)ViewBag.GrossTotal).ToString("N2"))</td>
+                                <td class="text-right text-danger">@(((decimal)ViewBag.DeductionsTotal).ToString("N2"))</td>
+                                <td class="text-right" style="color:#540033;font-size:0.95rem;">@(((decimal)ViewBag.GrandTotal).ToString("N2"))</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- WORKFLOW AUDIT TRAIL / TIMELINE -->
+        <div class="card" style="border-radius: 12px; border: 1px solid #e2e8f0;">
+            <div class="card-header bg-white" style="border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
+                <h6 style="font-weight: 700; color: #0f172a; margin: 0;">
+                    <i class="fas fa-history mr-1 text-muted"></i> Workflow Approval History & Comments
+                </h6>
+            </div>
+            <div class="card-body p-0">
+                @if (!history.Any())
+                {
+                    <div class="p-3 text-muted text-center" style="font-size: 0.85rem;">
+                        No approval actions logged yet.
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table mb-0" style="font-size: 0.8rem;">
+                            <thead style="background: #f8fafc;">
+                                <tr>
+                                    <th>Step</th>
+                                    <th>Action</th>
+                                    <th>Actor</th>
+                                    <th>Timestamp</th>
+                                    <th>Comments</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var h in history)
+                                {
+                                    <tr>
+                                        <td><strong>@h.StepName</strong></td>
+                                        <td>
+                                            @if (h.Action == "Approved")
+                                            {
+                                                <span class="badge badge-success">Approved</span>
+                                            }
+                                            else if (h.Action == "Rejected")
+                                            {
+                                                <span class="badge badge-danger">Rejected</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-primary">@h.Action</span>
+                                            }
+                                        </td>
+                                        <td>@h.ActorName</td>
+                                        <td>@h.ActionDateTime.ToString("dd MMM yyyy, hh:mm tt")</td>
+                                        <td style="color: #334155;">@(string.IsNullOrWhiteSpace(h.Comments) ? "—" : h.Comments)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+
+</div>
+
+<!-- APPROVE MODAL -->
+<div class="modal fade" id="modalApprove" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="border-top: 4px solid #16a34a;">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold" style="color: #16a34a;">
+                    <i class="fas fa-check-circle mr-1"></i> Approve Salary Process
+                </h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: #475569;">
+                    Are you sure you want to approve the Salary Process for <strong>@periodText</strong>?
+                </p>
+                <div class="form-group">
+                    <label class="control-label font-weight-bold" style="font-size: 0.8rem;">Approval Comments / Remarks (Optional):</label>
+                    <textarea id="txtApproveComments" class="form-control" rows="3" placeholder="Enter comments or remarks..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" id="btnConfirmApprove" class="btn btn-sm btn-success" onclick="executeApprove();">
+                    <i class="fas fa-check mr-1"></i> Confirm Approval
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal fade" id="modalReject" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content" style="border-top: 4px solid #dc2626;">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold" style="color: #dc2626;">
+                    <i class="fas fa-times-circle mr-1"></i> Reject Salary Process
+                </h5>
+                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size: 0.85rem; color: #475569;">
+                    The salary process will be rejected and returned to Kaushalya Fonseka for required corrections.
+                </p>
+                <div class="form-group">
+                    <label class="control-label font-weight-bold" style="font-size: 0.8rem;">Reason for Rejection <span class="text-danger">*</span>:</label>
+                    <textarea id="txtRejectComments" class="form-control" rows="3" placeholder="Please specify why this salary process is rejected..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" id="btnConfirmReject" class="btn btn-sm btn-danger" onclick="executeReject();">
+                    <i class="fas fa-times mr-1"></i> Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var currentPrcId = @(hdr?.PrcId ?? 0);
+
+    function openApprovalModal() {
+        $('#txtApproveComments').val('');
+        $('#modalApprove').modal('show');
+    }
+
+    function openRejectModal() {
+        $('#txtRejectComments').val('');
+        $('#modalReject').modal('show');
+    }
+
+    function executeApprove() {
+        var comments = $('#txtApproveComments').val();
+        $('#btnConfirmApprove').attr('disabled', '').html('<i class="fas fa-spinner fa-spin mr-1"></i> Approving...');
+        $.ajax({
+            url: '/Payroll/HrPrSlryPrcApproval/Approve',
+            type: 'POST',
+            data: { prcId: currentPrcId, comments: comments },
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: function (res) {
+                if (res.ok) {
+                    alert(res.message);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + res.message);
+                    $('#btnConfirmApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
+                }
+            },
+            error: function () {
+                alert('An error occurred during approval.');
+                $('#btnConfirmApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
+            }
+        });
+    }
+
+    function executeReject() {
+        var comments = $('#txtRejectComments').val();
+        if (!comments || !comments.trim()) {
+            alert('Please enter a rejection reason.');
+            $('#txtRejectComments').focus();
+            return;
+        }
+
+        $('#btnConfirmReject').attr('disabled', '').html('<i class="fas fa-spinner fa-spin mr-1"></i> Rejecting...');
+        $.ajax({
+            url: '/Payroll/HrPrSlryPrcApproval/Reject',
+            type: 'POST',
+            data: { prcId: currentPrcId, comments: comments },
+            headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+            success: function (res) {
+                if (res.ok) {
+                    alert(res.message);
+                    window.location.reload();
+                } else {
+                    alert('Error: ' + res.message);
+                    $('#btnConfirmReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
+                }
+            },
+            error: function () {
+                alert('An error occurred during rejection.');
+                $('#btnConfirmReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
+            }
+        });
+    }
+</script>

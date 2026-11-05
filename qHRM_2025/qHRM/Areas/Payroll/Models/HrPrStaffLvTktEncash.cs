@@ -74,6 +74,13 @@ namespace qHRM.Areas.Payroll.Models
         [Column("Prc_Stat")]
         public short PrcStat { get; set; } = 1; // 1 = Draft / Calculated, 2 = Confirmed
 
+        [Column("Wf_Stat")]
+        [StringLength(30)]
+        public string WfStat { get; set; } = "Draft";
+
+        [Column("Wf_Inst_Id")]
+        public Guid? WfInstId { get; set; }
+
         [Column("Crt_By")]
         public int CrtBy { get; set; } = 1;
 

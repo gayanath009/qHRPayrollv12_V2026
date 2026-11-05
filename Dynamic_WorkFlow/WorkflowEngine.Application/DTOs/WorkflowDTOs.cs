@@ -13,7 +13,8 @@ public record WorkflowDefinitionDto(
     string? Category,
     string? AssociatedLeaveTypes,
     string? TargetWorkType,
-    bool IsActive
+    bool IsActive,
+    string? WorkflowType = "Leave Approval"
 );
 
 public record WorkflowVersionDto(
@@ -29,7 +30,8 @@ public record WorkflowVersionDto(
     string? WorkflowName = null,
     string? WorkflowCode = null,
     string? AssociatedLeaveTypes = null,
-    string? TargetWorkType = null
+    string? TargetWorkType = null,
+    string? WorkflowType = null
 );
 
 public record WorkflowStepDto(
@@ -89,7 +91,8 @@ public record CreateWorkflowDto(
     string? Module,
     string? Category,
     string? AssociatedLeaveTypes,
-    string? TargetWorkType
+    string? TargetWorkType,
+    string? WorkflowType = "Leave Approval"
 );
 
 public record UpdateWorkflowDto(
@@ -98,7 +101,8 @@ public record UpdateWorkflowDto(
     string? Module,
     string? Category,
     string? AssociatedLeaveTypes,
-    string? TargetWorkType
+    string? TargetWorkType,
+    string? WorkflowType = "Leave Approval"
 );
 
 public class UpdateStepDto
