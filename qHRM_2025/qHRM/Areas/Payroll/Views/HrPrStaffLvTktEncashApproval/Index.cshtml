@@ -16,14 +16,34 @@
 @Html.AntiForgeryToken()
 
 <style>
-    .approval-wrap { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 0.5rem 1.5rem 2rem; }
+    :root {
+        --clr-bg: #f8fafc;
+        --clr-surface: #ffffff;
+        --clr-surface2: #f1f5f9;
+        --clr-border: #e2e8f0;
+        --clr-text: #0f172a;
+        --clr-muted: #64748b;
+        --clr-accent: #6366f1;
+        --clr-accent2: #4f46e5;
+        --radius: 10px;
+        --radius-sm: 6px;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+    }
+
+    .approval-wrap {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        padding: 0.5rem 1.5rem 2rem;
+        color: var(--clr-text);
+    }
+
     .org-hero-card {
         background: #ffffff;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
+        border-radius: var(--radius);
+        border: 1px solid var(--clr-border);
         padding: 1rem 1.5rem;
         margin-bottom: 1.25rem;
-        box-shadow: 0 1px 6px rgba(2,6,23,0.04);
+        box-shadow: var(--shadow-sm);
         position: relative;
         overflow: hidden;
     }
@@ -33,6 +53,7 @@
         top: 0; left: 0; width: 4px; height: 100%;
         background: linear-gradient(180deg, #540033 0%, #830050 100%);
     }
+
     .stat-badge {
         display: inline-block;
         padding: 4px 12px;
@@ -47,22 +68,67 @@
     .sb-rejected { background: rgba(239,68,68,0.15); color: #b91c1c; border: 1px solid #fecaca; }
     .sb-draft { background: rgba(100,116,139,0.15); color: #334155; border: 1px solid #cbd5e1; }
 
-    .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.85rem; margin-bottom: 1.25rem; }
-    .metric-card {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
-        padding: 0.85rem 1rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+    /* ─── Stat Cards (Identical to HrPrSlryPrcDtl) ─── */
+    .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.25rem;
     }
-    .metric-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: #64748b; letter-spacing: 0.04em; }
-    .metric-val { font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-top: 0.25rem; }
-    .metric-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 0.1rem; }
+    .stat-card {
+        background: var(--clr-surface);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
+        padding: 1.1rem 1.25rem;
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.2s, border-color 0.2s;
+        box-shadow: var(--shadow-sm);
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99,102,241,0.35);
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 3px;
+        border-radius: var(--radius) var(--radius) 0 0;
+    }
+    .stat-card.sc-indigo::before   { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+    .stat-card.sc-green::before    { background: linear-gradient(90deg, #22c55e, #16a34a); }
+    .stat-card.sc-red::before      { background: linear-gradient(90deg, #ef4444, #dc2626); }
+    .stat-card.sc-amber::before    { background: linear-gradient(90deg, #f59e0b, #d97706); }
+    .stat-card.sc-cyan::before     { background: linear-gradient(90deg, #06b6d4, #0891b2); }
+    .stat-card.sc-purple::before   { background: linear-gradient(90deg, #8b5cf6, #a855f7); }
+    .stat-card.sc-burgundy::before { background: linear-gradient(90deg, #540033, #830050); }
 
+    .stat-card-label {
+        font-size: 0.68rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--clr-muted);
+    }
+    .stat-card-val {
+        font-size: 1.35rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        margin-top: 0.25rem;
+        font-variant-numeric: tabular-nums;
+    }
+    .stat-card-sub {
+        font-size: 0.7rem;
+        color: var(--clr-muted);
+        margin-top: 0.2rem;
+    }
+
+    /* ─── Action Toolbar ─── */
     .action-toolbar {
         background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-radius: 10px;
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
         padding: 0.85rem 1.25rem;
         margin-bottom: 1.25rem;
         display: flex;
@@ -70,6 +136,7 @@
         justify-content: space-between;
         flex-wrap: wrap;
         gap: 0.75rem;
+        box-shadow: var(--shadow-sm);
     }
     .btn-approve {
         background: #16a34a;
@@ -101,6 +168,99 @@
         transition: background 0.15s;
     }
     .btn-reject:hover { background: #b91c1c; color: #fff; }
+
+    /* ─── Grid Panel & Table (Look and Feel of HrPrSlryPrcDtl) ─── */
+    .grid-panel {
+        background: var(--clr-surface);
+        border: 1px solid var(--clr-border);
+        border-radius: var(--radius);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+        margin-bottom: 1.5rem;
+    }
+    .grid-panel-hdr {
+        padding: 0.9rem 1.25rem;
+        border-bottom: 1px solid var(--clr-border);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: #ffffff;
+    }
+    .grid-panel-hdr h3 {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        margin: 0;
+    }
+    .grid-inner { padding: 0; }
+
+    .slry-grid-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    .slry-grid-table th {
+        background: #f8fafc !important;
+        color: #64748b !important;
+        font-size: 0.72rem !important;
+        font-weight: 600 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.06em !important;
+        border-top: none !important;
+        border-bottom: 1px solid var(--clr-border) !important;
+        border-left: 1px solid var(--clr-border) !important;
+        border-right: 1px solid var(--clr-border) !important;
+        padding: 0.65rem 0.75rem !important;
+        vertical-align: middle !important;
+        white-space: nowrap !important;
+    }
+    .slry-grid-table td {
+        background: #ffffff !important;
+        border: 1px solid var(--clr-border) !important;
+        color: var(--clr-text) !important;
+        font-size: 0.8rem !important;
+        padding: 0.55rem 0.75rem !important;
+        vertical-align: middle !important;
+    }
+    .slry-grid-table tbody tr:nth-child(even) td {
+        background: #f8fafc !important;
+    }
+    .slry-grid-table tbody tr:hover td {
+        background: rgba(99,102,241,0.06) !important;
+    }
+    .slry-grid-table tfoot td {
+        background: #f1f5f9 !important;
+        color: var(--clr-text) !important;
+        font-size: 0.8rem !important;
+        font-weight: 700 !important;
+        border-top: 2px solid var(--clr-border) !important;
+        padding: 0.7rem 0.75rem !important;
+    }
+
+    /* ─── Category Highlighting ─── */
+    .cat-badge-inhouse {
+        background: #e0f2fe !important;
+        color: #0284c7 !important;
+        border: 1px solid #bae6fd !important;
+        font-weight: 700 !important;
+        font-size: 0.68rem !important;
+        padding: 0.25rem 0.6rem !important;
+        border-radius: 4px !important;
+        display: inline-block;
+        letter-spacing: 0.02em;
+    }
+    .cat-badge-outsource {
+        background: #ede9fe !important;
+        color: #7c3aed !important;
+        border: 1px solid #ddd6fe !important;
+        font-weight: 700 !important;
+        font-size: 0.68rem !important;
+        padding: 0.25rem 0.6rem !important;
+        border-radius: 4px !important;
+        display: inline-block;
+        letter-spacing: 0.02em;
+    }
 </style>
 
 <div class="approval-wrap">
@@ -153,36 +313,30 @@
                         </div>
                     </div>
                 </div>
-
-                <div>
-                    <a href="/Payroll/HrPrStaffLvTktEncash?year=@year&month=@month&load=true" class="btn btn-sm btn-outline-secondary">
-                        <i class="fas fa-arrow-left mr-1"></i> Back to Encashment Screen
-                    </a>
-                </div>
             </div>
         </div>
 
-        <!-- STAT METRICS ROW -->
-        <div class="stat-row">
-            <div class="metric-card">
-                <div class="metric-label">Staff Count</div>
-                <div class="metric-val">@records.Count</div>
-                <div class="metric-sub">Eligible Employees</div>
+        <!-- STAT CARDS (Look, color, and feel of HrPrSlryPrcDtl) -->
+        <div class="stat-grid">
+            <div class="stat-card sc-amber">
+                <div class="stat-card-label">Staff Count</div>
+                <div class="stat-card-val">@records.Count</div>
+                <div class="stat-card-sub">Eligible Employees</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">In-House Staff Settlement</div>
-                <div class="metric-val" style="color:#0284c7;">QAR @((hdr?.TotalInternalSettlement ?? 0).ToString("N2"))</div>
-                <div class="metric-sub">Leave: QAR @((hdr?.TotalInternalLeave ?? 0).ToString("N2")) | Ticket: QAR @((hdr?.TotalInternalTicket ?? 0).ToString("N2"))</div>
+            <div class="stat-card sc-indigo">
+                <div class="stat-card-label">In-House Staff Settlement</div>
+                <div class="stat-card-val">@(((hdr?.TotalInternalSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
+                <div class="stat-card-sub">Leave: @((hdr?.TotalInternalLeave ?? 0).ToString("N2")) | Ticket: @((hdr?.TotalInternalTicket ?? 0).ToString("N2"))</div>
             </div>
-            <div class="metric-card">
-                <div class="metric-label">Outsource Staff Settlement</div>
-                <div class="metric-val" style="color:#7c3aed;">QAR @((hdr?.TotalOutsourceSettlement ?? 0).ToString("N2"))</div>
-                <div class="metric-sub">Leave: QAR @((hdr?.TotalOutsourceLeave ?? 0).ToString("N2")) | Ticket: QAR @((hdr?.TotalOutsourceTicket ?? 0).ToString("N2"))</div>
+            <div class="stat-card sc-purple">
+                <div class="stat-card-label">Outsource Staff Settlement</div>
+                <div class="stat-card-val">@(((hdr?.TotalOutsourceSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
+                <div class="stat-card-sub">Leave: @((hdr?.TotalOutsourceLeave ?? 0).ToString("N2")) | Ticket: @((hdr?.TotalOutsourceTicket ?? 0).ToString("N2"))</div>
             </div>
-            <div class="metric-card" style="background:#fdf2f8;border-color:#fbcfe8;">
-                <div class="metric-label" style="color:#540033;">Grand Total Settlement</div>
-                <div class="metric-val" style="color:#540033;">QAR @((hdr?.GrandTotalSettlement ?? 0).ToString("N2"))</div>
-                <div class="metric-sub" style="color:#830050;">Total Payout</div>
+            <div class="stat-card sc-burgundy">
+                <div class="stat-card-label">Grand Total Settlement</div>
+                <div class="stat-card-val" style="color:#540033;">@(((hdr?.GrandTotalSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:#830050;">QAR</span></div>
+                <div class="stat-card-sub">Total Payout for @monthName @year</div>
             </div>
         </div>
 
@@ -221,31 +375,31 @@
             </div>
         </div>
 
-        <!-- GRID OF EMPLOYEES -->
-        <div class="card mb-4" style="border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 6px rgba(0,0,0,0.03);">
-            <div class="card-header bg-white" style="border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
-                <h6 style="font-weight: 700; color: #0f172a; margin: 0;">
-                    <i class="fas fa-users mr-1 text-muted"></i> Staff Encashment Breakdown (@records.Count Records)
-                </h6>
+        <!-- GRID OF EMPLOYEES (Look and feel of HrPrSlryPrcDtl) -->
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>
+                    <i class="fas fa-users mr-2 text-muted"></i>Staff Encashment Breakdown (@records.Count Records)
+                </h3>
             </div>
-            <div class="card-body p-0">
+            <div class="grid-inner">
                 <div class="table-responsive" style="max-height: 520px; overflow-y: auto;">
-                    <table class="table table-hover table-striped mb-0" style="font-size: 0.78rem;">
-                        <thead style="position: sticky; top: 0; background: #f8fafc; z-index: 10;">
+                    <table class="table slry-grid-table mb-0">
+                        <thead style="position: sticky; top: 0; z-index: 10;">
                             <tr>
-                                <th>Emp ID</th>
+                                <th style="width: 80px;">Emp ID</th>
                                 <th>Full Name</th>
-                                <th>Category</th>
+                                <th style="width: 100px; text-align: center;">Category</th>
                                 <th>Department</th>
-                                <th>Joined Date</th>
-                                <th class="text-center">Next Reset Date</th>
-                                <th class="text-right">Net Days</th>
-                                <th class="text-right">Monthly Salary</th>
-                                <th class="text-right font-weight-bold">Leave Salary</th>
-                                <th class="text-center">Tickets</th>
-                                <th class="text-right">Air Ticket Value</th>
-                                <th class="text-right font-weight-bold" style="color:#540033;">Total Settlement</th>
-                                <th>Remarks</th>
+                                <th style="width: 110px;">Joined Date</th>
+                                <th style="width: 110px;" class="text-center">Next Reset Date</th>
+                                <th style="width: 80px;" class="text-right">Net Days</th>
+                                <th style="width: 110px;" class="text-right">Monthly Salary</th>
+                                <th style="width: 110px;" class="text-right font-weight-bold">Leave Salary</th>
+                                <th style="width: 70px;" class="text-center">Tickets</th>
+                                <th style="width: 110px;" class="text-right">Air Ticket Value</th>
+                                <th style="width: 120px;" class="text-right font-weight-bold">Total Settlement</th>
+                                <th style="min-width: 220px;">Remarks</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -254,14 +408,14 @@
                                 <tr>
                                     <td><strong>@r.EmpId</strong></td>
                                     <td>@r.FullName</td>
-                                    <td>
+                                    <td class="text-center">
                                         @if (r.StaffCategory == "INTERNAL")
                                         {
-                                            <span class="badge badge-info" style="font-size:0.65rem;">In-House</span>
+                                            <span class="cat-badge-inhouse">In-House</span>
                                         }
                                         else
                                         {
-                                            <span class="badge badge-purple" style="font-size:0.65rem;background:#8b5cf6;color:#fff;">Outsource</span>
+                                            <span class="cat-badge-outsource">Outsource</span>
                                         }
                                     </td>
                                     <td>@r.Department</td>
@@ -273,17 +427,17 @@
                                     <td class="text-center">@r.TktCount</td>
                                     <td class="text-right">@r.AirTicketValue.ToString("N2")</td>
                                     <td class="text-right font-weight-bold" style="color:#540033;">@r.TotalSettlement.ToString("N2")</td>
-                                    <td style="color: #64748b;">@r.Remarks</td>
+                                    <td style="color: #64748b; font-size: 0.78rem;">@r.Remarks</td>
                                 </tr>
                             }
                         </tbody>
-                        <tfoot style="background: #f1f5f9; font-weight: 800;">
+                        <tfoot>
                             <tr>
                                 <td colspan="8">Totals:</td>
                                 <td class="text-right font-weight-bold">@records.Sum(x => x.TotalLeaveSalary).ToString("N2")</td>
                                 <td class="text-center">@records.Sum(x => x.TktCount)</td>
                                 <td class="text-right font-weight-bold">@records.Sum(x => x.AirTicketValue).ToString("N2")</td>
-                                <td class="text-right" style="color:#540033;font-size:0.95rem;">@records.Sum(x => x.TotalSettlement).ToString("N2")</td>
+                                <td class="text-right font-weight-bold" style="color:#540033; font-size:0.9rem;">@records.Sum(x => x.TotalSettlement).ToString("N2")</td>
                                 <td></td>
                             </tr>
                         </tfoot>
@@ -293,13 +447,13 @@
         </div>
 
         <!-- WORKFLOW AUDIT TRAIL / TIMELINE -->
-        <div class="card" style="border-radius: 12px; border: 1px solid #e2e8f0;">
-            <div class="card-header bg-white" style="border-bottom: 1px solid #e2e8f0; padding: 0.85rem 1.25rem;">
-                <h6 style="font-weight: 700; color: #0f172a; margin: 0;">
-                    <i class="fas fa-history mr-1 text-muted"></i> Workflow Approval History & Comments
-                </h6>
+        <div class="grid-panel">
+            <div class="grid-panel-hdr">
+                <h3>
+                    <i class="fas fa-history mr-2 text-muted"></i>Workflow Approval History & Comments
+                </h3>
             </div>
-            <div class="card-body p-0">
+            <div class="grid-inner">
                 @if (!history.Any())
                 {
                     <div class="p-3 text-muted text-center" style="font-size: 0.85rem;">
@@ -309,13 +463,13 @@
                 else
                 {
                     <div class="table-responsive">
-                        <table class="table mb-0" style="font-size: 0.8rem;">
-                            <thead style="background: #f8fafc;">
+                        <table class="table slry-grid-table mb-0">
+                            <thead>
                                 <tr>
-                                    <th>Step</th>
-                                    <th>Action</th>
-                                    <th>Actor</th>
-                                    <th>Timestamp</th>
+                                    <th style="width: 140px;">Step</th>
+                                    <th style="width: 110px;">Action</th>
+                                    <th style="width: 180px;">Actor</th>
+                                    <th style="width: 180px;">Timestamp</th>
                                     <th>Comments</th>
                                 </tr>
                             </thead>
@@ -327,15 +481,15 @@
                                         <td>
                                             @if (h.Action == "Approved")
                                             {
-                                                <span class="badge badge-success">Approved</span>
+                                                <span class="badge badge-success" style="font-weight:700;">Approved</span>
                                             }
                                             else if (h.Action == "Rejected")
                                             {
-                                                <span class="badge badge-danger">Rejected</span>
+                                                <span class="badge badge-danger" style="font-weight:700;">Rejected</span>
                                             }
                                             else
                                             {
-                                                <span class="badge badge-primary">@h.Action</span>
+                                                <span class="badge badge-primary" style="font-weight:700;">@h.Action</span>
                                             }
                                         </td>
                                         <td>@h.ActorName</td>
@@ -479,4 +633,3 @@
         });
     }
 </script>
-
