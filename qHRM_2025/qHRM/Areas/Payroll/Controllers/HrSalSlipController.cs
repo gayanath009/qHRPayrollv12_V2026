@@ -400,11 +400,13 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
-                int entId = (int)HttpContext.Session.GetInt32("userEntId");
+                int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
+                var slryPrcHdr = _payrollContext.GetTopSalaryHeader(entId, eftYr, eftMnt);
+                bool isWfApproved = (slryPrcHdr != null && slryPrcHdr.WfStat == "Approved");
                 var _list = _payrollContext.GetSalaryDtl(entId, "_paysheet", 0, eftMnt, eftYr);
 
                 if (_list.Count() > 0)
-                    return Json(new { ok = true, data = _list, message = "ok" });
+                    return Json(new { ok = true, data = _list, isWfApproved = isWfApproved, message = "ok" });
                 else
                 {
                     List<PrSalarySheetView> temp = new List<PrSalarySheetView>
@@ -445,7 +447,7 @@ namespace qHRM.Areas.Payroll.Controllers
                         PrcLogId = 0
                         }
                     };
-                    return Json(new { ok = false, data = temp, message = "ok" });
+                    return Json(new { ok = false, data = temp, isWfApproved = isWfApproved, message = "ok" });
                 }
             }
             catch (Exception ex)

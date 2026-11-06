@@ -223,13 +223,14 @@
                 else if (wfStat == "Rejected") { badgeClass = "badge-danger"; }
                 else if (wfStat == "Verified") { badgeClass = "badge-info"; }
             }
-            <span class="badge @badgeClass py-2 px-3 font-weight-normal" style="font-size: 0.82rem; border-radius: 6px;"><i class="fas fa-tasks mr-1"></i> Status: @wfStat</span>
             @if (canSubmit)
             {
                 <button type="button" class="btn btn-encash-submit shadow-sm" id="btnSubmitEncashWf" onclick="submitEncashmentWorkflow();">
                     <i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow
                 </button>
             }
+            <span class="badge @badgeClass py-2 px-3 font-weight-normal" style="font-size: 0.82rem; border-radius: 6px;"><i class="fas fa-tasks mr-1"></i> Status: @wfStat</span>
+          
         </div>
     </div>
 

@@ -255,32 +255,12 @@
 
             <div class="ctrl-divider"></div>
 
-            @if (ViewBag.IsWfApproved != true)
-            {
-                <div class="alert alert-warning p-2 mb-3" style="font-size:0.75rem;border-left:3px solid #f59e0b;background:#fef3c7;color:#92400e;">
-                    <i class="fas fa-lock mr-1"></i>
-                    <strong>Payslips Locked:</strong> Printing is enabled once Salary Process receives Final Approval.
-                </div>
-            }
-
-            <!-- Action 1: Print Pay Slip -->
-            <div>
-                @using (Html.BeginForm("PrintPaySlip", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "return validateReportForm(event)" }))
-                {
-                    <input id="txtEmps" asp-for="Emp_Id" hidden />
-                    <input id="txtEftYr" asp-for="EftYr" hidden />
-                    <input id="txtEftMnt" asp-for="EftMnt" hidden />
-                    <button type="submit" class="action-btn btn-process" id="btnPaySlip" @(ViewBag.IsWfApproved == true ? "" : "disabled")>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
-                            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
-                        </svg>
-                        <span id="btnPaySlipTxt">Print Pay Slip</span>
-                    </button>
-                }
+            <div id="lockedAlert" class="alert alert-warning p-2 mb-3" style="font-size:0.75rem;border-left:3px solid #f59e0b;background:#fef3c7;color:#92400e; @(ViewBag.IsWfApproved == true ? "display:none;" : "")">
+                <i class="fas fa-lock mr-1"></i>
+                <strong>Payslips Locked:</strong> Printing and Emailing PaySlips will be enabled once Salary Process receives Final Approval.
             </div>
 
-            <!-- Action 2: Salary Sheet Summary -->
+            <!-- Action 1: Salary Sheet Summary -->
             <div>
                 @using (Html.BeginForm("PrintSlrySht", "HrSalSlip", FormMethod.Post, new { target = "_blank" }))
                 {
@@ -296,7 +276,7 @@
                 }
             </div>
 
-            <!-- Action 3: Staff Salary Sheet with Category Dropdown -->
+            <!-- Action 2: Staff Salary Sheet with Category Dropdown -->
             <div style="background: rgba(99,102,241,0.03); border: 1px solid var(--clr-border); border-radius: var(--radius-sm); padding: 0.75rem; margin-bottom: 0.65rem;">
                 <div class="ctrl-label" style="display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.35rem;">
                     <span>Staff Category</span>
@@ -323,7 +303,7 @@
                 }
             </div>
 
-            <!-- Action 5: Download Excel -->
+            <!-- Action 3: Download Excel -->
             <div>
                 @using (Html.BeginForm("GetSlryShtExcel", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "syncStaffCategory()" }))
                 {
@@ -333,16 +313,36 @@
                     <button type="submit" class="action-btn btn-repro">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/>
-                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5v2z"/>
+                            <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2H2z"/>
                         </svg>
                         <span>Download Salary Sheet</span>
                     </button>
                 }
             </div>
 
-            <!-- Action 6: Email Salary Slips -->
+            <!-- Action 4: Print Pay Slip (Moved just before Email Salary Slips) -->
             <div>
-                <a href="/Payroll/HrSalSlip/EmailSlrySlipIndex" class="action-btn btn-email">
+                @using (Html.BeginForm("PrintPaySlip", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "return validateReportForm(event)" }))
+                {
+                    <input id="txtEmps" asp-for="Emp_Id" hidden />
+                    <input id="txtEftYr" asp-for="EftYr" hidden />
+                    <input id="txtEftMnt" asp-for="EftMnt" hidden />
+                    <button type="submit" class="action-btn btn-process" id="btnPaySlip" @(ViewBag.IsWfApproved == true ? "" : "disabled")>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M2.5 8a.5.5 0 1 0 0-1 .5.5 0 0 0 0 1z"/>
+                            <path d="M5 1a2 2 0 0 0-2 2v2H2a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h1v1a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2v-1h1a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-1V3a2 2 0 0 0-2-2H5zM4 3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2H4V3zm1 5a2 2 0 0 0-2 2v1H2a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v-1a2 2 0 0 0-2-2H5zm7 2v3a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1z"/>
+                        </svg>
+                        <span id="btnPaySlipTxt">Print Pay Slip</span>
+                    </button>
+                }
+            </div>
+
+            <!-- Action 5: Email Salary Slips (Deactivated until approved) -->
+            <div>
+                <a href="/Payroll/HrSalSlip/EmailSlrySlipIndex" class="action-btn btn-email" id="btnEmailSlips"
+                   style="@(ViewBag.IsWfApproved == true ? "" : "opacity:0.55; pointer-events:none; cursor:not-allowed;")"
+                   @(ViewBag.IsWfApproved == true ? "" : "disabled")
+                   onclick="return validateEmailSlipsNav(event);">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M0 4a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V4Zm2-1a1 1 0 0 0-1 1v.217l7 4.2 7-4.2V4a1 1 0 0 0-1-1H2Zm13 2.383-4.708 2.825L15 11.105V5.383Zm-.034 6.876-5.64-3.471L8 9.583l-1.326-.795-5.64 3.47A1 1 0 0 0 2 13h12a1 1 0 0 0 .966-.741ZM1 11.105l4.708-2.897L1 5.383v5.722Z"/>
                     </svg>
@@ -513,9 +513,20 @@
         $("#statPeriod").text(mntTxt + " " + yrTxt);
     }
 
+    var isWfApprovedCurrent = @(ViewBag.IsWfApproved == true ? "true" : "false");
+
+    function validateEmailSlipsNav(e) {
+        if (!isWfApprovedCurrent) {
+            alert("Printing and Emailing PaySlips will be enabled once Salary Process receives Final Approval.");
+            if (e) e.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
     function validateReportForm(e) {
-        if (@(ViewBag.IsWfApproved == true ? "true" : "false") !== true) {
-            alert("Payslip printing is locked until the Salary Process receives final approval.");
+        if (!isWfApprovedCurrent) {
+            alert("Printing and Emailing PaySlips will be enabled once Salary Process receives Final Approval.");
             if (e) e.preventDefault();
             return false;
         }
@@ -567,6 +578,18 @@
                 grid.dataSource = res.data;
                 grid.hideSpinner();
                 updateStatCards(res.data);
+                if (typeof res.isWfApproved !== 'undefined') {
+                    isWfApprovedCurrent = (res.isWfApproved === true);
+                    if (isWfApprovedCurrent) {
+                        $("#lockedAlert").hide();
+                        $("#btnPaySlip").removeAttr("disabled");
+                        $("#btnEmailSlips").removeAttr("disabled").css({ "opacity": "", "pointer-events": "", "cursor": "" });
+                    } else {
+                        $("#lockedAlert").show();
+                        $("#btnPaySlip").attr("disabled", "");
+                        $("#btnEmailSlips").attr("disabled", "").css({ "opacity": "0.55", "pointer-events": "none", "cursor": "not-allowed" });
+                    }
+                }
             },
             error: function (xhr, err) {
                 grid.hideSpinner();
