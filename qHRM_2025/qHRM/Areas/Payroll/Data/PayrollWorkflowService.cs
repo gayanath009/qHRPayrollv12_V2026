@@ -585,7 +585,8 @@ namespace qHRM.Areas.Payroll.Data
                         return (false, $"Only the Final Approver (EmpSysId: {approvers.FinalId}) can perform Final approval.");
 
                     hdr.WfStat = "Approved";
-                    hdr.PrcStat = 3; // Approved / Completed
+                    // Keep PrcStat = 2 (Verified / Approved) so current month remains active for Initiator to Generate WPS and manually Complete.
+                    // Do not set PrcStat = 3 automatically on final approval!
                     hdr.WfApprovedBy = actorEmpSysId;
                     hdr.WfApprovedDateTime = DateTime.Now;
 
@@ -614,7 +615,7 @@ namespace qHRM.Areas.Payroll.Data
                         title: "Encashment Approved",
                         heading: $"Encashment Batch for {periodText} is Approved",
                         periodText: periodText,
-                        statusText: "Approved (Completed)",
+                        statusText: "Approved (Ready for Completion)",
                         actorText: $"Final Approval granted by {actorName}",
                         comments: string.IsNullOrWhiteSpace(comments) ? "The encashment batch has received final approval." : $"Final Approver Comments: {comments}",
                         actionButtonText: "View Encashment Details",
@@ -625,7 +626,7 @@ namespace qHRM.Areas.Payroll.Data
                     await PushInAppNotificationSafelyAsync(approvers.InitiatorId, subject, $"Leave Salary & Air Ticket Encashment for {periodText} was approved by {actorName}.", hdr.EncashHdrId, approvalUrl);
                     await PushInAppNotificationSafelyAsync(approvers.Level1Id, subject, $"Leave Salary & Air Ticket Encashment for {periodText} was approved by {actorName}.", hdr.EncashHdrId, approvalUrl);
 
-                    return (true, "Final approval completed successfully.");
+                    return (true, "Final approval completed successfully. Ready for WPS generation and manual completion by initiator.");
                 }
                 else
                 {
