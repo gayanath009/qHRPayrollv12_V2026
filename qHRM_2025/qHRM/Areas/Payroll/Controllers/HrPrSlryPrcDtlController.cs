@@ -359,9 +359,17 @@ namespace qHRM.Areas.Payroll.Controllers
                     return Json(new { ok = false, message = "Salary process must be approved through the workflow before it can be completed." });
                 }
                 obj.PrcStat = Convert.ToInt16(mthod); //Update the Process Status | value '2' - Verified ,  value '3' - Completed;
-                if (mthod == 2) { obj.WfStat = "Verified"; }
-                obj.VrfdBy = crtId;
-                obj.VrfdDateTime = DateTime.Now;
+                if (mthod == 2) 
+                { 
+                    obj.WfStat = "Verified"; 
+                    obj.VrfdBy = crtId;
+                    obj.VrfdDateTime = DateTime.Now;
+                }
+                else if (mthod == 3)
+                {
+                    obj.CmpdBy = crtId;
+                    obj.CmpdDateTime = DateTime.Now;
+                }
                 var x = _dbCommitContext.commitChanges(LogEventTypes.UPD, obj, crtId);
 
 
@@ -395,6 +403,8 @@ namespace qHRM.Areas.Payroll.Controllers
                 {
                     var approvers = await _workflowService.GetWorkflowApproversAsync("Salary Process");
                     int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                    int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                    bool isInitiator = (userEmpSysId == approvers.InitiatorId || userEmpSysId == 1 || userGrpId == 1);
                     return Json(new
                     {
                         ok = true,
@@ -403,7 +413,9 @@ namespace qHRM.Areas.Payroll.Controllers
                         wfStat = string.IsNullOrEmpty(hdr.WfStat) ? (hdr.PrcStat == 2 ? "Verified" : (hdr.PrcStat == 3 ? "Approved" : "Draft")) : hdr.WfStat,
                         comments = hdr.WfComments,
                         submittedBy = hdr.WfSubmittedBy,
-                        canSubmit = (userEmpSysId == approvers.InitiatorId || userEmpSysId == 1) && hdr.PrcStat == 2 && (hdr.WfStat == null || hdr.WfStat == "Draft" || hdr.WfStat == "Verified" || hdr.WfStat == "Rejected")
+                        isInitiator = isInitiator,
+                        canSubmit = isInitiator && hdr.PrcStat == 2 && (hdr.WfStat == null || hdr.WfStat == "Draft" || hdr.WfStat == "Verified" || hdr.WfStat == "Rejected"),
+                        canCompleteAndWps = isInitiator && hdr.WfStat == "Approved" && hdr.PrcStat == 2
                     });
                 }
                 return Json(new { ok = false, prcStat = 0, wfStat = "None", canSubmit = false });

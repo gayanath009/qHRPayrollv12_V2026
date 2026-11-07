@@ -275,9 +275,8 @@ namespace qHRM.Areas.Payroll.Data
                     }
 
                     hdr.WfStat = "Approved";
-                    hdr.PrcStat = 3; // Completed!
-                    hdr.CmpdBy = actorEmpSysId;
-                    hdr.CmpdDateTime = DateTime.Now;
+                    // Do not complete the salary process or advance to next month automatically.
+                    // Keep PrcStat = 2 (Verified) so current month remains active for Initiator to Generate WPS and manually Complete.
                     hdr.WfApprovedBy = actorEmpSysId;
                     hdr.WfApprovedDateTime = DateTime.Now;
                     hdr.WfComments = comments;
@@ -322,7 +321,7 @@ namespace qHRM.Areas.Payroll.Data
                         title: "Salary Process Approved",
                         heading: $"Salary Process for {periodText} is Approved",
                         periodText: periodText,
-                        statusText: "Approved (Completed)",
+                        statusText: "Approved (Ready for Completion)",
                         actorText: $"Final Approval granted by {actorName}",
                         comments: string.IsNullOrWhiteSpace(comments) ? "The salary process has received final approval. Payslip printing and emailing are now enabled." : $"Final Approver Comments: {comments}<br/>Payslip printing and emailing are now enabled.",
                         actionButtonText: "View Salary Process",
@@ -333,7 +332,7 @@ namespace qHRM.Areas.Payroll.Data
                     await PushInAppNotificationSafelyAsync(approvers.InitiatorId, subject, $"Salary process for {periodText} received final approval from {actorName}. Payslips are now active.", prcId, approvalUrl);
                     await PushInAppNotificationSafelyAsync(approvers.Level1Id, subject, $"Salary process for {periodText} received final approval from {actorName}.", prcId, approvalUrl);
 
-                    return (true, $"Final approval completed successfully. Salary process is now marked Completed and payslip actions are unlocked.");
+                    return (true, $"Final approval completed successfully. Salary process is Approved and ready for WPS generation and final completion by the process initiator.");
                 }
                 else
                 {

@@ -523,7 +523,7 @@ namespace qHRM.Areas.Payroll.Controllers
             {
                 int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
                 var wfHdr = _payrollContext.GetTopSalaryHeader(entId, obj.EftYr, obj.EftMnt);
-                if (wfHdr != null && wfHdr.WfStat != "Approved")
+                if (wfHdr == null || wfHdr.WfStat != "Approved")
                 {
                     return BadRequest("Payslip printing is disabled until the Salary Process receives final approval.");
                 }

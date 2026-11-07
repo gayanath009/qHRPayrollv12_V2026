@@ -862,7 +862,11 @@
         } else if (wf.wfStat === "PendingFinal") {
             badgeHtml = '<span class="status-badge" style="background:rgba(6,182,212,0.15);color:#0e7490;"><span class="dot" style="background:#06b6d4;"></span>Pending Final (Hasan Sayed)</span>';
         } else if (wf.wfStat === "Approved") {
-            badgeHtml = '<span class="status-badge sb-complete"><span class="dot"></span>Approved (Completed)</span>';
+            if (wf.prcStat == 3) {
+                badgeHtml = '<span class="status-badge sb-complete"><span class="dot"></span>Approved (Completed)</span>';
+            } else {
+                badgeHtml = '<span class="status-badge" style="background:rgba(34,197,94,0.15);color:#16a34a;"><span class="dot" style="background:#22c55e;"></span>Approved – Ready for WPS / Complete</span>';
+            }
         } else if (wf.wfStat === "Rejected") {
             badgeHtml = '<span class="status-badge" style="background:rgba(239,68,68,0.15);color:#b91c1c;"><span class="dot" style="background:#ef4444;"></span>Rejected: ' + (wf.comments || '') + '</span>';
         }
@@ -893,12 +897,23 @@
                 var elC = document.getElementById("btnCmpltd");
                 if (elC) elC.setAttribute("disabled", "");
                 var elW = document.getElementById("btnWps");
-                if (elW) elW.removeAttribute("disabled");
+                if (elW) {
+                    if (wf.isInitiator) { elW.removeAttribute("disabled"); }
+                    else { elW.setAttribute("disabled", ""); }
+                }
             } else {
-                ["btnCmpltd", "btnWps"].forEach(id => {
-                    var el = document.getElementById(id);
-                    if (el) el.removeAttribute("disabled");
-                });
+                // Approved by workflow: enable Complete and Generate WPS for process initiator to execute manually
+                if (wf.isInitiator) {
+                    ["btnCmpltd", "btnWps"].forEach(id => {
+                        var el = document.getElementById(id);
+                        if (el) el.removeAttribute("disabled");
+                    });
+                } else {
+                    ["btnCmpltd", "btnWps"].forEach(id => {
+                        var el = document.getElementById(id);
+                        if (el) el.setAttribute("disabled", "");
+                    });
+                }
             }
         } else {
             // Not yet approved through workflow -> deactivate Complete and Generate WPS
