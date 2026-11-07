@@ -633,15 +633,14 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
-                    alert(res.message);
-                    window.location.reload();
+                    showFlashToastAndReload("Encashment Approval", res.message, "success");
                 } else {
-                    alert('Error: ' + res.message);
+                    showAppNotification("Encashment Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmEncashApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
                 }
             },
             error: function () {
-                alert('An error occurred during approval.');
+                showAppNotification("Encashment Approval", "An error occurred during approval.", "danger");
                 $('#btnConfirmEncashApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
             }
         });
@@ -650,7 +649,7 @@
     function executeEncashReject() {
         var comments = $('#txtEncashRejectComments').val();
         if (!comments || !comments.trim()) {
-            alert('Please enter a rejection reason.');
+            showAppNotification("Encashment Approval", "Please enter a rejection reason.", "warning");
             $('#txtEncashRejectComments').focus();
             return;
         }
@@ -663,15 +662,14 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
-                    alert(res.message);
-                    window.location.reload();
+                    showFlashToastAndReload("Encashment Approval", res.message, "success");
                 } else {
-                    alert('Error: ' + res.message);
+                    showAppNotification("Encashment Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmEncashReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
                 }
             },
             error: function () {
-                alert('An error occurred during rejection.');
+                showAppNotification("Encashment Approval", "An error occurred during rejection.", "danger");
                 $('#btnConfirmEncashReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
             }
         });

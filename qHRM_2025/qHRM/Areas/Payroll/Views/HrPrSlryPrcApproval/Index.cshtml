@@ -631,15 +631,14 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
-                    alert(res.message);
-                    window.location.reload();
+                    showFlashToastAndReload("Salary Process Approval", res.message, "success");
                 } else {
-                    alert('Error: ' + res.message);
+                    showAppNotification("Salary Process Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
                 }
             },
             error: function () {
-                alert('An error occurred during approval.');
+                showAppNotification("Salary Process Approval", "An error occurred during approval.", "danger");
                 $('#btnConfirmApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
             }
         });
@@ -648,7 +647,7 @@
     function executeReject() {
         var comments = $('#txtRejectComments').val();
         if (!comments || !comments.trim()) {
-            alert('Please enter a rejection reason.');
+            showAppNotification("Salary Process Approval", "Please enter a rejection reason.", "warning");
             $('#txtRejectComments').focus();
             return;
         }
@@ -661,15 +660,14 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
-                    alert(res.message);
-                    window.location.reload();
+                    showFlashToastAndReload("Salary Process Approval", res.message, "success");
                 } else {
-                    alert('Error: ' + res.message);
+                    showAppNotification("Salary Process Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
                 }
             },
             error: function () {
-                alert('An error occurred during rejection.');
+                showAppNotification("Salary Process Approval", "An error occurred during rejection.", "danger");
                 $('#btnConfirmReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
             }
         });

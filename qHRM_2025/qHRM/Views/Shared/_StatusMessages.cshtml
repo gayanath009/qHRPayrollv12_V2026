@@ -1,15 +1,163 @@
-﻿@{
+@{
     var type = (string)TempData["_alert.type"];
     var title = (string)TempData["_alert.title"];
     var body = (string)TempData["_alert.body"];
 }
 
+<style>
+    .alert-container {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+    .alert-container .alert, .app-toast-alert {
+        border-radius: 8px !important;
+        padding: 0.75rem 1.25rem !important;
+        font-size: 0.88rem !important;
+        line-height: 1.4 !important;
+        margin-bottom: 0.85rem !important;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.04) !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    }
+    .alert-container .alert-success, .app-toast-alert.alert-success {
+        background-color: #d2f4e8 !important;
+        border: 1px solid #bff0de !important;
+        border-left: 4px solid #10b981 !important;
+        color: #0f6848 !important;
+    }
+    .alert-container .alert-success strong, .app-toast-alert.alert-success strong {
+        color: #093b29 !important;
+        font-weight: 700 !important;
+        margin-right: 0.45rem !important;
+    }
+    .alert-container .alert-danger, .app-toast-alert.alert-danger {
+        background-color: #fde8e8 !important;
+        border: 1px solid #f8b4b4 !important;
+        border-left: 4px solid #ef4444 !important;
+        color: #9b1c1c !important;
+    }
+    .alert-container .alert-danger strong, .app-toast-alert.alert-danger strong {
+        color: #771d1d !important;
+        font-weight: 700 !important;
+        margin-right: 0.45rem !important;
+    }
+    .alert-container .alert-warning, .app-toast-alert.alert-warning {
+        background-color: #fef3c7 !important;
+        border: 1px solid #fde68a !important;
+        border-left: 4px solid #f59e0b !important;
+        color: #92400e !important;
+    }
+    .alert-container .alert-warning strong, .app-toast-alert.alert-warning strong {
+        color: #78350f !important;
+        font-weight: 700 !important;
+        margin-right: 0.45rem !important;
+    }
+    .alert-container .alert-info, .app-toast-alert.alert-info {
+        background-color: #e0f2fe !important;
+        border: 1px solid #bae6fd !important;
+        border-left: 4px solid #0284c7 !important;
+        color: #075985 !important;
+    }
+    .alert-container .alert-info strong, .app-toast-alert.alert-info strong {
+        color: #034466 !important;
+        font-weight: 700 !important;
+        margin-right: 0.45rem !important;
+    }
+    .alert-container .alert .close, .app-toast-alert .close {
+        position: relative !important;
+        top: 0 !important;
+        right: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        font-size: 1.35rem !important;
+        opacity: 0.5 !important;
+        cursor: pointer !important;
+        line-height: 1 !important;
+        margin-left: 1rem !important;
+        color: inherit !important;
+    }
+    .alert-container .alert .close:hover, .app-toast-alert .close:hover {
+        opacity: 0.9 !important;
+    }
+</style>
+
 <div class="alert-container">
+    <div id="appGlobalToastContainer"></div>
     @if (!string.IsNullOrEmpty(type))
     {
         <div class="alert alert-@type alert-dismissible" role="alert">
+            <div>
+                <strong>@title</strong> @body
+            </div>
             <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <strong>@title</strong> @body
         </div>
     }
 </div>
+
+<script>
+    function showAppNotification(title, message, type, duration, callback) {
+        type = type || 'success';
+        if (type === 'error') type = 'danger';
+        duration = duration !== undefined ? duration : 4500;
+
+        var container = $('#appGlobalToastContainer');
+        if (container.length === 0) {
+            var alertCont = $('.alert-container');
+            if (alertCont.length > 0) {
+                alertCont.prepend('<div id="appGlobalToastContainer"></div>');
+            } else if ($('.org-hero-card').length > 0) {
+                $('.org-hero-card').before('<div id="appGlobalToastContainer" style="margin: 0.75rem 2rem 0.5rem 2rem;"></div>');
+            } else {
+                $('body').prepend('<div id="appGlobalToastContainer" style="margin: 1rem 2rem;"></div>');
+            }
+            container = $('#appGlobalToastContainer');
+        }
+
+        var alertHtml = $(
+            '<div class="app-toast-alert alert alert-' + type + ' alert-dismissible fade show" role="alert">' +
+            '  <div>' +
+            (title ? '<strong>' + title + '</strong> ' : '') +
+            '    <span>' + message + '</span>' +
+            '  </div>' +
+            '  <button type="button" class="close" data-dismiss="alert" aria-label="Close">' +
+            '    <span aria-hidden="true">&times;</span>' +
+            '  </button>' +
+            '</div>'
+        );
+
+        container.empty().append(alertHtml);
+
+        if (duration > 0) {
+            setTimeout(function () {
+                alertHtml.fadeOut(350, function () {
+                    $(this).remove();
+                    if (typeof callback === 'function') callback();
+                });
+            }, duration);
+        }
+    }
+
+    function showFlashToastAndReload(title, message, type) {
+        sessionStorage.setItem('app_flash_toast', JSON.stringify({
+            title: title,
+            message: message,
+            type: type || 'success'
+        }));
+        location.reload();
+    }
+
+    // Auto-check flash on load
+    $(document).ready(function () {
+        var flashData = sessionStorage.getItem('app_flash_toast');
+        if (flashData) {
+            try {
+                var item = JSON.parse(flashData);
+                showAppNotification(item.title, item.message, item.type, 5000);
+            } catch (e) {}
+            sessionStorage.removeItem('app_flash_toast');
+        }
+    });
+</script>

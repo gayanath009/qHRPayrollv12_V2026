@@ -939,7 +939,7 @@
     function submitSalaryForApproval() {
         var prcId = $("#txtPrcId").val();
         if (!prcId || prcId == 0) {
-            alert("No verified salary process found to submit.");
+            showAppNotification("Salary Process", "No verified salary process found to submit.", "warning");
             return;
         }
         $("#modalSubmitApproval").modal("show");
@@ -948,7 +948,7 @@
     function runSubmitApprovalProcess() {
         var prcId = $("#txtPrcId").val();
         if (!prcId || prcId == 0) {
-            alert("No verified salary process found to submit.");
+            showAppNotification("Salary Process", "No verified salary process found to submit.", "warning");
             $("#modalSubmitApproval").modal("hide");
             return;
         }
@@ -965,17 +965,17 @@
                 $("#modalSubmitApproval").modal("hide");
                 $("#btnConfirmSubmitApproval").prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval');
                 if (res.ok) {
-                    alert(res.message);
-                    location.reload();
+                    showFlashToastAndReload("Salary Process", res.message, "success");
+
                 } else {
-                    alert("Error: " + res.message);
+                    showAppNotification("Salary Process", "Error: " + res.message, "danger");
                     $("#btnSubmitApproval").prop("disabled", false);
                 }
             },
             error: function () {
                 $("#modalSubmitApproval").modal("hide");
                 $("#btnConfirmSubmitApproval").prop("disabled", false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval');
-                alert("Error submitting salary process for approval.");
+                showAppNotification("Salary Process", "Error submitting salary process for approval.", "danger");
                 $("#btnSubmitApproval").prop("disabled", false);
             }
         });

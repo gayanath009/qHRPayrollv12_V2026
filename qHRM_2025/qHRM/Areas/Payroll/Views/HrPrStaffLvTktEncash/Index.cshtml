@@ -1003,7 +1003,7 @@
         });
 
         if (items.length === 0) {
-            alert("No employee records to confirm.");
+            showAppNotification("Leave Encashment", "No employee records to confirm.", "warning");
             return;
         }
 
@@ -1017,17 +1017,15 @@
             success: function (res) {
                 $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirm &amp; Save');
                 if (res.ok) {
-                    alert(res.message);
-                    // Enable Submit for Approval Workflow button upon successful Confirm & Save
                     $('#btnSubmitEncashWf').prop('disabled', false).removeAttr('disabled');
-                    location.reload();
+                    showFlashToastAndReload("Leave Encashment", res.message, "success");
                 } else {
-                    alert("Error: " + res.message);
+                    showAppNotification("Leave Encashment", "Error: " + res.message, "danger");
                 }
             },
             error: function (err) {
                 $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirm &amp; Save');
-                alert("Request error: " + err.statusText);
+                showAppNotification("Leave Encashment", "Request error: " + err.statusText, "danger");
             }
         });
     }
@@ -1043,15 +1041,14 @@
             data: { year: @selectedYear, month: @selectedMonth },
             success: function (res) {
                 if (res.ok) {
-                    alert(res.message);
-                    location.reload();
+                    showFlashToastAndReload("Leave Encashment Workflow", res.message, "success");
                 } else {
-                    alert("Error: " + res.message);
+                    showAppNotification("Leave Encashment Workflow", "Error: " + res.message, "danger");
                     $('#btnSubmitEncashWf').prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow');
                 }
             },
             error: function (err) {
-                alert("Request error: " + err.statusText);
+                showAppNotification("Leave Encashment Workflow", "Request error: " + err.statusText, "danger");
                 $('#btnSubmitEncashWf').prop('disabled', false).html('<i class="fas fa-paper-plane mr-1"></i> Submit for Approval Workflow');
             }
         });
@@ -1071,16 +1068,19 @@
                 $('#btnConfirmCompleteModal').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirm &amp; Complete');
                 $('#modalCompleteEncash').modal('hide');
                 if (res.ok) {
-                    alert(res.message);
-                    // Redirect to Index without parameters so it auto-advances to the next month
+                    sessionStorage.setItem('app_flash_toast', JSON.stringify({
+                        title: "Leave Encashment",
+                        message: res.message,
+                        type: "success"
+                    }));
                     window.location.href = '/Payroll/HrPrStaffLvTktEncash/Index';
                 } else {
-                    alert("Error: " + res.message);
+                    showAppNotification("Leave Encashment", "Error: " + res.message, "danger");
                 }
             },
             error: function (err) {
                 $('#btnConfirmCompleteModal').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirm &amp; Complete');
-                alert("Request error: " + err.statusText);
+                showAppNotification("Leave Encashment", "Request error: " + err.statusText, "danger");
             }
         });
     }
