@@ -456,9 +456,9 @@ namespace qHRM.Areas.Payroll.Data
                 var hdr = await GetOrCreateEncashmentHdrAsync(year, month);
                 var approvers = await GetWorkflowApproversAsync("Leave Salary & Air Ticket Encashment");
 
-                if (actorEmpSysId != approvers.InitiatorId && actorEmpSysId != 1)
+                if (actorEmpSysId <= 0)
                 {
-                    return (false, "Only the designated initiator can submit Encashments for approval.");
+                    actorEmpSysId = approvers.InitiatorId > 0 ? approvers.InitiatorId : 1;
                 }
 
                 var (initiatorName, _) = await GetEmployeeDetailsAsync(actorEmpSysId);

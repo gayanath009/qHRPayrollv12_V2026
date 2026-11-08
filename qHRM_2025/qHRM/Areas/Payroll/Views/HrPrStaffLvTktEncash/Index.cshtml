@@ -126,11 +126,11 @@
         line-height: 1.25;
     }
 
-    /* ─── Stat KPI Cards (Increased Font Sizes) ─── */
+    /* ─── Stat KPI Cards (Matched with Salary Process Layout) ─── */
     .stat-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.1rem;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 1rem;
         margin-bottom: 1.5rem;
         padding: 0 2rem;
     }
@@ -139,7 +139,7 @@
         background: var(--clr-surface);
         border: 1px solid var(--clr-border);
         border-radius: var(--radius);
-        padding: 1.2rem 1.35rem;
+        padding: 1.1rem 1.25rem;
         position: relative;
         overflow: hidden;
         box-shadow: var(--shadow-sm);
@@ -168,26 +168,26 @@
     .stat-card.sc-cyan::before   { background: linear-gradient(90deg, #06b6d4, #0891b2); }
 
     .stat-card-label {
-        font-size: 0.82rem !important;
-        font-weight: 700 !important;
+        font-size: 0.68rem !important;
+        font-weight: 600 !important;
         text-transform: uppercase !important;
-        letter-spacing: 0.06em !important;
+        letter-spacing: 0.08em !important;
         color: var(--clr-muted);
     }
 
     .stat-card-val {
-        font-size: 1.65rem !important;
-        font-weight: 800 !important;
+        font-size: 1.35rem !important;
+        font-weight: 700 !important;
         color: var(--clr-text);
-        margin-top: 0.35rem;
+        margin-top: 0.25rem;
         line-height: 1.15;
         font-variant-numeric: tabular-nums;
     }
 
     .stat-card-sub {
-        font-size: 0.78rem;
+        font-size: 0.7rem;
         color: var(--clr-muted);
-        margin-top: 0.35rem;
+        margin-top: 0.2rem;
         font-weight: 500;
     }
 
@@ -538,7 +538,7 @@
         <!-- Card 5: Category Breakdown -->
         <div class="stat-card sc-cyan">
             <div class="stat-card-label">OUTSOURCE / IN-HOUSE</div>
-            <div class="stat-card-val" id="statBreakdown" style="font-size: 1.25rem; margin-top: 0.45rem;">
+            <div class="stat-card-val" id="statBreakdown" style="font-size: 1.1rem; margin-top: 0.25rem;">
                 <span style="color:#0891b2;">@string.Format("{0:N0}", ViewBag.OutsourceSettlementTotal ?? 0)</span> / 
                 <span style="color:#475569;">@string.Format("{0:N0}", ViewBag.InternalSettlementTotal ?? 0)</span>
             </div>
@@ -711,15 +711,15 @@
                                     @foreach (var emp in internalStaff)
                                     {
                                         <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="INTERNAL"
-                                            data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary"
-                                            data-dailysalary="@emp.DailySalary" data-netdays="@emp.NetLeaveDays"
-                                            data-tktprice="@emp.TktPrice" data-leavesalary="@emp.TotalLeaveSalary"
+                                            data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-dailysalary="@emp.DailySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-netdays="@emp.NetLeaveDays"
+                                            data-tktprice="@emp.TktPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-leavesalary="@emp.TotalLeaveSalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-year="@emp.PrcYear" data-month="@emp.PrcMonth"
                                             data-joined="@emp.JoinedDate.ToString("yyyy-MM-dd")"
                                             data-vacreturn="@(emp.VacationReturnDate.HasValue ? emp.VacationReturnDate.Value.ToString("yyyy-MM-dd") : "")"
                                             data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
-                                            data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays"
-                                            data-paidleave="@emp.PaidLeaveDays">
+                                            data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-paidleave="@emp.PaidLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)">
                                             <td class="text-center font-weight-bold">@emp.EmpId</td>
                                             <td class="text-center">@emp.CourtesyTitle</td>
                                             <td>@emp.FullName</td>
@@ -766,15 +766,15 @@
                                     @foreach (var emp in outsourceStaff)
                                     {
                                         <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="OUTSOURCE"
-                                            data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary"
-                                            data-dailysalary="@emp.DailySalary" data-netdays="@emp.NetLeaveDays"
-                                            data-tktprice="@emp.TktPrice" data-leavesalary="@emp.TotalLeaveSalary"
+                                            data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-dailysalary="@emp.DailySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-netdays="@emp.NetLeaveDays"
+                                            data-tktprice="@emp.TktPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-leavesalary="@emp.TotalLeaveSalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-year="@emp.PrcYear" data-month="@emp.PrcMonth"
                                             data-joined="@emp.JoinedDate.ToString("yyyy-MM-dd")"
                                             data-vacreturn="@(emp.VacationReturnDate.HasValue ? emp.VacationReturnDate.Value.ToString("yyyy-MM-dd") : "")"
                                             data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
-                                            data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays"
-                                            data-paidleave="@emp.PaidLeaveDays">
+                                            data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)"
+                                            data-paidleave="@emp.PaidLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)">
                                             <td class="text-center font-weight-bold">@emp.EmpId</td>
                                             <td class="text-center">@emp.CourtesyTitle</td>
                                             <td>@emp.FullName</td>
@@ -1017,8 +1017,23 @@
             success: function (res) {
                 $('#btnSaveAll').prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Confirm &amp; Save');
                 if (res.ok) {
-                    $('#btnSubmitEncashWf').prop('disabled', false).removeAttr('disabled');
-                    showFlashToastAndReload("Leave Encashment", res.message, "success");
+                    $('#btnSubmitEncashWf')
+                        .prop('disabled', false)
+                        .removeAttr('disabled')
+                        .css({
+                            'opacity': '1',
+                            'pointer-events': 'auto',
+                            'cursor': 'pointer',
+                            'filter': 'none'
+                        });
+
+                    $('.status-badge')
+                        .removeClass('sb-idle sb-process sb-complete')
+                        .addClass('sb-verified')
+                        .find('span:last-child')
+                        .text('Status: Verified');
+
+                    showAppNotification("Leave Encashment", res.message, "success");
                 } else {
                     showAppNotification("Leave Encashment", "Error: " + res.message, "danger");
                 }

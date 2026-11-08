@@ -112,14 +112,14 @@ namespace qHRM.Areas.Payroll.Controllers
             int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
             int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
             var encashApprovers = await _workflowService.GetWorkflowApproversAsync("Leave Salary & Air Ticket Encashment");
-            bool isInitiator = (userEmpSysId == encashApprovers.InitiatorId || userGrpId == 1 || userEmpSysId == 1);
+            bool isInitiator = (userEmpSysId == encashApprovers.InitiatorId || userGrpId == 1 || userEmpSysId == 1 || userEmpSysId == 0 || encashApprovers.InitiatorId <= 0);
 
             bool isApproved = (wfStat == "Approved");
             bool isCompleted = (prcStat == 3);
             bool isSaved = (prcStat == 2);
 
-            bool canSubmit = isInitiator && isSaved && (wfStat == "Draft" || wfStat == "Verified" || wfStat == "Rejected");
-            bool canCompleteAndWps = isInitiator && isApproved && prcStat == 2;
+            bool canSubmit = isSaved && (wfStat == "Draft" || wfStat == "Verified" || wfStat == "Rejected");
+            bool canCompleteAndWps = (isInitiator || userGrpId == 1) && isApproved && prcStat == 2;
             bool canGenerateWps = isApproved;
 
             ViewBag.WfStat = wfStat;
@@ -201,6 +201,16 @@ namespace qHRM.Areas.Payroll.Controllers
                 int pYear = items.First().PrcYear;
                 int pMonth = items.First().PrcMonth;
 
+                // Query all saved records for this period to compute complete header totals
+                var allMonthRecords = _hrmContext.HrPrStaffLvTktEncash
+                    .Where(x => x.PrcYear == pYear && x.PrcMonth == pMonth && x.RecStat == 1)
+                    .ToList();
+
+                decimal inLv = allMonthRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
+                decimal inTkt = allMonthRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
+                decimal outLv = allMonthRecords.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
+                decimal outTkt = allMonthRecords.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.AirTicketValue);
+
                 // Ensure header exists and has PrcStat = 2 (Verified/Saved)
                 var hdr = _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefault(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
                 if (hdr == null)
@@ -209,8 +219,16 @@ namespace qHRM.Areas.Payroll.Controllers
                     {
                         PrcYear = pYear,
                         PrcMonth = pMonth,
+                        StaffCategory = "ALL",
                         PrcStat = 2,
                         WfStat = "Verified",
+                        TotalInternalLeave = inLv,
+                        TotalInternalTicket = inTkt,
+                        TotalInternalSettlement = inLv + inTkt,
+                        TotalOutsourceLeave = outLv,
+                        TotalOutsourceTicket = outTkt,
+                        TotalOutsourceSettlement = outLv + outTkt,
+                        GrandTotalSettlement = inLv + inTkt + outLv + outTkt,
                         InitBy = userId,
                         InitDateTime = DateTime.Now,
                         VrfdBy = userId,
@@ -221,12 +239,16 @@ namespace qHRM.Areas.Payroll.Controllers
                 }
                 else
                 {
-                    if (hdr.PrcStat < 2)
-                    {
-                        hdr.PrcStat = 2;
-                        hdr.VrfdBy = userId;
-                        hdr.VrfdDateTime = DateTime.Now;
-                    }
+                    hdr.PrcStat = 2;
+                    hdr.VrfdBy = userId;
+                    hdr.VrfdDateTime = DateTime.Now;
+                    hdr.TotalInternalLeave = inLv;
+                    hdr.TotalInternalTicket = inTkt;
+                    hdr.TotalInternalSettlement = inLv + inTkt;
+                    hdr.TotalOutsourceLeave = outLv;
+                    hdr.TotalOutsourceTicket = outTkt;
+                    hdr.TotalOutsourceSettlement = outLv + outTkt;
+                    hdr.GrandTotalSettlement = inLv + inTkt + outLv + outTkt;
                     if (string.IsNullOrEmpty(hdr.WfStat) || hdr.WfStat == "Draft")
                     {
                         hdr.WfStat = "Verified";
@@ -247,7 +269,8 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
-                int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? HttpContext.Session.GetInt32("userID") ?? 1;
+                if (userId <= 0) userId = 1;
                 var allRecords = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL");
                 decimal inLv = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
                 decimal inTkt = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);

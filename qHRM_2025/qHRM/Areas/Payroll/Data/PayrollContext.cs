@@ -3415,7 +3415,7 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                     applicableDays = 365;
                 }
 
-                decimal eligibleDays = Math.Round((decimal)applicableDays * 30.0m / 365.0m, 5);
+                decimal eligibleDays = saved != null ? saved.EligibleLeaveDays : Math.Round((decimal)applicableDays * 30.0m / 365.0m, 5);
 
                 decimal paidLeave = 0;
                 if (saved != null)
@@ -3429,53 +3429,74 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
 
                 int netLeaveDays = saved != null ? saved.NetLeaveDays : Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero));
 
-                decimal monthlySalary = 0m;
-                if (salaryStructures.TryGetValue(emp.EmpSysId, out var slry))
-                {
-                    monthlySalary = slry.Basic
-                                  + slry.HrAlwnc
-                                  + slry.TrnsAlwnc
-                                  + slry.Tra
-                                  + slry.PstnAlwnc
-                                  + slry.ProjAlwnc
-                                  + slry.MedAlwnc
-                                  + slry.MobAlwnc
-                                  + slry.SpcAlwnc
-                                  + slry.PrfmAlwnc
-                                  + slry.OthrAlwnc;
-                }
-
-                decimal dailySalary = Math.Round(monthlySalary / 30.0m, 2);
+                decimal monthlySalary;
+                decimal dailySalary;
                 decimal totalLeaveSalary;
-                if (netLeaveDays % 30 == 0 && netLeaveDays > 0)
+                int tktCount;
+                decimal tktPrice;
+                decimal airTicketValue;
+                decimal totalSettlement;
+                string remarks;
+
+                if (saved != null)
                 {
-                    totalLeaveSalary = (netLeaveDays / 30) * monthlySalary;
+                    monthlySalary = saved.MonthlySalary;
+                    dailySalary = saved.DailySalary;
+                    totalLeaveSalary = saved.TotalLeaveSalary;
+                    tktCount = saved.TktCount;
+                    tktPrice = saved.TktPrice;
+                    airTicketValue = saved.AirTicketValue;
+                    totalSettlement = saved.TotalSettlement;
+                    remarks = saved.Remarks ?? "-";
                 }
                 else
                 {
-                    totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 2);
+                    monthlySalary = 0m;
+                    if (salaryStructures.TryGetValue(emp.EmpSysId, out var slry))
+                    {
+                        monthlySalary = slry.Basic
+                                      + slry.HrAlwnc
+                                      + slry.TrnsAlwnc
+                                      + slry.Tra
+                                      + slry.PstnAlwnc
+                                      + slry.ProjAlwnc
+                                      + slry.MedAlwnc
+                                      + slry.MobAlwnc
+                                      + slry.SpcAlwnc
+                                      + slry.PrfmAlwnc
+                                      + slry.OthrAlwnc;
+                    }
+
+                    dailySalary = Math.Round(monthlySalary / 30.0m, 2);
+                    if (netLeaveDays % 30 == 0 && netLeaveDays > 0)
+                    {
+                        totalLeaveSalary = (netLeaveDays / 30) * monthlySalary;
+                    }
+                    else
+                    {
+                        totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 2);
+                    }
+
+                    int defaultTktCount = 1;
+                    if (depCounts.TryGetValue(emp.EmpSysId, out int deps))
+                    {
+                        defaultTktCount = 1 + Math.Min(3, deps);
+                    }
+                    tktCount = defaultTktCount;
+
+                    ticketPrices.TryGetValue(emp.CntryId, out tktPrice);
+
+                    airTicketValue = Math.Round(tktCount * tktPrice, 2);
+                    totalSettlement = totalLeaveSalary + airTicketValue;
+
+                    remarks = "-";
+                    if (netLeaveDays > 0 && tktCount > 1)
+                        remarks = $"{netLeaveDays:D2} Days Leave Salary & Air Fare Encashment (self & family)";
+                    else if (netLeaveDays > 0 && tktCount <= 1)
+                        remarks = $"{netLeaveDays:D2} Day{(netLeaveDays > 1 ? "s" : "")} Leave Salary & Air Fare Encashment";
+                    else if (netLeaveDays == 0 && airTicketValue > 0)
+                        remarks = "Air Fare Encashment";
                 }
-
-                int defaultTktCount = 1;
-                if (depCounts.TryGetValue(emp.EmpSysId, out int deps))
-                {
-                    defaultTktCount = 1 + Math.Min(3, deps);
-                }
-
-                int tktCount = saved != null ? saved.TktCount : defaultTktCount;
-
-                ticketPrices.TryGetValue(emp.CntryId, out decimal tktPrice);
-
-                decimal airTicketValue = Math.Round(tktCount * tktPrice, 2);
-                decimal totalSettlement = totalLeaveSalary + airTicketValue;
-
-                string remarks = "-";
-                if (netLeaveDays > 0 && tktCount > 1)
-                    remarks = $"{netLeaveDays:D2} Days Leave Salary & Air Fare Encashment (self & family)";
-                else if (netLeaveDays > 0 && tktCount <= 1)
-                    remarks = $"{netLeaveDays:D2} Day{(netLeaveDays > 1 ? "s" : "")} Leave Salary & Air Fare Encashment";
-                else if (netLeaveDays == 0 && airTicketValue > 0)
-                    remarks = "Air Fare Encashment";
 
                 result.Add(new HrPrStaffLvTktEncashVw
                 {
@@ -3553,6 +3574,7 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                 }
                 else
                 {
+                    rec.EncashId = 0;
                     rec.PrcStat = 2; // Confirmed
                     rec.CrtBy = userId;
                     rec.CrtDateTime = DateTime.Now;
