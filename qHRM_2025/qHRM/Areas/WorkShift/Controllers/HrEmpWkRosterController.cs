@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,6 +11,7 @@ using qHRM.Areas.WorkShift.Data;
 using qHRM.Areas.WorkShift.Models;
 using qHRM.Data;
 using qHRM.Extensions.Alerts;
+using qHRM.Models;
 
 namespace qHRM.Areas.WorkShift.Controllers
 {
@@ -21,18 +22,21 @@ namespace qHRM.Areas.WorkShift.Controllers
         private readonly WorkShiftContext _workShiftContext;
         private readonly EmployeeContext _empContext;
         private readonly AttnContext _attnContext;
+        private readonly qHRMasterContext _hrmContext;
 
         private readonly DbCommitContext<HrEmpWkRoster> _dbCommitContext;
 
         public HrEmpWkRosterController(WorkShiftContext workShiftContext, 
                                        EmployeeContext empContext,
                                        DbCommitContext<HrEmpWkRoster> dbCommitContext,
-                                       AttnContext attnContext)
+                                       AttnContext attnContext,
+                                       qHRMasterContext hrmContext)
         {
             _workShiftContext = workShiftContext;
             _empContext = empContext;
             _dbCommitContext = dbCommitContext;
             _attnContext = attnContext;
+            _hrmContext = hrmContext;
         }
 
         public IActionResult Index()
@@ -158,91 +162,139 @@ namespace qHRM.Areas.WorkShift.Controllers
 
 
         [HttpGet]     
-        public async Task<JsonResult> Create(string EmpTyp, int EmpSysId,int RstId, DateTime StDate, DateTime EndDate, bool CndrAtndc)
+        public async Task<JsonResult> Create(string EmpTyp, int EmpSysId, int RstId, DateTime StDate, DateTime EndDate, bool CndrAtndc)
         {
             try
-            {                
-                    try
-                    {
-                        var refId = 0;
-                        if (EmpTyp == "A") //All Employees
-                        {
-                            var _emplist = _empContext.GetActvEmpNameLst(Convert.ToInt32(HttpContext.Session.GetInt32("userEntId")));
-                            foreach (var itm in _emplist)
-                            {
-                                var obj = _workShiftContext.GetEmpWrkRstrs().Where(x => x.EmpSysId == itm.ESysId && (x.EndDate >= StDate || x.EndDate <= EndDate || x.EndDate >= EndDate)).FirstOrDefault(); //|| x.EndDate >= hrEmpWkRoster.EndDate
-                                if (obj != null)
-                                {
-                                    //Update the Current Roster with 
-                                    HrEmpWkRoster hrEmpWkUPD = new HrEmpWkRoster();
-                                    hrEmpWkUPD.RecId = obj.RecId;
-                                    hrEmpWkUPD.EmpSysId = obj.EmpSysId;
-                                    hrEmpWkUPD.RstId = obj.RstId;
-                                    hrEmpWkUPD.StDate = obj.StDate;
-                                    hrEmpWkUPD.EndDate = StDate.AddDays(-1);
-                                    hrEmpWkUPD.CndrAtndc = obj.CndrAtndc;
-                                    await _dbCommitContext.commitChangesAsync(LogEventTypes.UPD, hrEmpWkUPD, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                                }
-
-                                HrEmpWkRoster hrEmpWkINS = new HrEmpWkRoster();
-                                hrEmpWkINS.EmpSysId = itm.ESysId;
-                                hrEmpWkINS.RstId = RstId;
-                                hrEmpWkINS.StDate = StDate;
-                                if (EndDate.ToString() == "01/01/0001 00:00:00") hrEmpWkINS.EndDate = null; else hrEmpWkINS.EndDate = EndDate;
-                                hrEmpWkINS.CndrAtndc = obj == null ? CndrAtndc : obj.CndrAtndc;
-                                await _dbCommitContext.commitChangesAsync(LogEventTypes.INS, hrEmpWkINS, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                            }
-                        }
-                        else if (EmpTyp == "S") //Individual Employee
-                        {
-                            refId = EmpSysId;
-                            var obj = _workShiftContext.GetEmpWrkRstrs().Where(x => x.EmpSysId == EmpSysId && (x.EndDate >= StDate || x.EndDate <= EndDate || x.EndDate >= EndDate)).FirstOrDefault(); //|| x.EndDate >= hrEmpWkRoster.EndDate
-                            if (obj != null)
-                            {
-                                //Update the Current Roster with 
-                                HrEmpWkRoster hrEmpWkUPD = new HrEmpWkRoster();
-                                hrEmpWkUPD.RecId = obj.RecId;
-                                hrEmpWkUPD.EmpSysId = obj.EmpSysId;
-                                hrEmpWkUPD.RstId = RstId;
-                                hrEmpWkUPD.StDate = obj.StDate;
-                                //hrEmpWkUPD.EndDate = hrEmpWkRoster.StDate.AddDays(-1);
-                                hrEmpWkUPD.EndDate = StDate.AddDays(-1);
-                                hrEmpWkUPD.CndrAtndc = obj.CndrAtndc;
-                                await _dbCommitContext.commitChangesAsync(LogEventTypes.UPD, hrEmpWkUPD, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                            }
-
-                            HrEmpWkRoster hrEmpWkINS = new HrEmpWkRoster();
-                            hrEmpWkINS.EmpSysId = EmpSysId;
-                            hrEmpWkINS.RstId = RstId;
-                            hrEmpWkINS.StDate = StDate;
-                            if (EndDate.ToString() == "01/01/0001 00:00:00") hrEmpWkINS.EndDate = null; else hrEmpWkINS.EndDate = EndDate;
-                            hrEmpWkINS.CndrAtndc = obj == null ? CndrAtndc : obj.CndrAtndc; //Changed                             
-                            await _dbCommitContext.commitChangesAsync(LogEventTypes.INS, hrEmpWkINS, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                        }
-                        //_dbCommitContext.commitChanges(LogEventTypes.INS, hrEmpWkRoster, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-
-                        //---------- Execute Load Attendance Process ----------//
-                        //var prcSrcDtl = "Add new Employee Roster RecId:" + hrEmpWkRoster.RecId; 
-                        var prcSrcDtl = "Add new Employee Roster RecId:"; 
-                    
-                        //DateTime toDate = EndDate == null ? StDate : (DateTime) EndDate;                        
-                        DateTime toDate = EndDate.ToString() == "01/01/0001 00:00:00"?  StDate: (DateTime)EndDate;
-
-                    _attnContext.LoadHrEmpAtndc(EmpTyp, refId, StDate, toDate, AttnContext.AtndcLdPrcTyp.RST_CNG, prcSrcDtl, false, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                        //----------------------------------------------------//
-                        //return RedirectToAction(nameof(Index)).WithSuccess("Employee Work Roster", "Added Successfully");
-                        return Json(new { ok = true, data = "Employee Work Roster - Added Successfully", message = "ok" });
-                    }
-                    catch (Exception)
-                    {
-                        //return RedirectToAction(nameof(Index)).WithWarning("Employee Work Roster", "Adding Record got failed");
-                        return Json(new { ok = false, data = "Employee Work Roster - Adding Record got failed", message = "error" });
-                    }
-               
-            }
-            catch
             {
-                return Json(new { ok = false, data = "", message = "error" });
+                int usrId = (int)(HttpContext.Session.GetInt32("userEmpSysId") ?? 1);
+                int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
+
+                // 1. Employee Work Roster is assigned to IN-HOUSE employees ONLY (WrktypId == 1)
+                var inHouseList = new List<int>();
+                if (EmpTyp == "A") // All in-house employees
+                {
+                    inHouseList = _hrmContext.HrEmpGenInfo
+                        .Where(e => e.CurrStat == 0 && e.WrktypId == 1)
+                        .Select(e => e.EmpSysId)
+                        .ToList();
+                }
+                else if (EmpTyp == "S") // Individual employee
+                {
+                    var isEmpInHouse = _hrmContext.HrEmpGenInfo
+                        .Any(e => e.EmpSysId == EmpSysId && e.CurrStat == 0 && e.WrktypId == 1);
+
+                    if (!isEmpInHouse)
+                    {
+                        return Json(new { ok = false, data = "Employee Work Roster can only be assigned to In-House employees.", message = "error" });
+                    }
+                    inHouseList.Add(EmpSysId);
+                }
+
+                if (inHouseList.Count == 0)
+                {
+                    return Json(new { ok = false, data = "No eligible In-House employees found.", message = "error" });
+                }
+
+                bool hasEndDate = EndDate != DateTime.MinValue && EndDate.ToString() != "01/01/0001 00:00:00" && EndDate >= StDate;
+
+                // Identify active Normal Roster ID for auto-resumption
+                int normalRosterId = 4;
+                var activeNormalRst = _workShiftContext.GetAllHrWkRoster(entId)
+                    .FirstOrDefault(r => r.RstCode == "RST_NRM" || r.RstId == 4);
+                if (activeNormalRst != null) normalRosterId = activeNormalRst.RstId;
+
+                // 2. Process Roster assignments & Seamless Ramadan <-> Normal switching
+                foreach (var empId in inHouseList)
+                {
+                    // Find the existing active roster covering StDate
+                    var currentRst = _hrmContext.HrEmpWkRoster
+                        .Where(x => x.EmpSysId == empId && x.RecStat == 1 && (x.EndDate == null || x.EndDate >= StDate) && x.StDate <= StDate)
+                        .OrderByDescending(x => x.StDate)
+                        .FirstOrDefault();
+
+                    int origRstId = currentRst != null ? currentRst.RstId : normalRosterId;
+                    DateTime? origEndDate = currentRst != null ? currentRst.EndDate : null;
+
+                    if (currentRst != null)
+                    {
+                        if (currentRst.StDate < StDate)
+                        {
+                            // Truncate previous roster to end the day before the new roster starts
+                            currentRst.EndDate = StDate.AddDays(-1);
+                            await _dbCommitContext.commitChangesAsync(LogEventTypes.UPD, currentRst, usrId);
+                        }
+                        else if (currentRst.StDate == StDate)
+                        {
+                            // Deactivate if exact start date match
+                            currentRst.RecStat = 0;
+                            await _dbCommitContext.commitChangesAsync(LogEventTypes.UPD, currentRst, usrId);
+                        }
+                    }
+
+                    // Deactivate any existing future rosters that fall completely inside the new range
+                    if (hasEndDate)
+                    {
+                        var insideRsts = _hrmContext.HrEmpWkRoster
+                            .Where(x => x.EmpSysId == empId && x.RecStat == 1 && x.StDate >= StDate && x.StDate <= EndDate)
+                            .ToList();
+                        foreach (var r in insideRsts)
+                        {
+                            r.RecStat = 0;
+                            await _dbCommitContext.commitChangesAsync(LogEventTypes.UPD, r, usrId);
+                        }
+                    }
+
+                    // Insert new roster (e.g. Ramadan Roster)
+                    HrEmpWkRoster insRst = new HrEmpWkRoster();
+                    insRst.EmpSysId = empId;
+                    insRst.RstId = RstId;
+                    insRst.StDate = StDate;
+                    insRst.EndDate = hasEndDate ? EndDate : (DateTime?)null;
+                    insRst.CndrAtndc = currentRst == null ? CndrAtndc : currentRst.CndrAtndc;
+                    insRst.RecStat = 1;
+                    insRst.CrtDateTime = DateTime.Now;
+                    await _dbCommitContext.commitChangesAsync(LogEventTypes.INS, insRst, usrId);
+
+                    // 3. SWITCHING LOGIC: If a temporary roster (e.g. Ramadan for 1 month) is assigned with an EndDate,
+                    // automatically resume the Normal Roster from EndDate + 1 onwards!
+                    if (hasEndDate)
+                    {
+                        int resumeRstId = (origRstId > 0 && origRstId != RstId) ? origRstId : normalRosterId;
+                        var nextDay = EndDate.AddDays(1);
+
+                        // Check if a future roster is already scheduled on or after nextDay
+                        var futureRst = _hrmContext.HrEmpWkRoster
+                            .FirstOrDefault(x => x.EmpSysId == empId && x.RecStat == 1 && x.StDate >= nextDay);
+
+                        if (futureRst == null)
+                        {
+                            HrEmpWkRoster resumeRst = new HrEmpWkRoster();
+                            resumeRst.EmpSysId = empId;
+                            resumeRst.RstId = resumeRstId;
+                            resumeRst.StDate = nextDay;
+                            resumeRst.EndDate = origEndDate ?? Convert.ToDateTime("2032-12-31");
+                            resumeRst.CndrAtndc = insRst.CndrAtndc;
+                            resumeRst.RecStat = 1;
+                            resumeRst.CrtDateTime = DateTime.Now;
+                            await _dbCommitContext.commitChangesAsync(LogEventTypes.INS, resumeRst, usrId);
+                        }
+                    }
+                }
+
+                // 4. Synchronize attendance logs for affected date range
+                try
+                {
+                    DateTime toDate = hasEndDate ? EndDate : StDate.AddDays(30);
+                    int refId = (EmpTyp == "S") ? EmpSysId : 0;
+                    _attnContext.LoadHrEmpAtndc(EmpTyp, refId, StDate, toDate, AttnContext.AtndcLdPrcTyp.RST_CNG, "Roster Assignment (In-House)", false, usrId);
+                }
+                catch {}
+
+                return Json(new { ok = true, data = "Employee Work Roster - Assigned Successfully to In-House Staff (" + inHouseList.Count + " employees)", message = "ok" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { ok = false, data = "Employee Work Roster - Adding Record failed: " + ex.Message, message = "error" });
             }
         }
 

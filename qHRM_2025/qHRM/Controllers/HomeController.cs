@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using qHRM.Areas.SysAdmin.Data;
 using qHRM.Areas.Identity.Data;
@@ -54,6 +55,8 @@ namespace qHRM.Controllers
         private readonly LeaveContext _leaveContext;
         private readonly LeaveBalanceService _leaveBalanceService;
         private readonly LeaveWorkflowService _lvWfService;
+        private readonly qHRMasterContext _hrmContext;
+        private readonly AttendanceRegularizationService _regService;
 
 
         public HomeController(ILogger<HomeController> logger,
@@ -74,7 +77,9 @@ namespace qHRM.Controllers
                               PayrollContext payrollContext,
                               LeaveContext leaveContext,
                               LeaveBalanceService leaveBalanceService = null,
-                              LeaveWorkflowService lvWfService = null)
+                              LeaveWorkflowService lvWfService = null,
+                              qHRMasterContext hrmContext = null,
+                              AttendanceRegularizationService regService = null)
         {
             _logger = logger;
             _signInManager = signInManager;
@@ -95,6 +100,8 @@ namespace qHRM.Controllers
             _leaveContext = leaveContext;
             _leaveBalanceService = leaveBalanceService;
             _lvWfService = lvWfService;
+            _hrmContext = hrmContext;
+            _regService = regService;
 
         }
 
@@ -368,8 +375,7 @@ namespace qHRM.Controllers
                     {
                         if (_lvWfService != null && empSysId > 0)
                         {
-                            var pendingList = await _lvWfService.GetPendingApprovalsForUserAsync(empSysId);
-                            ViewBag.PendingLeaveCount = pendingList?.Count ?? 0;
+                            ViewBag.PendingLeaveCount = await _lvWfService.GetPendingApprovalsCountForUserAsync(empSysId);
                         }
                         else
                         {
@@ -382,18 +388,83 @@ namespace qHRM.Controllers
                         ViewBag.PendingLeaveCount = 0;
                     }
 
-                    // --- Attendance Section: Subordinate hierarchy employees & Initial 7 days ---
+                    // --- Pending Regularization Approvals Count (Item a) ---
                     try
                     {
-                        var hierarchyEmps = _empContext.GetHierarchySubordinates(empSysId, userGrpId).ToList();
-                        ViewBag.lstHierarchyEmployees = hierarchyEmps;
-                        ViewBag.InitAttendanceSummary = _attnContext.GetEmployee7DaysAttendance(empSysId);
+                        if (_regService != null && empSysId > 0)
+                        {
+                            ViewBag.PendingRegCount = await _regService.GetPendingApprovalsCountAsync(empSysId, userGrpId);
+                        }
+                        else
+                        {
+                            ViewBag.PendingRegCount = 0;
+                        }
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error loading hierarchy employees or attendance summary.");
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending regularizations count in hr dashboard.");
+                        ViewBag.PendingRegCount = 0;
+                    }
+
+                    // --- Pending Salary Process Approvals Count ---
+                    try
+                    {
+                        ViewBag.PendingSalaryProcessCount = await _hrmContext.HrPrSlryPrcHdr
+                            .CountAsync(h => h.WfStat == "PendingLevel1" || h.WfStat == "PendingFinal");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending salary process count.");
+                        ViewBag.PendingSalaryProcessCount = 0;
+                    }
+
+                    // --- Pending Leave Salary & Air Ticket Encashment Approvals Count ---
+                    try
+                    {
+                        ViewBag.PendingEncashmentCount = await _hrmContext.HrPrStaffLvTktEncashHdr
+                            .CountAsync(h => h.WfStat == "PendingLevel1" || h.WfStat == "PendingFinal");
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending encashment count.");
+                        ViewBag.PendingEncashmentCount = 0;
+                    }
+
+                    // --- Attendance Section: Cycle-Based Attendance with All Employees Filter (Item b) ---
+                    try
+                    {
+                        int entId = userEntId > 0 ? userEntId : 1;
+                        var allEmps = _empContext.GetActvEmpNameLst(entId, empSysId, userGrpId).ToList();
+                        ViewBag.lstHierarchyEmployees = allEmps;
+
+                        DateTime today = DateTime.Today;
+                        DateTime defCycleStart = today.Day >= 21 ? new DateTime(today.Year, today.Month, 21) : new DateTime(today.Year, today.Month, 21).AddMonths(-1);
+                        DateTime defCycleEnd = defCycleStart.AddMonths(1).AddDays(-1);
+
+                        ViewBag.DefCycleStart = defCycleStart.ToString("yyyy-MM-dd");
+                        ViewBag.DefCycleEnd = defCycleEnd.ToString("yyyy-MM-dd");
+
+                        int initialEmpId = empSysId;
+                        if (initialEmpId <= 0 || !allEmps.Any(e => e.ESysId == initialEmpId))
+                        {
+                            initialEmpId = allEmps.FirstOrDefault()?.ESysId ?? empSysId;
+                        }
+                        ViewBag.SelectedEmpSysId = initialEmpId;
+
+                        if (initialEmpId > 0)
+                        {
+                            ViewBag.InitAttendanceCycleSummary = _attnContext.GetEmployeeCycleAttendance(initialEmpId, defCycleStart, defCycleEnd);
+                        }
+                        else
+                        {
+                            ViewBag.InitAttendanceCycleSummary = null;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error loading employees or cycle attendance summary in hr dashboard.");
                         ViewBag.lstHierarchyEmployees = new List<HrEmpGen>();
-                        ViewBag.InitAttendanceSummary = null;
+                        ViewBag.InitAttendanceCycleSummary = null;
                     }
 
                     // --- Company Monthly Salary Section: Default to Latest Processed / Active Period ---
@@ -417,8 +488,151 @@ namespace qHRM.Controllers
                     }
                 });
             }
-            //--- 2. Manager or Employee Dashboard (_mgr_index.cshtml / _emp_index.cshtml / _emp_index_.cshtml) ---//
-            else if (userDashboard == "_mgr_index.cshtml" || userDashboard == "_emp_index.cshtml" || userDashboard == "_emp_index_.cshtml")
+            //--- 2. Manager Dashboard (_mgr_index.cshtml) ---//
+            else if (userDashboard == "_mgr_index.cshtml")
+            {
+                await Task.Run(async () =>
+                {
+                    int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                    ViewBag.LoggedEmpSysId = empSysId;
+                    ViewBag.userGrpId = userGrpId;
+
+                    var hierarchyEmps = new List<HrEmpGen>();
+                    // --- Hierarchy Employees & Initial Cycle Attendance ---
+                    try
+                    {
+                        hierarchyEmps = _empContext.GetHierarchySubordinates(empSysId, userGrpId).ToList();
+                        ViewBag.lstHierarchyEmployees = hierarchyEmps;
+                        ViewBag.empCount = hierarchyEmps.Count;
+                        ViewBag.SelectedEmpSysId = empSysId;
+
+                        DateTime today = DateTime.Today;
+                        DateTime defCycleStart = today.Day >= 21 ? new DateTime(today.Year, today.Month, 21) : new DateTime(today.Year, today.Month, 21).AddMonths(-1);
+                        DateTime defCycleEnd = defCycleStart.AddMonths(1).AddDays(-1);
+                        ViewBag.DefCycleStart = defCycleStart.ToString("yyyy-MM-dd");
+                        ViewBag.DefCycleEnd = defCycleEnd.ToString("yyyy-MM-dd");
+
+                        if (empSysId > 0)
+                        {
+                            ViewBag.InitAttendanceCycleSummary = _attnContext.GetEmployeeCycleAttendance(empSysId, defCycleStart, defCycleEnd);
+                        }
+                        else
+                        {
+                            ViewBag.InitAttendanceCycleSummary = null;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error loading hierarchy employees or attendance summary in manager dashboard.");
+                        ViewBag.lstHierarchyEmployees = new List<HrEmpGen>();
+                        ViewBag.InitAttendanceCycleSummary = null;
+                    }
+
+                    // --- Team Metrics: On Leave Today, Remote / WFH Today, Turnover ---
+                    try
+                    {
+                        var teamEmpSysIds = hierarchyEmps.Select(e => e.ESysId).ToHashSet();
+                        var today = DateTime.Today;
+
+                        // 1. On Leave Today (Approved leaves for team members today)
+                        if (teamEmpSysIds.Count > 0 && _hrmContext != null)
+                        {
+                            ViewBag.leaveEmpCount = _hrmContext.HrLvRegister
+                                .Where(l => l.EmpSysId.HasValue && teamEmpSysIds.Contains(l.EmpSysId.Value)
+                                            && l.StDate.Date <= today && l.EndDate.Date >= today
+                                            && l.RecStat != 3 && l.RecStat != 0
+                                            && (l.RecStat == 2 || l.WfStat == "Approved" || l.WfStat == "FinalApproved" || l.WfStat == null))
+                                .Select(l => l.EmpSysId.Value)
+                                .Distinct()
+                                .Count();
+                        }
+                        else
+                        {
+                            ViewBag.leaveEmpCount = 0;
+                        }
+
+                        // 2. Remote / WFH Today (Active approved WFH / Remote exceptions for team members today)
+                        if (teamEmpSysIds.Count > 0 && _hrmContext != null)
+                        {
+                            ViewBag.WFH = _hrmContext.HrEmpAttendExp
+                                .Where(x => teamEmpSysIds.Contains(x.EmpSysId)
+                                            && x.StDate.Date <= today && x.EndDate.Date >= today
+                                            && x.RecStat == 1
+                                            && (x.WfStatus == "Approved" || x.WfStatus == null)
+                                            && (
+                                                (x.ReasonCategory != null && (x.ReasonCategory.Contains("Home") || x.ReasonCategory.Contains("Remote") || x.ReasonCategory.Contains("WFH") || x.ReasonCategory.Contains("Visit") || x.ReasonCategory.Contains("Off-site")))
+                                                || (x.ReasonDescription != null && (x.ReasonDescription.Contains("Home") || x.ReasonDescription.Contains("Remote") || x.ReasonDescription.Contains("WFH") || x.ReasonDescription.Contains("Off-site")))
+                                                || (x.Note != null && (x.Note.Contains("Home") || x.Note.Contains("Remote") || x.Note.Contains("WFH") || x.Note.Contains("Off-site")))
+                                                || (x.ReasonCategory == null && x.ReqNo == null)
+                                            ))
+                                .Select(x => x.EmpSysId)
+                                .Distinct()
+                                .Count();
+                        }
+                        else
+                        {
+                            ViewBag.WFH = 0;
+                        }
+
+                        // 3. Turnover (Last 3M)
+                        int effectiveDptId = userDptId;
+                        if (effectiveDptId == 0 && empSysId > 0 && _hrmContext != null)
+                        {
+                            var mngJob = _hrmContext.HrEmpJobAssign.FirstOrDefault(j => j.EmpSysId == empSysId && j.WkStat == 1);
+                            if (mngJob != null && mngJob.DeptId > 0)
+                            {
+                                effectiveDptId = mngJob.DeptId;
+                            }
+                        }
+
+                        var empTrnOvr = _empContext.GetEmpCntSmry(effectiveDptId > 0 ? "DPT" : "ALL", effectiveDptId, today.AddDays(-90), today);
+                        ViewBag.InCnt = empTrnOvr.InCnt;
+                        ViewBag.OutCnt = empTrnOvr.OutCnt;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error calculating manager team metrics.");
+                    }
+
+                    // --- Pending Regularization Approvals Count (Item a) ---
+                    try
+                    {
+                        if (_regService != null && empSysId > 0)
+                        {
+                            ViewBag.PendingRegCount = await _regService.GetPendingApprovalsCountAsync(empSysId, userGrpId);
+                        }
+                        else
+                        {
+                            ViewBag.PendingRegCount = 0;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending regularizations count in manager dashboard.");
+                        ViewBag.PendingRegCount = 0;
+                    }
+
+                    // --- Pending Leave Approvals Count ---
+                    try
+                    {
+                        if (_lvWfService != null && empSysId > 0)
+                        {
+                            ViewBag.PendingLeaveCount = await _lvWfService.GetPendingApprovalsCountForUserAsync(empSysId);
+                        }
+                        else
+                        {
+                            ViewBag.PendingLeaveCount = 0;
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending leaves count in manager dashboard.");
+                        ViewBag.PendingLeaveCount = 0;
+                    }
+                });
+            }
+            //--- 3. Employee Dashboard (_emp_index.cshtml / _inhouse_emp_index.cshtml / outsource_emp_index.cshtml) ---//
+            else if (userDashboard == "_emp_index.cshtml" || userDashboard == "_emp_index_.cshtml" || userDashboard == "_inhouse_emp_index.cshtml" || userDashboard == "outsource_emp_index.cshtml")
             {
                 await Task.Run(async () =>
                 {
@@ -443,12 +657,7 @@ namespace qHRM.Controllers
                             ViewBag.DptName = _loggedEmp.DeptName;
                         }
 
-                        if (userDashboard == "_mgr_index.cshtml")
-                        {
-                            ViewBag.lstEmployee = _objEmp.OrderBy(o => o.FullName);
-                            ViewBag.empCount = _objEmp.Count();
-                        }
-                        else if (!showAllEmp && empSysId > 0)
+                        if (!showAllEmp && empSysId > 0)
                         {
                             ViewBag.lstEmployee = _objEmp.Where(x => x.EmpSysId == empSysId).OrderBy(o => o.FullName);
                             ViewBag.empCount = 1;
@@ -523,7 +732,7 @@ namespace qHRM.Controllers
 
                     try
                     {
-                        bool isSngl = (userDashboard == "_mgr_index.cshtml") ? false : !showAllEmp;
+                        bool isSngl = !showAllEmp;
                         ViewBag.leaveEmpCount = _leaveContext.GetLeaveRegister(isSngl, empSysId).Count(x => x.StDate <= DateTime.Today && x.EndDate >= DateTime.Today);
                     }
                     catch (Exception ex)
@@ -555,99 +764,7 @@ namespace qHRM.Controllers
                         ViewBag.OutCnt = 0;
                     }
 
-                    if (userDashboard == "_mgr_index.cshtml")
-                    {
-                        // --- Hierarchy Employees & Initial 7-Day Attendance ---
-                        try
-                        {
-                            var hierarchyEmps = _empContext.GetHierarchySubordinates(empSysId, userGrpId).ToList();
-                            ViewBag.lstHierarchyEmployees = hierarchyEmps;
-                            if (hierarchyEmps.Count > 0)
-                            {
-                                ViewBag.empCount = hierarchyEmps.Count;
-                            }
-                            ViewBag.InitAttendanceSummary = _attnContext.GetEmployee7DaysAttendance(empSysId);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error loading hierarchy employees or attendance summary in manager dashboard.");
-                            ViewBag.lstHierarchyEmployees = new List<HrEmpGen>();
-                            ViewBag.InitAttendanceSummary = null;
-                        }
-
-                        // --- Pending Leave Approvals Count ---
-                        try
-                        {
-                            if (_lvWfService != null && empSysId > 0)
-                            {
-                                var pendingList = await _lvWfService.GetPendingApprovalsForUserAsync(empSysId);
-                                ViewBag.PendingLeaveCount = pendingList?.Count ?? 0;
-                            }
-                            else
-                            {
-                                ViewBag.PendingLeaveCount = 0;
-                            }
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching pending leaves count in manager dashboard.");
-                            ViewBag.PendingLeaveCount = 0;
-                        }
-
-                        // --- Card Controls: Nationality, Department, & Daily Attendance datasets ---
-                        try
-                        {
-                            var nltyEmpFullSmry = _dashboardContext.GetNltyEmpFullSmryByEntId(userEntId > 0 ? userEntId : 1);
-                            ViewBag.dsAllocated = nltyEmpFullSmry.AllocatedNltyEmpList;
-                            ViewBag.dsActual = nltyEmpFullSmry.ActualNltyEmpList.OrderBy(o => o.StfRatio);
-                            ViewBag.dsNltyEmpSmry = nltyEmpFullSmry.NltyEmpCntSmryList.OrderByDescending(o => o.ActlEmpCnt);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error in GetNltyEmpFullSmryByEntId for manager dashboard.");
-                        }
-
-                        try
-                        {
-                            ViewBag.dsDeptEmpSmry = _dashboardContext.GetDeptEmpSmry(userEntId > 0 ? userEntId : 1);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error in GetDeptEmpSmry for manager dashboard.");
-                        }
-
-                        try
-                        {
-                            var y = _attnContext.GetDailyAttendanceSmry(DateTime.Today.AddDays(-1), 8);
-                            ViewBag.dsDlyAtndSmry = y.Any() ? y : null;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error in GetDailyAttendanceSmry for manager dashboard.");
-                        }
-
-                        try
-                        {
-                            var x = _attnContext.GetEmpDlyAttnSmry("DAILY_SMRY", false, empSysId, DateTime.Today, DateTime.Today);
-                            ViewBag.dsDayAttnSmry = x.Any() ? x : null;
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error in GetEmpDlyAttnSmry for manager dashboard.");
-                        }
-
-                        try
-                        {
-                            ViewBag.dsDayAttnDtl = _attnContext.GetHrEmpAttnCompackedVwByDate("_detail", DateTime.Today, "ALL").Where(z => z.Status == "Present");
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error in GetHrEmpAttnCompackedVwByDate for manager dashboard.");
-                            ViewBag.dsDayAttnDtl = null;
-                        }
-                    }
-
-                    if ((userDashboard == "_emp_index.cshtml" || userDashboard == "_emp_index_.cshtml") && _leaveBalanceService != null && empSysId > 0)
+                    if ((userDashboard == "_emp_index.cshtml" || userDashboard == "_emp_index_.cshtml" || userDashboard == "_inhouse_emp_index.cshtml" || userDashboard == "outsource_emp_index.cshtml") && _leaveBalanceService != null && empSysId > 0)
                     {
                         try
                         {
@@ -665,6 +782,24 @@ namespace qHRM.Controllers
                         {
                             _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching employee leave balances.");
                             ViewBag.EmpLeaveBalances = new List<qHRM.Areas.Leave.Models.EmpLeaveBalanceViewModel>();
+                        }
+                    }
+
+                    if (userDashboard == "_inhouse_emp_index.cshtml" && empSysId > 0)
+                    {
+                        try
+                        {
+                            DateTime today = DateTime.Today;
+                            DateTime cycleStart = today.Day >= 21 ? new DateTime(today.Year, today.Month, 21) : new DateTime(today.Year, today.Month, 21).AddMonths(-1);
+                            DateTime cycleEnd = cycleStart.AddMonths(1).AddDays(-1);
+                            ViewBag.DefCycleStart = cycleStart.ToString("yyyy-MM-dd");
+                            ViewBag.DefCycleEnd = cycleEnd.ToString("yyyy-MM-dd");
+                            ViewBag.InitAttendanceCycleSummary = _attnContext.GetEmployeeCycleAttendance(empSysId, cycleStart, cycleEnd);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching employee cycle attendance for in-house dashboard.");
+                            ViewBag.InitAttendanceCycleSummary = null;
                         }
                     }
 
@@ -694,8 +829,7 @@ namespace qHRM.Controllers
                     {
                         if (_lvWfService != null && empSysId > 0)
                         {
-                            var pendingList = await _lvWfService.GetPendingApprovalsForUserAsync(empSysId);
-                            ViewBag.PendingLeaveCount = pendingList?.Count ?? 0;
+                            ViewBag.PendingLeaveCount = await _lvWfService.GetPendingApprovalsCountForUserAsync(empSysId);
                         }
                         else
                         {
@@ -708,18 +842,23 @@ namespace qHRM.Controllers
                         ViewBag.PendingLeaveCount = 0;
                     }
 
-                    // --- Attendance Section: Subordinate hierarchy employees & Initial 7 days ---
-                    try
+                    // --- Attendance Section: Cycle Attendance for OS Admin ---
+                    if (empSysId > 0)
                     {
-                        var hierarchyEmps = _empContext.GetHierarchySubordinates(empSysId, userGrpId).ToList();
-                        ViewBag.lstHierarchyEmployees = hierarchyEmps;
-                        ViewBag.InitAttendanceSummary = _attnContext.GetEmployee7DaysAttendance(empSysId);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error loading hierarchy employees or attendance summary for OS Admin.");
-                        ViewBag.lstHierarchyEmployees = new List<HrEmpGen>();
-                        ViewBag.InitAttendanceSummary = null;
+                        try
+                        {
+                            DateTime today = DateTime.Today;
+                            DateTime cycleStart = today.Day >= 21 ? new DateTime(today.Year, today.Month, 21) : new DateTime(today.Year, today.Month, 21).AddMonths(-1);
+                            DateTime cycleEnd = cycleStart.AddMonths(1).AddDays(-1);
+                            ViewBag.DefCycleStart = cycleStart.ToString("yyyy-MM-dd");
+                            ViewBag.DefCycleEnd = cycleEnd.ToString("yyyy-MM-dd");
+                            ViewBag.InitAttendanceCycleSummary = _attnContext.GetEmployeeCycleAttendance(empSysId, cycleStart, cycleEnd);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "[DEBUG] LoadDashBoards: Error fetching employee cycle attendance for OS Admin.");
+                            ViewBag.InitAttendanceCycleSummary = null;
+                        }
                     }
 
                     // --- Leave Balances of Logged User ---
@@ -851,17 +990,20 @@ namespace qHRM.Controllers
         {
             try
             {
-                int entId = (int)HttpContext.Session.GetInt32("userEntId");
-                var _filename = _pyrollContext.GetSalarySheet(eftYr, eftMnt, entId);
+                int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+                if (entId <= 0) entId = 1;
+                Console.WriteLine($"[DEBUG-SERVER] HomeController.PrintSalarySheet called: eftMnt={eftMnt}, eftYr={eftYr}, entId={entId}");
+                var _filename = _payrollContext.GetSalarySheet(eftYr, eftMnt, entId);
 
-                if (_filename !="0")
+                if (!string.IsNullOrEmpty(_filename) && _filename != "0")
                     return Json(new { ok = true, data = _filename, message = "ok" });                
                 else                
-                    return Json(new { ok = true, data = 0, message = "norecs" });                
+                    return Json(new { ok = false, data = 0, message = "norecs" });                
             }
             catch (Exception ex)
             {
-                return Json(new { ok = false, data = ex.Message, message = "failed" });
+                Console.WriteLine($"[ERROR] HomeController.PrintSalarySheet exception: {ex}");
+                return Json(new { ok = false, data = 0, message = ex.Message });
             }
         }
 
@@ -900,6 +1042,64 @@ namespace qHRM.Controllers
             }
         }
 
+        [HttpGet]
+        public JsonResult GetMyAttendanceCycle(int? empSysId, string fromDate, string toDate, int? cycleOffset)
+        {
+            try
+            {
+                int loggedEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool showAll = _empContext.GetUserShowAllEmployees(loggedEmpSysId, userGrpId);
+
+                int targetEmpSysId = loggedEmpSysId;
+                if (empSysId.HasValue && empSysId.Value > 0)
+                {
+                    if (showAll || targetEmpSysId == 0 || empSysId.Value == loggedEmpSysId)
+                    {
+                        targetEmpSysId = empSysId.Value;
+                    }
+                    else
+                    {
+                        // Check if the requested employee is a subordinate in the manager's hierarchy
+                        var hierarchyEmps = _empContext.GetHierarchySubordinates(loggedEmpSysId, userGrpId);
+                        if (hierarchyEmps.Any(e => e.ESysId == empSysId.Value))
+                        {
+                            targetEmpSysId = empSysId.Value;
+                        }
+                    }
+                }
+
+                DateTime fDate;
+                DateTime tDate;
+
+                if (!string.IsNullOrWhiteSpace(fromDate) && DateTime.TryParse(fromDate, out var parsedFrom) &&
+                    !string.IsNullOrWhiteSpace(toDate) && DateTime.TryParse(toDate, out var parsedTo))
+                {
+                    fDate = parsedFrom.Date;
+                    tDate = parsedTo.Date;
+                }
+                else
+                {
+                    DateTime today = DateTime.Today;
+                    DateTime cycleStart = today.Day >= 21 ? new DateTime(today.Year, today.Month, 21) : new DateTime(today.Year, today.Month, 21).AddMonths(-1);
+                    if (cycleOffset.HasValue && cycleOffset.Value != 0)
+                    {
+                        cycleStart = cycleStart.AddMonths(cycleOffset.Value);
+                    }
+                    fDate = cycleStart.Date;
+                    tDate = cycleStart.AddMonths(1).AddDays(-1).Date;
+                }
+
+                var data = _attnContext.GetEmployeeCycleAttendance(targetEmpSysId, fDate, tDate);
+                return Json(new { ok = true, success = true, data, fromDate = fDate.ToString("yyyy-MM-dd"), toDate = tDate.ToString("yyyy-MM-dd") });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error in GetMyAttendanceCycle");
+                return Json(new { ok = false, success = false, message = ex.Message });
+            }
+        }
+
         public JsonResult RecordUsrLog(string typ, string sessionId)
         {
             _logger.LogInformation($"[DEBUG] RecordUsrLog: Entered RecordUsrLog(typ='{typ}', sessionId='{sessionId}')");
@@ -918,8 +1118,7 @@ namespace qHRM.Controllers
                 objUsrLog.CrtDateTime = DateTime.Now;
 
                 _logger.LogInformation($"[DEBUG] RecordUsrLog: Checking if session '{sessionId}' is already logged...");
-                var loggedUsrLst = _sysAdminContext.GetLoggedUserList().Where(x => x.SessionId == sessionId);
-                if (loggedUsrLst.Count() == 0)
+                if (!_sysAdminContext.IsSessionLogged(sessionId))
                 {
                     _logger.LogInformation("[DEBUG] RecordUsrLog: Session not found in LoggedUserList. Saving to DB...");
                     var result = _sysAdminContext.LogUserLogin(objUsrLog);

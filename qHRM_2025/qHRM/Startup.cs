@@ -240,6 +240,7 @@ namespace qHR
             services.AddScoped<EmployeeContext>();
             services.AddScoped<AttnContext>();
             services.AddScoped<WorkShiftContext>();
+            services.AddScoped<qHRM.Areas.Attendance.Data.AttendanceRegularizationService>();
             //-------------Leave-------------------//
             services.AddScoped<LeaveContext>();
             services.AddScoped<LvIntgrtnContext>();

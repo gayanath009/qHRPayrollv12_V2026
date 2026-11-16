@@ -1,61 +1,125 @@
-﻿@model qHRM.Areas.Attendance.Models.HrEmpAttdView
-<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
-<script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
-<form asp-action="Edit" asp-controller="HrEmpAtndcSft">
-    <!-- enctype="multipart/form-data"-->
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <div class="form-row">
-        <div class="form-group col-md-12">
-            Are you sure to edit these time entries?
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            @Html.DisplayNameFor(model => model.EfctvDate) :
-        </div>
-        <div class="form-group col-md-6">
-            @Html.DisplayFor(model => model.EfctvDate)
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            @Html.DisplayNameFor(model => model.FullName) :
-        </div>
-        <div class="form-group col-md-6">
-            @Html.DisplayFor(model => model.FullName)
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            @Html.HiddenFor(model => model.RecId)
-            <label asp-for="InTime" class="control-label"></label>
+@model qHRM.Areas.Attendance.Models.HrEmpAttdView
 
+<form asp-action="Edit" asp-controller="HrEmpAtndcSft" method="post" id="formEditAttendance">
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.RecId)
+    @Html.HiddenFor(model => model.EmpSysId)
+
+    <div class="mb-3 font-weight-medium text-dark" style="font-size: 0.95rem;">
+        Are you sure to edit these time entries?
+    </div>
+
+    <div class="bg-light p-3 rounded mb-3 border">
+        <div class="row mb-2">
+            <div class="col-5 text-muted small font-weight-bold text-uppercase">Effective Date :</div>
+            <div class="col-7 font-weight-bold text-dark">@(Model.EfctvDate.ToString("dd MM yyyy"))</div>
         </div>
-        <div class="form-group col-md-6">
-            <input asp-for="InTime" class="form-control form-control-sm" />
-            <span asp-validation-for="InTime" class="text-danger"></span>
+        <div class="row">
+            <div class="col-5 text-muted small font-weight-bold text-uppercase">Full Name :</div>
+            <div class="col-7 font-weight-bold text-dark">@Model.FullName</div>
         </div>
     </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label asp-for="OutTime" class="control-label"></label>
+
+    <div class="form-row align-items-center mb-3">
+        <div class="col-4">
+            <label asp-for="InTime" class="control-label font-weight-bold text-dark mb-0 small">In Time</label>
         </div>
-        <div class="form-group col-md-6">
-            <input asp-for="OutTime" class="form-control form-control-sm" />
-            <span asp-validation-for="OutTime" class="text-danger"></span>
+        <div class="col-8">
+            <input type="time" step="1" asp-for="InTime" id="editInTime" class="form-control form-control-sm" />
+            <span asp-validation-for="InTime" class="text-danger small"></span>
         </div>
     </div>
-    <div class="form-row">  
-        <div class="form-group col-md-12">
+
+    <div class="form-row align-items-center mb-3">
+        <div class="col-4">
+            <label asp-for="OutTime" class="control-label font-weight-bold text-dark mb-0 small">Out Time</label>
+        </div>
+        <div class="col-8">
+            <input type="time" step="1" asp-for="OutTime" id="editOutTime" class="form-control form-control-sm" />
+            <span asp-validation-for="OutTime" class="text-danger small"></span>
+        </div>
+    </div>
+
+    <div class="form-row mb-3">
+        <div class="col-12">
             <div class="form-check">
                 <input type="checkbox" asp-for="OvrNghtStat" class="form-check-input" id="chkOverNight">
-                <label class="form-check-label">Next Day</label>
+                <label class="form-check-label font-weight-bold text-muted small" for="chkOverNight" style="cursor: pointer;">
+                    Next Day
+                </label>
             </div>
         </div>
     </div>
-    <div class="form-group">
-        <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
-        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+
+    <div class="form-group mb-3">
+        <label asp-for="Note" class="control-label font-weight-bold text-dark mb-1 small">Remarks</label>
+        <textarea asp-for="Note" id="editRemarks" rows="2" maxlength="300" class="form-control form-control-sm" placeholder="Enter remarks..."></textarea>
+        <span asp-validation-for="Note" class="text-danger small"></span>
+    </div>
+
+    <!-- Alert Box for validation / error messages -->
+    <div id="editValidationAlert" class="alert alert-danger py-2 px-3 small mb-3" style="display: none; border-radius: 6px;"></div>
+
+    <div class="d-flex flex-column" style="gap: 0.5rem;">
+        <button type="submit" id="btnSubmitEditAtndc" class="btn btn-block" style="background: linear-gradient(135deg, #540033 0%, #750047 100%); color: #ffffff; font-weight: 600; padding: 0.55rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);">
+            <i class="fas fa-check mr-1"></i> Update
+        </button>
+        <button type="button" class="btn btn-outline-secondary btn-block" data-dismiss="modal" style="border-radius: 6px; padding: 0.45rem;">
+            Back
+        </button>
     </div>
 </form>
-<ejs-scripts></ejs-scripts>
+
+<script type="text/javascript">
+    $('#formEditAttendance').on('submit', function (e) {
+        e.preventDefault();
+        var $alert = $('#editValidationAlert');
+        $alert.hide().text('');
+
+        var inTime = $('#editInTime').val();
+        var outTime = $('#editOutTime').val();
+        var isNextDay = $('#chkOverNight').is(':checked');
+
+        if (!inTime && !outTime) {
+            $alert.text('Please specify at least In Time or Out Time.').fadeIn(150);
+            return false;
+        }
+
+        if (inTime && outTime && !isNextDay) {
+            if (outTime <= inTime) {
+                $alert.text("Out Time must be later than In Time. If the shift ends the next day, please check 'Next Day'.").fadeIn(150);
+                return false;
+            }
+        }
+
+        var $btn = $('#btnSubmitEditAtndc');
+        if ($btn.data('submitting')) return false;
+        $btn.data('submitting', true).prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Updating...');
+
+        var formData = $(this).serialize();
+
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function (res) {
+                $btn.data('submitting', false).prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Update');
+                if (res && res.success) {
+                    $('#modalEdit').modal('hide');
+                    loadAttdData();
+                    if (window.toastObj) {
+                        toastObj.show({ title: 'Success!', content: res.message || 'Attendance timings updated successfully.', cssClass: 'e-toast-success', icon: 'e-success toast-icons' });
+                    }
+                } else {
+                    $alert.text(res && res.message ? res.message : 'Updating record failed.').fadeIn(150);
+                }
+            },
+            error: function (xhr) {
+                $btn.data('submitting', false).prop('disabled', false).html('<i class="fas fa-check mr-1"></i> Update');
+                $alert.text('Error communicating with server: ' + (xhr.statusText || 'Unknown Error')).fadeIn(150);
+            }
+        });
+        return false;
+    });
+</script>

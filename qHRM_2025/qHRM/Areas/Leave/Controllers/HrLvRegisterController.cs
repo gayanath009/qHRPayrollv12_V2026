@@ -1192,12 +1192,12 @@ namespace qHRM.Areas.Leave.Controllers
         // =====================================================================
         public IActionResult Pending()
         {
-            if (HttpContext.Session.GetString("LV_REG") == null)
+            if (HttpContext.Session.GetString("LV_PEND_AP") == null)
                 return RedirectToPage("/Account/Login", new { area = "Identity" });
 
             int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
             var objprv = _prvContext.Get("_user_priv_group", grpId)
-                                    .FirstOrDefault(x => x.PrvCode == "LV_REG");
+                                    .FirstOrDefault(x => x.PrvCode == "LV_PEND_AP");
             if (objprv != null)
             {
                 ViewBag.RecAdd    = objprv.RecAdd;
@@ -1219,7 +1219,7 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                if (HttpContext.Session.GetString("LV_REG") == null)
+                if (HttpContext.Session.GetString("LV_PEND_AP") == null)
                     return Json(new { error = "Session expired." });
 
                 int empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
@@ -1243,7 +1243,7 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                if (HttpContext.Session.GetString("LV_REG") == null)
+                if (HttpContext.Session.GetString("LV_PEND_AP") == null)
                     return Json(new { totalPending = 0, awaitingMyAction = 0 });
 
                 int empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
@@ -1329,7 +1329,7 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                if (HttpContext.Session.GetString("LV_REG") == null)
+                if (HttpContext.Session.GetString("LV_PEND_AP") == null)
                     return Json(new { success = false, message = "Session expired." });
 
                 await _lvWfService.ApproveStepAsync(req.ApprovalId, req.Comment);
@@ -1351,7 +1351,7 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                if (HttpContext.Session.GetString("LV_REG") == null)
+                if (HttpContext.Session.GetString("LV_PEND_AP") == null)
                     return Json(new { success = false, message = "Session expired." });
 
                 await _lvWfService.RejectStepAsync(req.ApprovalId, req.Comment);

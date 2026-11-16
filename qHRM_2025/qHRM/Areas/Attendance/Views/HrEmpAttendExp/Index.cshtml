@@ -1,44 +1,68 @@
 @model qHRM.Areas.Attendance.Models.HrEmpAttendExp
-@using Microsoft.AspNetCore.Http;
+@using Microsoft.AspNetCore.Http
+@using qHRM.Areas.Attendance.Data
+@using qHRM.Areas.Attendance.Models
 @inject IHttpContextAccessor HttpContextAccessor
 
 @{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Attendance Regularization";
+
+    var timeline = ViewBag.Timeline as List<AttendanceRegularizationService.DayAttendanceTimelineVm> ?? new List<AttendanceRegularizationService.DayAttendanceTimelineVm>();
+    var allRequests = ViewBag.RegularizationRequests as List<HrEmpAttendExp> ?? new List<HrEmpAttendExp>();
+    var pendingApprovals = ViewBag.PendingApprovals as List<HrEmpAttendExp> ?? new List<HrEmpAttendExp>();
+    var config = ViewBag.Config as HrAtndcRegConfig ?? new HrAtndcRegConfig { MaxDaysAllowed = 14, AllowFutureDates = false };
+    var empList = ViewBag.EmployeeList as IEnumerable<dynamic> ?? new List<dynamic>();
+
+    int currentEmpSysId = ViewBag.CurrentEmpSysId ?? 0;
+    int targetEmpSysId = ViewBag.TargetEmpSysId ?? currentEmpSysId;
+    string targetEmpName = ViewBag.TargetEmpName as string ?? "Selected Employee";
+    string targetEmpCode = ViewBag.TargetEmpCode as string ?? "";
+    string targetFullName = ViewBag.TargetFullName as string ?? "";
+    string fromDateStr = ViewBag.FromDate as string ?? DateTime.Today.AddDays(-7).ToString("dd-MMM-yyyy");
+    string toDateStr = ViewBag.ToDate as string ?? DateTime.Today.ToString("dd-MMM-yyyy");
+    bool canViewAll = ViewBag.CanViewAll ?? false;
+    bool canViewSubordinates = ViewBag.CanViewSubordinates ?? false;
+    int userGrpId = ViewBag.UserGrpId ?? 0;
+    bool isAdmin = (userGrpId == 1 || userGrpId == 2 || userGrpId == 7);
 }
 
 <style>
     :root {
-        --org-primary: #540033;
-        --org-primary-hover: #3e0026;
-        --org-primary-light: #fdf2f8;
-        --org-primary-border: #fbcfe8;
-        --clr-bg: #f7fafc;
+        --reg-primary: #540033;
+        --reg-primary-hover: #3e0026;
+        --reg-primary-light: #fdf2f8;
+        --reg-accent-blue: #0284c7;
+        --reg-accent-blue-hover: #0369a1;
+        --clr-bg: #f8fafc;
         --clr-surface: #ffffff;
-        --clr-border: rgba(2,6,23,0.06);
-        --clr-text: #0f172a;
-        --clr-muted: #475569;
-        --radius: 14px;
-        --radius-sm: 8px;
-        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+        --clr-border: #e2e8f0;
+        --clr-text-main: #0f172a;
+        --clr-text-muted: #64748b;
+        --radius: 12px;
+        --shadow-subtle: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+        --shadow-card: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
     }
 
-    .org-page-container {
-        padding: 0.75rem 0.5rem 1.5rem 0.5rem;
+    .reg-container {
+        padding: 0.75rem 0.5rem 2rem 0.5rem;
+        background-color: var(--clr-bg);
+        font-family: inherit;
     }
 
-    /* Compact Header Card */
-    .org-hero-card {
+    /* Hero Header Card */
+    .reg-hero-card {
         background: #ffffff;
-        border-radius: 12px;
+        border-radius: var(--radius);
         border: 1px solid var(--clr-border);
-        padding: 0.75rem 1.25rem;
+        padding: 0.85rem 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: var(--shadow-sm);
+        box-shadow: var(--shadow-subtle);
         position: relative;
         overflow: hidden;
     }
 
-    .org-hero-card::before {
+    .reg-hero-card::before {
         content: '';
         position: absolute;
         top: 0;
@@ -48,439 +72,2126 @@
         background: linear-gradient(180deg, #540033 0%, #830050 100%);
     }
 
-    .org-icon-badge {
-        width: 38px;
-        height: 38px;
-        border-radius: 8px;
+    .reg-icon-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
         background: linear-gradient(135deg, #540033 0%, #750047 100%);
         color: #ffffff;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.05rem;
-        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.2);
+        font-size: 1.15rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
         flex-shrink: 0;
     }
 
-    .org-title {
-        font-size: 1.2rem;
+    .reg-title {
+        font-size: 1.25rem;
         font-weight: 700;
-        color: var(--clr-text);
+        color: var(--clr-text-main);
         letter-spacing: -0.01em;
         line-height: 1.2;
         margin: 0;
     }
 
-    .org-category-pill {
-        background-color: var(--org-primary-light);
-        color: var(--org-primary);
+    .reg-category-pill {
+        background-color: var(--reg-primary-light);
+        color: var(--reg-primary);
         font-weight: 700;
         font-size: 0.65rem;
         letter-spacing: 0.05em;
-        padding: 0.2rem 0.5rem;
+        padding: 0.2rem 0.55rem;
         border-radius: 4px;
-        border: 1px solid var(--org-primary-border);
+        border: 1px solid #fbcfe8;
     }
 
-    .org-breadcrumb {
+    .reg-breadcrumb {
         font-size: 0.75rem;
-        color: var(--clr-muted);
-        margin-top: 0.15rem;
-        line-height: 1.2;
-    }
-    .org-breadcrumb a {
-        color: var(--clr-muted);
-        text-decoration: none;
-        transition: color 0.15s;
-    }
-    .org-breadcrumb a:hover {
-        color: var(--org-primary);
+        color: var(--clr-text-muted);
+        margin-top: 0.2rem;
     }
 
-    /* Create Button */
-    .org-btn-create {
-        background: linear-gradient(135deg, #540033 0%, #750047 100%) !important;
-        color: #ffffff !important;
-        border: none !important;
-        border-radius: var(--radius-sm) !important;
-        padding: 0.45rem 1rem !important;
-        font-size: 0.8rem !important;
-        font-weight: 600 !important;
-        letter-spacing: 0.01em !important;
+    /* Top Tabs Navigation (Matching Image 3) */
+    .reg-nav-tabs {
+        display: flex;
+        border-bottom: 2px solid #e2e8f0;
+        background: #ffffff;
+        border-radius: 10px 10px 0 0;
+        padding: 0.5rem 1rem 0 1rem;
+        margin-bottom: 0;
+        gap: 1.5rem;
+    }
+
+    .reg-nav-tab {
+        padding: 0.65rem 0.4rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--clr-text-muted);
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s ease;
+        cursor: pointer;
         display: inline-flex;
         align-items: center;
-        transition: all 0.2s ease !important;
-        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25) !important;
+        gap: 0.4rem;
     }
 
-    .org-btn-create:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35) !important;
-        color: #ffffff !important;
+    .reg-nav-tab:hover {
+        color: #550033;
+        text-decoration: none;
     }
 
-    .org-btn-create:active {
-        transform: translateY(0);
+    .reg-nav-tab.active {
+        color: #550033;
+        border-bottom-color: #550033;
+        font-weight: 700;
     }
 
-    /* Action Buttons in Grid */
-    .org-actions-wrapper {
+    .reg-tab-badge {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.45rem;
+        border-radius: 12px;
+        background: #ef4444;
+        color: white;
+        font-weight: 700;
+    }
+
+    /* Main Content Card */
+    .reg-content-card {
+        background: #ffffff;
+        border: 1px solid var(--clr-border);
+        border-top: none;
+        border-radius: 0 0 var(--radius) var(--radius);
+        padding: 1.25rem;
+        box-shadow: var(--shadow-subtle);
+    }
+
+    /* Controls Bar above timeline */
+    .reg-controls-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.85rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .reg-date-nav {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: #f8fafc;
+        border: 1px solid var(--clr-border);
+        border-radius: 8px;
+        padding: 0.25rem 0.6rem;
+    }
+
+    .reg-nav-arrow {
+        background: transparent;
+        border: none;
+        color: var(--clr-text-muted);
+        cursor: pointer;
+        padding: 0.2rem 0.45rem;
+        border-radius: 4px;
+        transition: all 0.15s;
+    }
+
+    .reg-nav-arrow:hover {
+        background: #e2e8f0;
+        color: var(--clr-text-main);
+    }
+
+    .reg-nav-date-text {
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: var(--clr-text-main);
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    /* Request Button (Blue dropdown theme as in Image 3) */
+    .btn-reg-request {
+        background: #550033;
+        color: #ffffff;
+        border: none;
+        border-radius: 8px;
+        padding: 0.45rem 1.15rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        box-shadow: 0 2px 6px rgba(85, 0, 51, 0.3);
+        transition: all 0.15s ease;
+        cursor: pointer;
+    }
+
+    .btn-reg-request:hover {
+        background: #3e0026;
+        color: #ffffff;
+        text-decoration: none;
+        box-shadow: 0 3px 8px rgba(85, 0, 51, 0.4);
+    }
+
+    /* Daily Timeline Rows (Matching Image 3) */
+    .reg-timeline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .reg-timeline-row {
+        display: flex;
+        align-items: center;
+        padding: 0.85rem 1rem;
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+
+    .reg-timeline-row:hover {
+        border-color: #cbd5e1;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        background: #fdfefe;
+    }
+
+    .reg-row-day {
+        width: 60px;
+        flex-shrink: 0;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .reg-row-day .day-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: var(--clr-text-muted);
+        text-transform: capitalize;
+    }
+
+    .reg-row-day .day-num {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: var(--clr-text-main);
+    }
+
+    .reg-row-punches {
+        width: 170px;
+        flex-shrink: 0;
+        padding: 0 0.75rem;
+        font-size: 0.8rem;
+        line-height: 1.35;
+    }
+
+    .reg-punch-in {
+        font-weight: 600;
+        color: #059669;
+        display: block;
+    }
+
+    .reg-punch-late {
+        font-size: 0.72rem;
+        color: #d97706;
+        font-weight: 600;
+        display: block;
+    }
+
+    .reg-punch-out {
+        font-weight: 600;
+        color: #475569;
+        display: block;
+    }
+
+    .reg-punch-early {
+        font-size: 0.72rem;
+        color: #ea580c;
+        font-weight: 600;
+        display: block;
+    }
+
+    /* Timeline Scale Ruler Header */
+    .reg-timeline-scale-header {
+        display: flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        margin-bottom: 0.65rem;
+        background: #f8fafc;
+        border: 1px solid #edf2f7;
+        border-radius: 8px;
+        font-size: 0.72rem;
+        font-weight: 600;
+        color: #64748b;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+    }
+
+    .scale-col-day {
+        width: 60px;
+        flex-shrink: 0;
+        text-align: center;
+    }
+
+    .scale-col-punches {
+        width: 170px;
+        flex-shrink: 0;
+        padding: 0 0.75rem;
+    }
+
+    .scale-col-track {
+        flex: 1;
+        padding: 0 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .scale-col-track .scale-shift-info {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #540033;
+        background: #fdf2f8;
+        padding: 0.15rem 0.65rem;
+        border-radius: 12px;
+        border: 1px solid #fbcfe8;
+        text-transform: none;
+    }
+
+    .scale-col-track .scale-shift-bound {
+        font-size: 0.72rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    .scale-col-hours {
+        width: 140px;
+        flex-shrink: 0;
+        text-align: right;
+        padding-left: 0.5rem;
+    }
+
+    /* Middle Timeline Graphic */
+    .reg-row-track {
+        flex: 1;
+        padding: 0 1.5rem;
+        position: relative;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
+        min-height: 28px;
     }
 
-    .org-action-btn {
-        width: 30px;
-        height: 30px;
-        border-radius: 6px;
-        display: inline-flex;
+    .reg-track-inner {
+        position: absolute;
+        left: 1.5rem;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 12px;
+        display: flex;
         align-items: center;
-        justify-content: center;
+    }
+
+    /* Base Rail representing scheduled shift (07:30 AM - 03:30 PM) */
+    .reg-track-base-rail {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: #e2e8f0;
+        border-radius: 3px;
+        z-index: 1;
+    }
+
+    /* Shift Boundary Caps */
+    .reg-shift-cap {
+        position: absolute;
+        width: 2px;
+        height: 12px;
+        background: #94a3b8;
+        border-radius: 1px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 3;
+    }
+    .reg-shift-cap.start { left: 0; }
+    .reg-shift-cap.end { right: 0; }
+
+    /* Late / Unworked Period Segment (0% to InPos%) */
+    .reg-track-late {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 3px;
+        background: #fee2e2;
+        background-image: repeating-linear-gradient(45deg, #f87171, #f87171 4px, #fee2e2 4px, #fee2e2 8px);
+        border-radius: 2px;
+        z-index: 2;
+        box-shadow: 0 0 3px rgba(239, 68, 68, 0.35);
+    }
+
+    /* Early Departure / Unworked Period Segment (OutPos% to 100%) */
+    .reg-track-early {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 3px;
+        background: #ffedd5;
+        background-image: repeating-linear-gradient(45deg, #fb923c, #fb923c 4px, #ffedd5 4px, #ffedd5 8px);
+        border-radius: 2px;
+        z-index: 2;
+        box-shadow: 0 0 3px rgba(249, 115, 22, 0.35);
+    }
+
+    /* Actual Worked Duration Bar (InPos% to OutPos%) */
+    .reg-track-worked {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 3px;
+        background: #10b981;
+        border-radius: 2px;
+        z-index: 4;
+        box-shadow: 0 0 4px rgba(16, 185, 129, 0.4);
+    }
+
+    /* Single Lines for Absent, Weekend, Regularized, Pending */
+    .reg-track-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 3px;
+        border-radius: 3px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 2;
+    }
+    .reg-track-line.absent {
+        background: #f87171;
+    }
+    .reg-track-line.weekend {
+        background: #facc15;
+    }
+    .reg-track-line.regularized {
+        background: #06b6d4;
+    }
+    .reg-track-line.pending {
+        background: #a855f7;
+    }
+    .reg-track-line.future {
+        background: #e2e8f0;
+        border-top: 1px dashed #cbd5e1;
+    }
+
+    /* Punch Dots (Check-in and Check-out) */
+    .reg-track-dot-start, .reg-track-dot-end {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 5;
+        box-shadow: 0 0 0 2px #ffffff, 0 1px 3px rgba(0,0,0,0.25);
+    }
+
+    .reg-track-badge {
+        position: relative;
+        z-index: 2;
+        padding: 0.15rem 0.65rem;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border-radius: 12px;
+        text-transform: capitalize;
         border: 1px solid transparent;
-        transition: all 0.15s ease;
-        text-decoration: none !important;
-        cursor: pointer;
-        font-size: 0.75rem;
-        padding: 0;
-        outline: none;
     }
 
-    .org-action-edit {
-        background: #fdf2f8;
-        color: var(--org-primary);
-        border-color: #fbcfe8;
-    }
-
-    .org-action-edit:hover {
-        background: var(--org-primary);
-        color: #ffffff !important;
-        border-color: var(--org-primary);
-        transform: translateY(-1px);
-        box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);
-    }
-
-    .org-action-delete {
-        background: #fef2f2;
+    .reg-track-badge.absent {
+        background: #fee2e2;
         color: #dc2626;
-        border-color: #fecaca;
+        border-color: #fca5a5;
     }
 
-    .org-action-delete:hover {
-        background: #dc2626;
+    .reg-track-badge.weekend {
+        background: #fef9c3;
+        color: #ca8a04;
+        border-color: #fde047;
+    }
+
+    .reg-track-badge.checkedin {
+        background: #ecfdf5;
+        color: #059669;
+        border-color: #a7f3d0;
+    }
+
+    .reg-track-badge.regularized {
+        background: #cffafe;
+        color: #0891b2;
+        border-color: #67e8f9;
+    }
+
+    .reg-track-badge.pending {
+        background: #f3e8ff;
+        color: #7e22ce;
+        border-color: #d8b4fe;
+    }
+
+    .reg-row-hours {
+        width: 140px;
+        flex-shrink: 0;
+        text-align: right;
+        padding-left: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0.25rem;
+    }
+
+    .reg-hours-text {
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--clr-text-main);
+    }
+
+    .reg-btn-action {
+        font-size: 0.72rem;
+        padding: 0.25rem 0.65rem;
+        border-radius: 6px;
+        font-weight: 600;
+        border: 1px solid #550033;
+        background: #550033;
+        color: #ffffff;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        box-shadow: 0 1px 3px rgba(85, 0, 51, 0.2);
+    }
+
+    .reg-btn-action:hover {
+        background: #3e0026;
+        border-color: #3e0026;
+        color: #ffffff;
+    }
+
+    /* Modal Styling (Burgundy theme matching screenshots) */
+    .modal-reg {
+        border-radius: 14px;
+        border: none;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    .modal-reg .modal-header {
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+        padding: 1rem 1.5rem;
+        background: #540033;
+        color: #ffffff;
+        border-radius: 14px 14px 0 0;
+    }
+
+    .modal-reg .modal-title {
+        font-size: 1.15rem;
+        font-weight: 700;
         color: #ffffff !important;
-        border-color: #dc2626;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
     }
 
-    /* Modern Modals */
-    .org-modal .modal-content {
-        border: 1px solid var(--clr-border) !important;
-        border-radius: var(--radius) !important;
-        box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2) !important;
+    .modal-reg .close {
+        color: #ffffff !important;
+        opacity: 0.85;
+        text-shadow: none;
+    }
+
+    .modal-reg .close:hover {
+        opacity: 1;
+    }
+
+    .modal-reg .modal-body {
+        padding: 1.5rem;
+    }
+
+    .reg-field-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #334155;
+        margin-bottom: 0.35rem;
+    }
+
+    /* Attachment Box (Clean Attachment Icon Style) */
+    .reg-attachment-box {
+        border: 1px dashed #94a3b8;
+        border-radius: 8px;
+        padding: 0.85rem 1.25rem;
+        background: #f8fafc;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .reg-attachment-box:hover {
+        border-color: #540033;
+        background: #fdf2f8;
+    }
+
+    .reg-attach-links {
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .reg-attach-note {
+        font-size: 0.74rem;
+        color: #64748b;
+        margin-top: 0.3rem;
+    }
+
+    /* Dynamic Grid Table (Image 1 & 2) */
+    .reg-dates-table {
+        width: 100%;
+        margin-top: 1rem;
+        border-collapse: separate;
+        border-spacing: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
         overflow: hidden;
     }
 
-    .org-modal .modal-header {
-        background: linear-gradient(135deg, #540033 0%, #3b0024 100%) !important;
-        color: #ffffff !important;
-        padding: 1rem 1.25rem !important;
-        border-bottom: none !important;
+    .reg-dates-table thead th {
+        background: #f8fafc;
+        color: #1e293b;
+        font-size: 0.8rem;
+        font-weight: 700;
+        padding: 0.75rem 0.85rem;
+        border-bottom: 2px solid #e2e8f0;
+        text-align: left;
     }
 
-    .org-modal .modal-header .modal-title {
-        color: #ffffff !important;
-        font-weight: 700 !important;
-        font-size: 1rem !important;
+    .reg-dates-table tbody td {
+        padding: 0.65rem 0.85rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.82rem;
+        vertical-align: middle;
+    }
+
+    .reg-dates-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .input-time-control {
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        color: #1e293b;
+        background-color: #ffffff;
+    }
+
+    .input-time-control:focus {
+        border-color: #540033;
+        box-shadow: 0 0 0 2px rgba(84, 0, 51, 0.15);
+    }
+
+    .btn-submit-reg {
+        background: #540033;
+        color: #ffffff;
+        border: none;
+        border-radius: 6px;
+        padding: 0.45rem 1.25rem;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: all 0.15s;
+    }
+
+    .btn-submit-reg:hover {
+        background: #3e0026;
+        color: #ffffff;
+    }
+
+    /* Toast Notification (Image matching media_1794076566972_8bb28adf.png) */
+    .app-toast-container {
+        position: fixed;
+        top: 20px;
+        right: 25px;
+        z-index: 1060;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 420px;
+    }
+
+    .app-toast-pill {
         display: flex;
         align-items: center;
+        justify-content: space-between;
+        padding: 0.65rem 1.15rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        border: 1px solid #a7f3d0;
+        background: #ecfdf5;
+        color: #065f46;
+        font-size: 0.85rem;
+        border-left: 4px solid #10b981;
+        animation: toastSlideIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     }
 
-    .org-modal .modal-header .close {
-        color: #ffffff !important;
-        opacity: 0.8 !important;
-        text-shadow: none !important;
-        transition: opacity 0.15s !important;
-        outline: none !important;
+    .app-toast-pill.error {
+        background: #fef2f2;
+        border-color: #fecaca;
+        color: #991b1b;
+        border-left-color: #ef4444;
     }
 
-    .org-modal .modal-header .close:hover {
-        opacity: 1 !important;
+    .app-toast-pill .toast-close {
+        background: transparent;
+        border: none;
+        color: inherit;
+        font-size: 1.15rem;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 0 0 0.8rem;
+        opacity: 0.7;
     }
 
-    .org-modal-delete .modal-header {
-        background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
+    .app-toast-pill .toast-close:hover {
+        opacity: 1;
+    }
+
+    @@keyframes toastSlideIn {
+        from { transform: translateY(-15px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 </style>
 
-<div class="org-page-container">
-    <main>
-        <div class="container-fluid px-0">
+<!-- Toast Container -->
+<div class="app-toast-container" id="toastContainer"></div>
 
-            <!-- COMPACT HERO HEADER -->
-            <div class="org-hero-card">
-                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+<div class="container-fluid reg-container">
+
+    <!-- Top Hero Card -->
+    <div class="reg-hero-card">
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+            <div class="d-flex align-items-center">
+                <div class="reg-icon-badge mr-3">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div>
                     <div class="d-flex align-items-center">
-                        <div class="org-icon-badge mr-3">
-                            <i class="fas fa-user-shield"></i>
-                        </div>
-                        <div>
-                            <div class="d-flex align-items-center flex-wrap" style="gap: 0.5rem;">
-                                <h1 class="org-title">Attendance Exemption</h1>
-                                <span class="badge org-category-pill">ATTENDANCE</span>
-                            </div>
-                            <div class="org-breadcrumb">
-                                <a href="#">Attendance</a> / <span class="text-dark font-weight-medium">Attendance Exemption</span>
-                                <span class="text-muted mx-1">&bull;</span>
-                                <span class="text-muted">Manage employee attendance exceptions, waivers, and special grace periods</span>
-                            </div>
-                        </div>
+                        <h1 class="reg-title mr-2">Attendance Regularization</h1>
+                        <span class="reg-category-pill">ATTENDANCE</span>
                     </div>
-                    <div class="d-flex align-items-center" style="gap: 0.5rem;">
-                        <button type="button" class="btn org-btn-create" id="btnCreate" onclick="createFunc();">
-                            <i class="fas fa-plus-circle mr-1"></i> Add New
-                        </button>
+                    <div class="reg-breadcrumb">
+                        <span>Attendance</span> &bull; <span>Attendance Regularization</span> &bull;
+                        <span>Employee Attendance Correction, Policy Compliance &amp; Multi-level Approval Workflow</span>
                     </div>
                 </div>
             </div>
 
-            <!-- Main Grid Card -->
-            <div class="card mb-4">
-                <div class="card-body">
-                    <!--Grid-->
-                    <div class="control-section">
-                        <ejs-grid id="Grid" width="auto" dataSource="ViewBag.DataSource" allowPaging="true" allowGrouping="true" allowFiltering="true"
-                                  allowExcelExport="true" allowPdfExport="true" toolbarClick="toolbarClick" toolbar="@(new List<string>() {"ExcelExport"} )" load="loadFormattings">
-                            <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
-                            <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
-                            <e-grid-columns>
-                                <e-grid-column field="EmpId" headerText="Employee ID" width="120"></e-grid-column>
-                                <e-grid-column field="EmpName" headerText="Name" width="180"></e-grid-column>
-                                <e-grid-column field="StDate" headerText="Start Date" width="120"></e-grid-column>
-                                <e-grid-column field="EndDate" headerText="End Date" width="120"></e-grid-column>
-                                <e-grid-column field="Note" headerText="Note" width="200"></e-grid-column>
-                                <e-grid-column field="CrtName" headerText="Created By" width="130"></e-grid-column>
-                                <e-grid-column field="CrtDateTime" headerText="Created Date" width="130"></e-grid-column>
-                                <e-grid-column field="" headerText="Actions" template="#_actions" width="130" textAlign="Center"></e-grid-column>
-                            </e-grid-columns>
-                        </ejs-grid>
+            <!-- Employee Selector for Admin & BU Heads (Searchable Dropdown) -->
+            <div class="d-flex align-items-center gap-2">
+                @if (canViewAll || canViewSubordinates)
+                {
+                    <div class="d-flex align-items-center mr-2">
+                        <label class="small text-muted font-weight-bold mb-0 mr-2" style="white-space: nowrap;">Employee:</label>
+                        <select id="selGlobalEmployee" class="form-control form-control-sm select2-dropdown" style="min-width: 280px;">
+                            @foreach (var emp in empList)
+                            {
+                                if (emp.ESysId == targetEmpSysId)
+                                {
+                                    <option value="@emp.ESysId" selected>@emp.DisplayText</option>
+                                }
+                                else
+                                {
+                                    <option value="@emp.ESysId">@emp.DisplayText</option>
+                                }
+                            }
+                        </select>
                     </div>
-                    <!--Grid-->
-                </div>
-            </div>
-
-            <!-- MODALS -->
-            <!--Create-->
-            <div class="modal fade org-modal" id="modalCreate" tabindex="-1" role="dialog" aria-labelledby="modalCreateTitle" aria-hidden="true">
-                <div class="modal-dialog modal-xl" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalCreateTitle">
-                                <i class="fas fa-plus-circle mr-2"></i> Create New Attendance Exemption
-                            </h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body p-4" id="createModalBody">
-                        </div>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center bg-light border px-3 py-1 rounded">
+                        <i class="fas fa-user-circle text-primary mr-2" style="font-size: 1.2rem;"></i>
+                        <span class="small font-weight-bold text-dark">@targetEmpName</span>
                     </div>
-                </div>
+                }
             </div>
-
-            <!--Edit-->
-            <div class="modal fade org-modal" id="modalEdit" tabindex="-1" role="dialog" aria-labelledby="modalEditTitle" aria-hidden="true">
-                <div class="modal-dialog modal-xl" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalEditTitle">
-                                <i class="fas fa-edit mr-2"></i> Edit Attendance Exemption
-                            </h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body p-4" id="editModalBody">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!--Delete-->
-            <div class="modal fade org-modal org-modal-delete" id="modalDelete" tabindex="-1" role="dialog" aria-labelledby="modalDeleteTitle" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalDeleteTitle">
-                                <i class="fas fa-exclamation-triangle mr-2"></i> Delete Attendance Exemption
-                            </h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body p-4" id="deleteModalBody">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!--Delete Multiple-->
-            <div class="modal fade org-modal org-modal-delete" id="modalDeleteAll" tabindex="-1" role="dialog" aria-labelledby="modalDeleteAllTitle" aria-hidden="true">
-                <div class="modal-dialog modal-lg" role="document">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title" id="modalDeleteAllTitle">
-                                <i class="fas fa-layer-group mr-2"></i> Delete Multiple Attendance Exemptions
-                            </h5>
-                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div class="modal-body p-4" id="deleteallModalBody">
-                        </div>
-                    </div>
-                </div>
-            </div>
-
         </div>
-    </main>
+    </div>
+
+    <!-- Top Tabs (Matching Image 3) -->
+    <div class="reg-nav-tabs">
+        <div class="reg-nav-tab active" data-tab="summary" onclick="switchMainTab('summary')">
+            <i class="fas fa-stream mr-1"></i> Attendance Summary
+        </div>
+        <div class="reg-nav-tab" data-tab="requests" onclick="switchMainTab('requests')">
+            <i class="fas fa-list-alt mr-1"></i> Regularization Requests
+            <span class="badge badge-light ml-1" id="badgeAllRequests">@allRequests.Count</span>
+        </div>
+        <div class="reg-nav-tab" data-tab="approvals" onclick="switchMainTab('approvals')">
+            <i class="fas fa-user-check mr-1"></i> Pending Approvals
+            @if (pendingApprovals.Any())
+            {
+                <span class="reg-tab-badge ml-1" id="badgePendingApprovals">@pendingApprovals.Count</span>
+            }
+        </div>
+        @if (isAdmin)
+        {
+            <div class="reg-nav-tab" data-tab="config" onclick="switchMainTab('config')">
+                <i class="fas fa-sliders-h mr-1"></i> Configuration
+            </div>
+        }
+    </div>
+
+    <!-- Content Card -->
+    <div class="reg-content-card">
+
+        <!-- ============================================================== -->
+        <!-- TAB 1: ATTENDANCE SUMMARY (TIMELINE VIEW - IMAGE 3)           -->
+        <!-- ============================================================== -->
+        <div id="tabSummary" class="tab-pane-content">
+            <!-- Controls Bar -->
+            <div class="reg-controls-bar">
+                <!-- Navigation Date Picker (< 25-Oct-2026 - 31-Oct-2026 >) -->
+                <div class="d-flex align-items-center gap-2">
+                    <div class="reg-date-nav">
+                        <button class="reg-nav-arrow" title="Previous Week" onclick="navigateWeek(-7)"><i class="fas fa-chevron-left"></i></button>
+                        <span class="reg-nav-date-text">
+                            <i class="far fa-calendar-alt text-primary"></i>
+                            <span id="lblDateRange">@fromDateStr - @toDateStr</span>
+                        </span>
+                        <button class="reg-nav-arrow" title="Next Week" onclick="navigateWeek(7)"><i class="fas fa-chevron-right"></i></button>
+                    </div>
+
+                    <button class="btn btn-sm btn-outline-secondary ml-2" onclick="navigateWeek(0)" title="Current Week">Current Week</button>
+                </div>
+
+                <!-- Action Controls (Request Dropdown) -->
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn-reg-request" onclick="openRegularizationModal(null, @targetEmpSysId)">
+                        <i class="fas fa-plus-circle"></i> Request Regularization <i class="fas fa-caret-down ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Timeline Scale Header (Scheduled Shift: 07:30 AM to 03:30 PM) -->
+            <div class="reg-timeline-scale-header">
+                <div class="scale-col-day">Day</div>
+                <div class="scale-col-punches">Attendance Timings</div>
+                <div class="scale-col-track">
+                    <span class="scale-shift-bound start"><i class="far fa-clock mr-1 text-primary"></i> 07:30 AM (Shift Start)</span>
+                    <span class="scale-shift-info">Standard Working Shift: 07:30 AM - 03:30 PM (8h 00m)</span>
+                    <span class="scale-shift-bound end">03:30 PM (Shift End) <i class="far fa-clock ml-1 text-primary"></i></span>
+                </div>
+                <div class="scale-col-hours">Worked / Action</div>
+            </div>
+
+            <!-- Daily Timeline Container (Image 3) -->
+            <div class="reg-timeline-list" id="timelineListContainer">
+                @if (!timeline.Any())
+                {
+                    <div class="text-center py-5 text-muted">
+                        <i class="far fa-calendar-times fa-3x mb-3 text-secondary"></i>
+                        <p class="mb-0">No attendance records found for this period.</p>
+                    </div>
+                }
+                else
+                {
+                    @foreach (var item in timeline)
+                    {
+                        <div class="reg-timeline-row">
+                            <!-- Left Column: Day & Date -->
+                            <div class="reg-row-day">
+                                <div class="day-name">@item.DayName</div>
+                                <div class="day-num">@item.DayNumber</div>
+                            </div>
+
+                            <!-- Left-Center: Office In / Late / Office Out / Early -->
+                            <div class="reg-row-punches">
+                                @if (item.IsWeekend)
+                                {
+                                    <span class="text-muted font-italic">Weekly Off</span>
+                                }
+                                else if (!string.IsNullOrEmpty(item.InTimeStr))
+                                {
+                                    <span class="reg-punch-in">Office In: @item.InTimeStr</span>
+                                    @if (!string.IsNullOrEmpty(item.LateByStr))
+                                    {
+                                        <span class="reg-punch-late">@item.LateByStr</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.OutTimeStr))
+                                    {
+                                        <span class="reg-punch-out">Office Out: @item.OutTimeStr</span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(item.EarlyByStr))
+                                    {
+                                        <span class="reg-punch-early">@item.EarlyByStr</span>
+                                    }
+                                }
+                                else if (item.IsFuture)
+                                {
+                                    <span class="text-muted">Upcoming Date</span>
+                                }
+                                else if (item.IsToday)
+                                {
+                                    <span class="text-warning font-weight-bold">Not Checked In</span>
+                                }
+                                else
+                                {
+                                    <span class="text-danger font-weight-bold">Not Recorded</span>
+                                }
+                            </div>
+
+                            <!-- Center: Visual Timeline Track (Proportional to 07:30 AM - 03:30 PM) -->
+                            <div class="reg-row-track">
+                                <div class="reg-track-inner">
+                                    <!-- Base Scheduled Shift Rail -->
+                                    <div class="reg-track-base-rail" title="Scheduled Shift: @item.ShiftStartStr - @item.ShiftEndStr"></div>
+                                    <div class="reg-shift-cap start" title="Shift Start: @item.ShiftStartStr"></div>
+                                    <div class="reg-shift-cap end" title="Shift End: @item.ShiftEndStr"></div>
+
+                                    @if (item.IsWeekend)
+                                    {
+                                        <div class="reg-track-line weekend"></div>
+                                        <div class="reg-track-dot-start" style="left: 0; background: #ca8a04;"></div>
+                                        <div class="reg-track-dot-end" style="left: 100%; background: #ca8a04;"></div>
+                                    }
+                                    else if (item.Status == "Checked In")
+                                    {
+                                        @* Unworked Late Arrival Period (0% to InPos%) *@
+                                        @if (item.HasLatePeriod)
+                                        {
+                                            <div class="reg-track-late" style="left: 0; width: @(item.LateWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;" title="Late arrival (Unworked): @item.ShiftStartStr to @item.InTimeStr (@item.LateByStr)"></div>
+                                        }
+
+                                        @* Worked / Active progress duration *@
+                                        <div class="reg-track-worked" style="left: @(item.InPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; width: @(item.WorkedWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; background: #10b981;" title="Checked In at @item.InTimeStr"></div>
+
+                                        @* Check-in Dot at Actual Check-in Position *@
+                                        <div class="reg-track-dot-start" style="left: @(item.InPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; background: #10b981;" title="Office In: @item.InTimeStr"></div>
+                                    }
+                                    else if (item.Status == "Not Checked In")
+                                    {
+                                        <div class="reg-track-line future" style="border-top: 2px dashed #f59e0b;"></div>
+                                    }
+                                    else if (item.Status == "Absent")
+                                    {
+                                        <div class="reg-track-line absent"></div>
+                                        <div class="reg-track-dot-start" style="left: 0; background: #dc2626;"></div>
+                                        <div class="reg-track-dot-end" style="left: 100%; background: #dc2626;"></div>
+                                    }
+                                    else if (item.Status == "Regularized")
+                                    {
+                                        <div class="reg-track-line regularized"></div>
+                                        <div class="reg-track-dot-start" style="left: 0; background: #0891b2;"></div>
+                                        <div class="reg-track-dot-end" style="left: 100%; background: #0891b2;"></div>
+                                    }
+                                    else if (item.Status == "Pending Regularization")
+                                    {
+                                        <div class="reg-track-line pending"></div>
+                                        <div class="reg-track-dot-start" style="left: 0; background: #7e22ce;"></div>
+                                        <div class="reg-track-dot-end" style="left: 100%; background: #7e22ce;"></div>
+                                    }
+                                    else if (item.IsFuture)
+                                    {
+                                        <div class="reg-track-line future"></div>
+                                    }
+                                    else
+                                    {
+                                        @* Unworked Late Arrival Period (0% to InPos%) *@
+                                        @if (item.HasLatePeriod)
+                                        {
+                                            <div class="reg-track-late" style="left: 0; width: @(item.LateWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;" title="Late arrival (Unworked): @item.ShiftStartStr to @item.InTimeStr (@item.LateByStr)"></div>
+                                        }
+
+                                        @* Worked Duration (InPos% to OutPos%) *@
+                                        <div class="reg-track-worked" style="left: @(item.InPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; width: @(item.WorkedWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;" title="Worked: @item.InTimeStr to @(item.OutTimeStr ?? item.InTimeStr) (@item.WorkedHoursStr)"></div>
+
+                                        @* Check-in Dot at Actual Check-in Position *@
+                                        <div class="reg-track-dot-start" style="left: @(item.InPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; background: #10b981;" title="Office In: @item.InTimeStr"></div>
+
+                                        @* Check-out Dot at Actual Check-out Position *@
+                                        @if (!string.IsNullOrEmpty(item.OutTimeStr))
+                                        {
+                                            <div class="reg-track-dot-end" style="left: @(item.OutPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; background: #10b981;" title="Office Out: @item.OutTimeStr"></div>
+                                        }
+
+                                        @* Unworked Early Departure Period (OutPos% to 100%) *@
+                                        @if (item.HasEarlyPeriod)
+                                        {
+                                            <div class="reg-track-early" style="left: @(item.OutPosPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%; width: @(item.EarlyWidthPercent.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%;" title="Early departure (Unworked): @item.OutTimeStr to @item.ShiftEndStr (@item.EarlyByStr)"></div>
+                                        }
+                                    }
+                                </div>
+
+                                @if (item.IsWeekend)
+                                {
+                                    <span class="reg-track-badge weekend">Weekend</span>
+                                }
+                                else if (item.Status == "Checked In")
+                                {
+                                    <span class="reg-track-badge checkedin"><i class="fas fa-sign-in-alt mr-1"></i> Checked In</span>
+                                }
+                                else if (item.Status == "Not Checked In")
+                                {
+                                    <span class="reg-track-badge" style="background: #fef3c7; color: #b45309; border-color: #fde047;"><i class="fas fa-clock mr-1"></i> Not Checked In</span>
+                                }
+                                else if (item.Status == "Absent")
+                                {
+                                    <span class="reg-track-badge absent">Absent</span>
+                                }
+                                else if (item.Status == "Regularized")
+                                {
+                                    <span class="reg-track-badge regularized"><i class="fas fa-check-circle mr-1"></i> Regularized</span>
+                                }
+                                else if (item.Status == "Pending Regularization")
+                                {
+                                    <span class="reg-track-badge pending"><i class="fas fa-clock mr-1"></i> Pending Approval</span>
+                                }
+                            </div>
+
+                            <!-- Right: Worked Hours and Action Button -->
+                            <div class="reg-row-hours">
+                                <span class="reg-hours-text">@item.WorkedHoursStr</span>
+                                @if (item.CanRequestRegularization)
+                                {
+                                    <button class="reg-btn-action" onclick="openRegularizationModal('@item.Date.ToString("yyyy-MM-dd")', @targetEmpSysId)">
+                                        <i class="fas fa-edit mr-1"></i> Regularize
+                                    </button>
+                                }
+                                else if (item.IsToday && item.Status == "Checked In")
+                                {
+                                    <span class="badge badge-light text-success border" style="font-size: 0.72rem; padding: 3px 8px; border-radius: 10px;" title="Punch recorded in Zoho Attendance logs">
+                                        <i class="fas fa-check-circle mr-1"></i> Punch Recorded
+                                    </span>
+                                }
+                                else if (item.RegId.HasValue)
+                                {
+                                    <button class="btn btn-sm btn-link p-0 text-info font-weight-bold" style="font-size:0.75rem;" onclick="viewWorkflowHistory(@item.RegId.Value)">
+                                        <i class="fas fa-history mr-1"></i> @item.RegReqNo
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 2: REGULARIZATION REQUESTS LIST                            -->
+        <!-- ============================================================== -->
+        <div id="tabRequests" class="tab-pane-content" style="display: none;">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm border" style="font-size: 0.82rem;">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Req No</th>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Requested Hours</th>
+                            <th>Actual Punches</th>
+                            <th>Reason / Category</th>
+                            <th>Attachment</th>
+                            <th>Workflow Status</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!allRequests.Any())
+                        {
+                            <tr>
+                                <td colspan="9" class="text-center py-4 text-muted">No regularization requests found.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var r in allRequests)
+                            {
+                                <tr>
+                                    <td class="font-weight-bold text-primary">@r.ReqNo</td>
+                                    <td>
+                                        <div class="font-weight-bold">@r.EmpName</div>
+                                        <div class="small text-muted">@r.EmpIdStr &bull; @r.DeptName</div>
+                                    </td>
+                                    <td>@r.StDate.ToString("dd-MMM-yyyy")</td>
+                                    <td>
+                                        <div class="font-weight-bold">
+                                            @(r.ReqInTime.HasValue ? DateTime.Today.Add(r.ReqInTime.Value).ToString("hh:mm tt") : "-") -
+                                            @(r.ReqOutTime.HasValue ? DateTime.Today.Add(r.ReqOutTime.Value).ToString("hh:mm tt") : "-")
+                                        </div>
+                                        <span class="badge badge-light border">@((r.TotalHours ?? 0m).ToString("0.00")) Hrs</span>
+                                    </td>
+                                    <td>
+                                        <div class="small text-muted">
+                                            In: @(r.ActualInTime.HasValue ? DateTime.Today.Add(r.ActualInTime.Value).ToString("hh:mm tt") : "None")<br />
+                                            Out: @(r.ActualOutTime.HasValue ? DateTime.Today.Add(r.ActualOutTime.Value).ToString("hh:mm tt") : "None")
+                                        </div>
+                                        <div class="mt-1"><span class="badge badge-light border">@(r.ActualWorkedHoursText ?? "00:00 Hrs")</span></div>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-info">@r.ReasonCategory</span>
+                                        <div class="small text-dark mt-1">@r.ReasonDescription</div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(r.AttachmentPath))
+                                        {
+                                            <a href="@r.AttachmentPath" target="_blank" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">
+                                                <i class="fas fa-paperclip"></i> View
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">None</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (r.WfStatus == "PendingManager")
+                                        {
+                                            <span class="badge" style="background-color: #fae8f3; color: #550033; border: 1px solid #d49ebd; font-weight: 600; padding: 0.35rem 0.65rem; border-radius: 6px;"><i class="fas fa-hourglass-half mr-1"></i> Pending Reporting Manager</span>
+                                        }
+                                        else if (r.WfStatus == "PendingHR")
+                                        {
+                                            <span class="badge badge-info"><i class="fas fa-user-clock mr-1"></i> Pending Final HR</span>
+                                        }
+                                        else if (r.WfStatus == "Approved")
+                                        {
+                                            <span class="badge badge-success"><i class="fas fa-check-circle mr-1"></i> Approved</span>
+                                        }
+                                        else if (r.WfStatus == "Rejected")
+                                        {
+                                            <span class="badge badge-danger"><i class="fas fa-times-circle mr-1"></i> Rejected</span>
+                                            @if (r.IsLopApplied == true)
+                                            {
+                                                <div class="small text-danger font-weight-bold mt-1">LOP Applied</div>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">@r.WfStatus</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-outline-secondary" onclick="viewWorkflowHistory(@r.AtnExpId)" title="View Workflow History">
+                                            <i class="fas fa-history"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 3: PENDING APPROVALS LIST                                 -->
+        <!-- ============================================================== -->
+        <div id="tabApprovals" class="tab-pane-content" style="display: none;">
+            <div class="alert py-2 small mb-3" style="background-color: #f3e8ff; border: 1px solid #e9d5ff; color: #581c87; border-left: 4px solid #7e22ce; border-radius: 8px;">
+                <i class="fas fa-info-circle mr-1" style="color: #7e22ce;"></i> Attendance Regularization follows an independent 2-step hierarchy workflow:
+                <strong style="color: #581c87;">Requestor &rarr; Step 1: Reporting Manager &rarr; Step 2: Final Approver HR</strong>.
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover table-sm border" style="font-size: 0.82rem;">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Req No</th>
+                            <th>Employee</th>
+                            <th>Date</th>
+                            <th>Requested In / Out</th>
+                            <th>Total Hours</th>
+                            <th>Original Check-in / Out</th>
+                            <th>Original Total Hours</th>
+                            <th>Category &amp; Reason</th>
+                            <th>Attachment</th>
+                            <th>Stage</th>
+                            <th class="text-center">Approval Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (!pendingApprovals.Any())
+                        {
+                            <tr>
+                                <td colspan="11" class="text-center py-4 text-muted">No pending approvals awaiting your action.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var p in pendingApprovals)
+                            {
+                                <tr>
+                                    <td class="font-weight-bold text-primary">@p.ReqNo</td>
+                                    <td>
+                                        <div class="font-weight-bold">@p.EmpName</div>
+                                        <div class="small text-muted">@p.EmpIdStr &bull; @p.DeptName</div>
+                                    </td>
+                                    <td>@p.StDate.ToString("dd-MMM-yyyy")</td>
+                                    <td>
+                                        @(p.ReqInTime.HasValue ? DateTime.Today.Add(p.ReqInTime.Value).ToString("hh:mm tt") : "-") to
+                                        @(p.ReqOutTime.HasValue ? DateTime.Today.Add(p.ReqOutTime.Value).ToString("hh:mm tt") : "-")
+                                    </td>
+                                    <td><span class="badge badge-light border">@((p.TotalHours ?? 0m).ToString("0.00")) Hrs</span></td>
+                                    <td>
+                                        @if (p.ActualInTime.HasValue || p.ActualOutTime.HasValue)
+                                        {
+                                            <span>
+                                                @(p.ActualInTime.HasValue ? DateTime.Today.Add(p.ActualInTime.Value).ToString("hh:mm tt") : "Not Recorded") to
+                                                @(p.ActualOutTime.HasValue ? DateTime.Today.Add(p.ActualOutTime.Value).ToString("hh:mm tt") : "Not Recorded")
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted font-italic">Not Recorded</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light border font-weight-bold">@(p.ActualWorkedHoursText ?? "00:00 Hrs")</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-secondary">@p.ReasonCategory</span>
+                                        <div class="small text-dark mt-1">@p.ReasonDescription</div>
+                                    </td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(p.AttachmentPath))
+                                        {
+                                            <a href="@p.AttachmentPath" target="_blank" class="btn btn-sm btn-outline-primary" style="font-size: 0.75rem;">
+                                                <i class="fas fa-paperclip"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted small">-</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (p.WfStatus == "PendingManager")
+                                        {
+                                            <span class="badge" style="background-color: #f3e8ff; color: #6b21a8; border: 1px solid #d8b4fe; font-weight: 600; padding: 0.35rem 0.65rem; border-radius: 6px;">Step 1: Reporting Manager</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-info">Step 2: HR Final Approval</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        <button class="btn btn-sm btn-success mr-1" onclick="promptApprovalAction(@p.AtnExpId, true, '@p.ReqNo')">
+                                            <i class="fas fa-check mr-1"></i> Approve
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" onclick="promptApprovalAction(@p.AtnExpId, false, '@p.ReqNo')">
+                                            <i class="fas fa-times mr-1"></i> Reject
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- TAB 4: CONFIGURATION (ADMINS ONLY)                             -->
+        <!-- ============================================================== -->
+        @if (isAdmin)
+        {
+            <div id="tabConfig" class="tab-pane-content" style="display: none;">
+                <div class="row justify-content-center">
+                    <div class="col-md-7">
+                        <div class="card shadow-sm border">
+                            <div class="card-header bg-light py-2">
+                                <h6 class="mb-0 font-weight-bold text-dark"><i class="fas fa-sliders-h mr-1"></i> Attendance Regularization Policy Settings</h6>
+                            </div>
+                            <div class="card-body">
+                                <form id="formConfig" onsubmit="saveConfiguration(event)">
+                                    @Html.AntiForgeryToken()
+                                    <div class="form-group mb-3">
+                                        <label class="reg-field-label">Permitted Regularization Window (Past Days)</label>
+                                        <div class="input-group">
+                                            <input type="number" id="cfgMaxDays" class="form-control" min="1" max="90" value="@config.MaxDaysAllowed" required />
+                                            <div class="input-group-append">
+                                                <span class="input-group-text">Days</span>
+                                            </div>
+                                        </div>
+                                        <small class="text-muted">Employees can submit regularization requests for dates within this previous window (Default: 14 days / 2 weeks).</small>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="cfgAllowFuture" @(config.AllowFutureDates ? "checked" : "") />
+                                            <label class="custom-control-label font-weight-bold" for="cfgAllowFuture">Allow Future Dates</label>
+                                        </div>
+                                        <small class="text-muted">Strict policy requirement: Applying Attendance Regularization for future dates is ineligible by default.</small>
+                                    </div>
+
+                                    <div class="form-group mb-4">
+                                        <label class="reg-field-label">Allowed Working Days</label>
+                                        <input type="text" id="cfgWorkingDays" class="form-control" value="@config.WorkingDays" readonly />
+                                        <small class="text-muted">Qatar working calendar: Sunday to Thursday are active working days; Friday &amp; Saturday are weekends.</small>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <button type="submit" class="btn btn-primary" id="btnSaveConfig">
+                                            <i class="fas fa-save mr-1"></i> Save Policy Settings
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+    </div>
 </div>
 
-<!-- JSRENDER ACTION TEMPLATES -->
-<script type="text/x-jsrender" id="_actions">
-    <div class="org-actions-wrapper">
-        <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${AtnExpId})" title="Edit Exemption">
-            <i class="fas fa-pen"></i>
-        </button>
-        <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${AtnExpId})" title="Delete Exemption">
-            <i class="fas fa-trash-alt"></i>
-        </button>
-        <button type="button" class="org-action-btn" style="background:#fef2f2;color:#991b1b;border-color:#fecaca;" onclick="deleteAllFunc()" title="Delete Multiple">
-            <i class="fas fa-layer-group"></i>
-        </button>
+<!-- ============================================================== -->
+<!-- MODAL: REQUEST REGULARIZATION (IMAGE 1 & 2)                    -->
+<!-- ============================================================== -->
+<div class="modal fade" id="modalRequestRegularization" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-reg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold">
+                    <i class="fas fa-calendar-plus mr-2"></i> Request Regularization
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formRegularization" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+
+                    <!-- Employee Name Searchable Select2 Dropdown -->
+                    <div class="form-group mb-3">
+                        <label class="reg-field-label">Employee Name</label>
+                        <select id="modalEmpSysId" class="form-control form-control-sm select2-modal-emp" style="width: 100%;">
+                            @foreach (var emp in empList)
+                            {
+                                if (emp.ESysId == targetEmpSysId)
+                                {
+                                    <option value="@emp.ESysId" selected>@emp.DisplayText</option>
+                                }
+                                else
+                                {
+                                    <option value="@emp.ESysId">@emp.DisplayText</option>
+                                }
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Period Dropdown: Day, Week, Month, Custom -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="reg-field-label">Period</label>
+                            <select id="modalPeriodType" class="form-control form-control-sm" onchange="onPeriodTypeChanged(this.value)">
+                                <option value="Day">Day</option>
+                                <option value="Week">Week</option>
+                                <option value="Month">Month</option>
+                                <option value="Custom">Custom</option>
+                            </select>
+                        </div>
+
+                        <!-- Date / Date Range Controls -->
+                        <div class="col-md-6" id="wrapSingleDate">
+                            <label class="reg-field-label">Date</label>
+                            <div class="input-group input-group-sm">
+                                <input type="date" id="modalTargetDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" max="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
+                            </div>
+                        </div>
+
+                        <div class="col-md-3" id="wrapCustomEndDate" style="display: none;">
+                            <label class="reg-field-label">End Date</label>
+                            <div class="input-group input-group-sm">
+                                <input type="date" id="modalCustomEndDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" max="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attachment Section (Clean Attachment Icon) -->
+                    <div class="form-group mb-4">
+                        <label class="reg-field-label">Attachment</label>
+                        <div class="reg-attachment-box" onclick="document.getElementById('fileAttachmentInput').click()">
+                            <div class="reg-attach-links">
+                                <i class="fas fa-paperclip text-primary mr-2" style="font-size: 1.15rem;"></i>
+                                <span class="font-weight-bold text-dark">Click to attach file or drag &amp; drop</span>
+                                <span class="badge badge-light border text-muted ml-2">Optional</span>
+                            </div>
+                            <div class="reg-attach-note">
+                                Files supported: PDF, XLS, DOC, Image &bull; Maximum file size: 5MB
+                            </div>
+                            <div id="fileSelectedIndicator" class="mt-2 text-success small font-weight-bold" style="display:none;"></div>
+                        </div>
+                        <input type="file" id="fileAttachmentInput" name="attachment" style="display:none;" onchange="handleFileSelect(this)" accept=".pdf,.xls,.xlsx,.doc,.docx,.png,.jpg,.jpeg" />
+                    </div>
+
+                    <!-- Dynamic Applicable Dates Grid -->
+                    <div>
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <h6 class="font-weight-bold text-dark mb-0">Applicable Working Days (Sun - Thu)</h6>
+                            <span class="small text-muted font-weight-bold" id="lblApplicableSummary">Loading dates...</span>
+                        </div>
+
+                        <div class="table-responsive">
+                            <table class="reg-dates-table" id="tableApplicableDates">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 120px;">Worked day</th>
+                                        <th style="width: 170px;">Original Timings</th>
+                                        <th style="width: 130px;">Check-in *</th>
+                                        <th style="width: 130px;">Check-out *</th>
+                                        <th style="width: 100px;" class="text-center">Total Hours</th>
+                                        <th style="width: 200px;">Regularization Reason *</th>
+                                        <th>Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tbodyApplicableDates">
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">
+                                            <i class="fas fa-spinner fa-spin mr-1"></i> Loading applicable dates...
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-submit-reg" id="btnSubmitRegularization" onclick="submitRegularizationForm()">
+                    <i class="fas fa-paper-plane mr-1"></i> Submit Regularization
+                </button>
+            </div>
+        </div>
     </div>
-</script>
+</div>
 
-<!-- Backward Compatibility Templates -->
-<script type="text/x-jsrender" id="_edit">
-    <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${AtnExpId})" title="Edit">
-        <i class="fas fa-pen"></i>
-    </button>
-</script>
-<script type="text/x-jsrender" id="_delete">
-    <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${AtnExpId})" title="Delete">
-        <i class="fas fa-trash-alt"></i>
-    </button>
-</script>
-<script type="text/x-jsrender" id="_deleteMultiple">
-    <button type="button" class="org-action-btn" style="background:#fef2f2;color:#991b1b;border-color:#fecaca;" onclick="deleteAllFunc()" title="Delete Multiple">
-        <i class="fas fa-layer-group"></i>
-    </button>
-</script>
+<!-- ============================================================== -->
+<!-- MODAL: WORKFLOW HISTORY TIMELINE                               -->
+<!-- ============================================================== -->
+<div class="modal fade" id="modalWorkflowHistory" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light py-2">
+                <h6 class="modal-title font-weight-bold text-dark" id="modalHistoryTitle">
+                    <i class="fas fa-history text-primary mr-1"></i> Workflow Tracking
+                </h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="mb-2 d-flex justify-content-between align-items-center">
+                    <span class="small font-weight-bold text-muted">Request Status:</span>
+                    <span id="historyStatusBadge" class="badge badge-info">Pending</span>
+                </div>
+                <div id="historyLopWarning" class="alert alert-danger py-1 small mb-3" style="display:none;">
+                    <i class="fas fa-exclamation-triangle mr-1"></i> Loss of Pay (LOP) deduction applied for this rejected full-day request.
+                </div>
+                <div id="historyTimelineContent" class="timeline-container py-2">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
-<!-- Scripts -->
+<!-- ============================================================== -->
+<!-- MODAL: APPROVAL / REJECTION COMMENTS                           -->
+<!-- ============================================================== -->
+<div class="modal fade" id="modalApprovalAction" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-light py-2">
+                <h6 class="modal-title font-weight-bold text-dark" id="approvalActionTitle">
+                    Workflow Action
+                </h6>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-3">
+                <input type="hidden" id="actionRegId" />
+                <input type="hidden" id="actionIsApprove" />
+                <p id="actionPromptText" class="small text-dark mb-2"></p>
+                <div class="form-group mb-0">
+                    <label class="reg-field-label">Comments / Remarks *</label>
+                    <textarea id="actionComments" class="form-control form-control-sm" rows="3" placeholder="Enter comments..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2">
+                <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-primary" id="btnConfirmApprovalAction" onclick="executeApprovalAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-    var createFunc = function () {
-        var url = "/Attendance/HrEmpAttendExp/CreateNew";
-        $("#createModalBody").load(url, function () {
-            $("#modalCreate").modal("show");
-        });
-    };
+    // State variables
+    let currentFromDate = '@fromDateStr';
+    let currentToDate = '@toDateStr';
+    let currentTargetEmpId = @targetEmpSysId;
+    let applicableDatesCache = [];
 
-    var editFunc = function (id) {
-        var url = "/Attendance/HrEmpAttendExp/EditGet?id=" + id;
-        $("#editModalBody").load(url, function () {
-            $("#modalEdit").modal("show");
-        });
-    };
+    // =========================================================================
+    // SEARCHABLE EMPLOYEE DROPDOWNS (SELECT2 INITIALIZATION)
+    // =========================================================================
+    $(document).ready(function () {
+        if ($.fn.select2) {
+            // Global header employee dropdown
+            $('#selGlobalEmployee').select2({
+                theme: 'bootstrap4',
+                width: '300px',
+                placeholder: 'Search employee...'
+            }).on('change', function () {
+                onEmployeeChanged(this.value);
+            });
 
-    var deleteFunc = function (id) {
-        var url = "/Attendance/HrEmpAttendExp/DeleteGet?id=" + id;
-        $("#deleteModalBody").load(url, function () {
-            $("#modalDelete").modal("show");
-        });
-    };
+            // Modal employee dropdown
+            $('#modalEmpSysId').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                dropdownParent: $('#modalRequestRegularization'),
+                placeholder: 'Search employee...'
+            }).on('change', function () {
+                loadApplicableDates();
+            });
+        }
+    });
 
-    var deleteAllFunc = function () {
-        var url = "/Attendance/HrEmpAttendExp/DeleteAllGet";
-        $("#deleteallModalBody").load(url, function () {
-            $("#modalDeleteAll").modal("show");
-        });
-    };
+    // =========================================================================
+    // TOAST NOTIFICATIONS (Matching user's style)
+    // =========================================================================
+    function showAppToast(title, message, isError = false) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = 'app-toast-pill ' + (isError ? 'error' : '');
+        toast.innerHTML = `
+            <div>
+                <strong class="${isError ? 'text-danger' : 'text-success'}">${title}</strong> ${message}
+            </div>
+            <button type="button" class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => {
+            if (toast.parentElement) toast.remove();
+        }, 5000);
+    }
 
-    function toolbarClick(args) {
-        var gridObj = document.getElementById("Grid").ej2_instances[0];
+    // =========================================================================
+    // MAIN TAB SWITCHING
+    // =========================================================================
+    function switchMainTab(tabKey) {
+        document.querySelectorAll('.reg-nav-tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-pane-content').forEach(p => p.style.display = 'none');
 
-        if (args.item.id === 'Grid_excelexport') {
-            gridObj.excelExport();
+        const activeTabEl = document.querySelector(`.reg-nav-tab[data-tab="${tabKey}"]`);
+        if (activeTabEl) activeTabEl.classList.add('active');
+
+        if (tabKey === 'summary') {
+            document.getElementById('tabSummary').style.display = 'block';
+        } else if (tabKey === 'requests') {
+            document.getElementById('tabRequests').style.display = 'block';
+        } else if (tabKey === 'approvals') {
+            document.getElementById('tabApprovals').style.display = 'block';
+        } else if (tabKey === 'config') {
+            const el = document.getElementById('tabConfig');
+            if (el) el.style.display = 'block';
         }
     }
 
-    // Date Range Search for StDate And EndDate
-    var flValInput;
-    var daterangepicker;
-    function loadFormattings() {
-        var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
-        this.columns[2].format = { type: 'date', format: 'dd/MM/yyyy' };
-        this.columns[3].format = { type: 'date', format: 'dd/MM/yyyy' };
-        this.columns[6].format = { type: 'date', format: 'dd/MM/yyyy' };
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const targetTab = urlParams.get('tab') || urlParams.get('viewTab') || (window.location.hash ? window.location.hash.replace('#', '') : null) || '@(ViewBag.ViewTab ?? "summary")';
+            if (targetTab && targetTab !== 'summary' && ['requests', 'approvals', 'config'].includes(targetTab)) {
+                switchMainTab(targetTab);
+            }
+        } catch (e) {
+            console.error('Error switching main tab:', e);
+        }
+    });
 
-        this.columns[2].filter = {
-            type: "Menu",
-            ui: {
-                create: (args) => {
-                    flValInput = ej.base.createElement('input', { className: 'e-input' });
-                    args.target.appendChild(flValInput);
-                },
-                write: (args) => {
-                    daterangepicker = new ej.calendars.DateRangePicker({
-                        change: function (e) {
-                            var target = e.element;
-                            if (e.value) {
-                                startDate = e.value[0];
-                                endDate = e.value[1];
-                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
-                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('StDate', 'equal', startDate) : grid.filterByColumn('StDate', 'greaterthan', startDate);
-                            }
-                            else {
-                                grid.filterSettings.columns = [];
-                                grid.removeFilteredColsByField(target.id);
-                            }
-                        },
-                    });
-                    daterangepicker.appendTo(flValInput);
-                }
-            },
-        };
+    // =========================================================================
+    // EMPLOYEE CHANGE & WEEK NAVIGATION
+    // =========================================================================
+    function onEmployeeChanged(empSysId) {
+        currentTargetEmpId = empSysId;
+        window.location.href = `/Attendance/HrEmpAttendExp?empSysId=${empSysId}&fromDate=${currentFromDate}&toDate=${currentToDate}`;
+    }
 
-        this.columns[3].filter = {
-            type: "Menu",
-            ui: {
-                create: (args) => {
-                    flValInput = ej.base.createElement('input', { className: 'e-input' });
-                    args.target.appendChild(flValInput);
-                },
-                write: (args) => {
-                    daterangepicker = new ej.calendars.DateRangePicker({
-                        change: function (e) {
-                            var target = e.element;
-                            if (e.value) {
-                                startDate = e.value[0];
-                                endDate = e.value[1];
-                                (startDate.toDateString() === endDate.toDateString()) ? customFilter = false : customFilter = true;
-                                (startDate.toDateString() === endDate.toDateString()) ? grid.filterByColumn('EndDate', 'equal', startDate) : grid.filterByColumn('EndDate', 'greaterthan', startDate);
-                            }
-                            else {
-                                grid.filterSettings.columns = [];
-                                grid.removeFilteredColsByField(target.id);
-                            }
-                        },
-                    });
-                    daterangepicker.appendTo(flValInput);
+    function navigateWeek(dayOffset) {
+        let baseDate = new Date(currentFromDate);
+        if (isNaN(baseDate.getTime())) baseDate = new Date();
+
+        if (dayOffset === 0) {
+            window.location.href = `/Attendance/HrEmpAttendExp?empSysId=${currentTargetEmpId}`;
+            return;
+        }
+
+        baseDate.setDate(baseDate.getDate() + dayOffset);
+        const diff = (7 + (baseDate.getDay() - 0)) % 7;
+        const newFrom = new Date(baseDate);
+        newFrom.setDate(baseDate.getDate() - diff);
+        const newTo = new Date(newFrom);
+        newTo.setDate(newFrom.getDate() + 6);
+
+        const fromStr = formatDate(newFrom);
+        const toStr = formatDate(newTo);
+        window.location.href = `/Attendance/HrEmpAttendExp?empSysId=${currentTargetEmpId}&fromDate=${fromStr}&toDate=${toStr}`;
+    }
+
+    function formatDate(d) {
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        const day = ('0' + d.getDate()).slice(-2);
+        return `${day}-${months[d.getMonth()]}-${d.getFullYear()}`;
+    }
+
+    // =========================================================================
+    // MODAL: REQUEST REGULARIZATION
+    // =========================================================================
+    function openRegularizationModal(targetDateStr, empSysId) {
+        if (targetDateStr) {
+            const checkDate = new Date(targetDateStr);
+            const dayOfWeek = checkDate.getDay();
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                showAppToast('Weekend Not Applicable', 'Regularization is not applicable for weekends (Friday and Saturday).', true);
+                return;
+            }
+        }
+
+        if (empSysId && empSysId > 0) {
+            currentTargetEmpId = empSysId;
+        }
+
+        const empSelect = document.getElementById('modalEmpSysId');
+        if (empSelect) empSelect.value = currentTargetEmpId;
+        if ($.fn.select2 && $('#modalEmpSysId').data('select2')) {
+            $('#modalEmpSysId').val(currentTargetEmpId).trigger('change.select2');
+        }
+
+        const periodSelect = document.getElementById('modalPeriodType');
+        if (periodSelect) periodSelect.value = 'Day';
+
+        const wrapSingle = document.getElementById('wrapSingleDate');
+        const wrapCustom = document.getElementById('wrapCustomEndDate');
+        if (wrapSingle) wrapSingle.className = 'col-md-6';
+        if (wrapCustom) wrapCustom.style.display = 'none';
+
+        if (targetDateStr) {
+            document.getElementById('modalTargetDate').value = targetDateStr;
+        } else {
+            document.getElementById('modalTargetDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        document.getElementById('fileAttachmentInput').value = '';
+        const ind = document.getElementById('fileSelectedIndicator');
+        if (ind) {
+            ind.style.display = 'none';
+            ind.innerHTML = '';
+        }
+
+        loadApplicableDates();
+        $('#modalRequestRegularization').modal('show');
+    }
+
+    function onPeriodTypeChanged(periodType) {
+        const wrapSingle = document.getElementById('wrapSingleDate');
+        const wrapCustom = document.getElementById('wrapCustomEndDate');
+
+        if (periodType === 'Custom') {
+            wrapSingle.className = 'col-md-3';
+            wrapCustom.style.display = 'block';
+        } else {
+            wrapSingle.className = 'col-md-6';
+            wrapCustom.style.display = 'none';
+        }
+        loadApplicableDates();
+    }
+
+    function handleFileSelect(input) {
+        const ind = document.getElementById('fileSelectedIndicator');
+        if (input.files && input.files[0]) {
+            const f = input.files[0];
+            if (f.size > 5 * 1024 * 1024) {
+                showAppToast('Validation', 'File size exceeds 5MB limit.', true);
+                input.value = '';
+                ind.style.display = 'none';
+                return;
+            }
+            ind.innerHTML = `<i class="fas fa-paperclip mr-1"></i> Attached: <strong>${f.name}</strong> (${(f.size / 1024).toFixed(1)} KB)`;
+            ind.style.display = 'block';
+        } else {
+            ind.style.display = 'none';
+        }
+    }
+
+    // =========================================================================
+    // AJAX: LOAD APPLICABLE DATES & TIMER CONTROLS
+    // =========================================================================
+    function loadApplicableDates() {
+        const empSysId = document.getElementById('modalEmpSysId').value || currentTargetEmpId;
+        const periodType = document.getElementById('modalPeriodType').value;
+        const targetDate = document.getElementById('modalTargetDate').value;
+        const customEndDate = (periodType === 'Custom') ? document.getElementById('modalCustomEndDate').value : '';
+
+        const tbody = document.getElementById('tbodyApplicableDates');
+        const btnSubmit = document.getElementById('btnSubmitRegularization');
+
+        if (periodType === 'Day' && targetDate) {
+            const checkDate = new Date(targetDate);
+            const dayOfWeek = checkDate.getDay();
+            if (dayOfWeek === 5 || dayOfWeek === 6) {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Weekends (Friday and Saturday) are non-working days and cannot be regularized.</td></tr>`;
+                document.getElementById('lblApplicableSummary').innerText = '0 eligible day(s) (Weekend)';
+                applicableDatesCache = [];
+                if (btnSubmit) btnSubmit.disabled = true;
+                return;
+            }
+        }
+
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Calculating applicable dates and missing hours...</td></tr>`;
+
+        fetch(`/Attendance/HrEmpAttendExp/GetApplicableDates?empSysId=${empSysId}&periodType=${periodType}&targetDate=${targetDate}&customEndDate=${customEndDate}`)
+            .then(res => res.json())
+            .then(data => {
+                const datesList = data.Dates || data.dates;
+                if (!data.success && !data.Success || !datesList || datesList.length === 0) {
+                    const errorMsg = data.message || data.Message || 'No eligible working days found for this period.';
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${errorMsg}</td></tr>`;
+                    document.getElementById('lblApplicableSummary').innerText = '0 eligible day(s)';
+                    applicableDatesCache = [];
+                    if (btnSubmit) btnSubmit.disabled = true;
+                    return;
                 }
-            },
-        };
+
+                if (btnSubmit) btnSubmit.disabled = false;
+                applicableDatesCache = datesList;
+                document.getElementById('lblApplicableSummary').innerText = `${datesList.length} working day(s)`;
+
+                let rowsHtml = '';
+                datesList.forEach((d, idx) => {
+                    // Safe property resolution (handling both PascalCase and camelCase)
+                    const workedDay = d.WorkedDayText || d.workedDayText || 'Working Day';
+                    const dateVal = d.DateStr || d.dateStr || (d.Date ? d.Date.split('T')[0] : (d.date ? d.date.split('T')[0] : ''));
+                    const actualInTxt = d.ActualInTimeText || d.actualInTimeText || '-';
+                    const actualOutTxt = d.ActualOutTimeText || d.actualOutTimeText || '-';
+                    const actualWorkedTxt = d.ActualWorkedHoursText || d.actualWorkedHoursText || '00:00 Hrs';
+                    const suggestedReason = d.SuggestedReason || d.suggestedReason || '';
+                    const isEligible = (d.IsEligible !== undefined) ? d.IsEligible : (d.isEligible !== undefined ? d.isEligible : true);
+                    const ineligibilityReason = d.IneligibilityReason || d.ineligibilityReason || '';
+                    const missingPeriodNote = d.MissingPeriodNote || d.missingPeriodNote || '';
+                    const inTimeVal = d.CheckInTimeOnly || d.checkInTimeOnly || '';
+                    const outTimeVal = d.CheckOutTimeOnly || d.checkOutTimeOnly || '';
+                    const totHoursVal = d.TotalHoursText || d.totalHoursText || '00:00';
+
+                    // Initialize description: sync with suggestedReason unless "Other" or blank
+                    let description = d.Description || d.description || '';
+                    if (!description && suggestedReason && suggestedReason !== 'Other') {
+                        description = suggestedReason;
+                    }
+                    if (suggestedReason === 'Other') {
+                        description = '';
+                    }
+
+                    const disabledAttr = isEligible ? '' : 'disabled';
+                    const ineligibilityHint = ineligibilityReason ? `<div class="small text-danger">${ineligibilityReason}</div>` : '';
+                    const missingHint = missingPeriodNote ? `<div class="small text-primary font-italic">${missingPeriodNote}</div>` : '';
+
+                    rowsHtml += `
+                        <tr data-index="${idx}" class="${isEligible ? '' : 'table-light text-muted'}">
+                            <td>
+                                <div class="font-weight-bold text-dark">${workedDay}</div>
+                                ${ineligibilityHint}
+                                ${missingHint}
+                            </td>
+                            <td>
+                                <div class="small bg-light p-2 rounded border">
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted">In:</span>
+                                        ${(actualInTxt && actualInTxt !== '-') ? `<span class="font-weight-bold text-success">${actualInTxt}</span>` : `<span class="text-muted font-italic">Not Recorded</span>`}
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="text-muted">Out:</span>
+                                        ${(actualOutTxt && actualOutTxt !== '-') ? `<span class="font-weight-bold text-primary">${actualOutTxt}</span>` : `<span class="text-muted font-italic">Not Recorded</span>`}
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between pt-1 border-top">
+                                        <span class="text-muted">Worked:</span>
+                                        <span class="font-weight-bold text-dark">${actualWorkedTxt}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkInTime_${idx}" value="${inTimeVal}" ${disabledAttr} oninput="recalculateRowHours(${idx})" onchange="recalculateRowHours(${idx})" />
+                            </td>
+                            <td>
+                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkOutTime_${idx}" value="${outTimeVal}" ${disabledAttr} oninput="recalculateRowHours(${idx})" onchange="recalculateRowHours(${idx})" />
+                            </td>
+                            <td class="text-center align-middle">
+                                <span class="font-weight-bold text-dark" id="totHours_${idx}">${totHoursVal}</span>
+                            </td>
+                            <td>
+                                <select class="form-control form-control-sm select-reason" id="selReason_${idx}" ${disabledAttr} onchange="onReasonChanged(${idx})">
+                                    <option value="">-- Select Reason --</option>
+                                    <option value="Forgot to check-in" ${suggestedReason === 'Forgot to check-in' ? 'selected' : ''}>Forgot to check-in</option>
+                                    <option value="Forgot to check-out" ${suggestedReason === 'Forgot to check-out' ? 'selected' : ''}>Forgot to check-out</option>
+                                    <option value="Direct Customer Visit" ${suggestedReason === 'Direct Customer Visit' ? 'selected' : ''}>Direct Customer Visit</option>
+                                    <option value="Business Trip" ${suggestedReason === 'Business Trip' ? 'selected' : ''}>Business Trip</option>
+                                    <option value="Official Duty" ${suggestedReason === 'Official Duty' ? 'selected' : ''}>Official Duty</option>
+                                    <option value="Work from Home" ${suggestedReason === 'Work from Home' ? 'selected' : ''}>Work from Home</option>
+                                    <option value="Other" ${suggestedReason === 'Other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="text" class="form-control form-control-sm" id="txtDesc_${idx}" value="${description}" placeholder="${suggestedReason === 'Other' ? 'Please enter reason description (Mandatory) *' : 'Description'}" ${disabledAttr} />
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tbody.innerHTML = rowsHtml;
+            })
+            .catch(err => {
+                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load dates: ${err.message}</td></tr>`;
+            });
+    }
+
+    // =========================================================================
+    // SYNC DESCRIPTION WITH SELECTED REASON & HANDLE "OTHER" MANDATORY
+    // =========================================================================
+    function onReasonChanged(idx) {
+        const sel = document.getElementById(`selReason_${idx}`);
+        const descEl = document.getElementById(`txtDesc_${idx}`);
+        if (!sel || !descEl) return;
+
+        const val = sel.value;
+        if (val === 'Other') {
+            descEl.value = '';
+            descEl.placeholder = 'Please enter reason description (Mandatory) *';
+            descEl.classList.add('border-danger');
+            descEl.focus();
+        } else if (val) {
+            descEl.value = val;
+            descEl.placeholder = 'Description';
+            descEl.classList.remove('border-danger');
+        } else {
+            descEl.value = '';
+            descEl.placeholder = 'Description';
+            descEl.classList.remove('border-danger');
+        }
+    }
+
+    // =========================================================================
+    // DYNAMIC HOURS CALCULATION BASED ON CHECK-IN & CHECK-OUT TIMER CONTROLS
+    // =========================================================================
+    function recalculateRowHours(idx) {
+        const inEl = document.getElementById(`chkInTime_${idx}`);
+        const outEl = document.getElementById(`chkOutTime_${idx}`);
+        const totEl = document.getElementById(`totHours_${idx}`);
+        if (!inEl || !outEl || !totEl) return;
+
+        const inVal = inEl.value;
+        const outVal = outEl.value;
+
+        if (!inVal || !outVal) {
+            totEl.innerText = "00:00";
+            return;
+        }
+
+        const [inH, inM] = inVal.split(':').map(Number);
+        const [outH, outM] = outVal.split(':').map(Number);
+
+        let diffMinutes = (outH * 60 + outM) - (inH * 60 + inM);
+        if (diffMinutes < 0) {
+            diffMinutes = 0;
+        }
+
+        const h = Math.floor(diffMinutes / 60);
+        const m = diffMinutes % 60;
+        totEl.innerText = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    }
+
+    // =========================================================================
+    // SUBMIT REGULARIZATION REQUEST
+    // =========================================================================
+    function submitRegularizationForm() {
+        if (!applicableDatesCache || applicableDatesCache.length === 0) {
+            showAppToast('Validation', 'No eligible working days to regularize.', true);
+            return;
+        }
+
+        const itemsToSubmit = [];
+        for (let i = 0; i < applicableDatesCache.length; i++) {
+            const d = applicableDatesCache[i];
+            const isEligible = (d.IsEligible !== undefined) ? d.IsEligible : (d.isEligible !== undefined ? d.isEligible : true);
+            if (!isEligible) continue;
+
+            const workedDay = d.WorkedDayText || d.workedDayText || `Day ${i + 1}`;
+            const reason = document.getElementById(`selReason_${i}`)?.value;
+            if (!reason || reason === 'Select' || reason === '') {
+                showAppToast('Validation', `Please select a Regularization Reason for ${workedDay}.`, true);
+                document.getElementById(`selReason_${i}`)?.focus();
+                return;
+            }
+
+            const inTime = document.getElementById(`chkInTime_${i}`)?.value;
+            const outTime = document.getElementById(`chkOutTime_${i}`)?.value;
+
+            if (!inTime) {
+                showAppToast('Validation', `Please specify Check-in time for ${workedDay}.`, true);
+                document.getElementById(`chkInTime_${i}`)?.focus();
+                return;
+            }
+            if (!outTime) {
+                showAppToast('Validation', `Please specify Check-out time for ${workedDay}.`, true);
+                document.getElementById(`chkOutTime_${i}`)?.focus();
+                return;
+            }
+
+            const [inH, inM] = inTime.split(':').map(Number);
+            const [outH, outM] = outTime.split(':').map(Number);
+            if ((outH * 60 + outM) <= (inH * 60 + inM)) {
+                showAppToast('Validation', `Check-out time must be after Check-in time for ${workedDay}.`, true);
+                document.getElementById(`chkOutTime_${i}`)?.focus();
+                return;
+            }
+
+            const desc = (document.getElementById(`txtDesc_${i}`)?.value || '').trim();
+            if (reason === 'Other' && !desc) {
+                showAppToast('Validation', `Description is mandatory when reason is 'Other' for ${workedDay}.`, true);
+                const descEl = document.getElementById(`txtDesc_${i}`);
+                if (descEl) {
+                    descEl.classList.add('border-danger');
+                    descEl.focus();
+                }
+                return;
+            }
+
+            const dateStr = d.DateStr || d.dateStr || (d.Date ? d.Date.split('T')[0] : (d.date ? d.date.split('T')[0] : ''));
+
+            const formattedInTime = inTime.length === 5 ? `${inTime}:00` : inTime;
+            const formattedOutTime = outTime.length === 5 ? `${outTime}:00` : outTime;
+
+            itemsToSubmit.push({
+                date: dateStr,
+                checkIn: `${dateStr}T${formattedInTime}`,
+                checkOut: `${dateStr}T${formattedOutTime}`,
+                reasonCategory: reason,
+                description: desc || reason
+            });
+        }
+
+        if (itemsToSubmit.length === 0) {
+            showAppToast('Validation', 'Please select at least one eligible working day.', true);
+            return;
+        }
+
+        const btn = document.getElementById('btnSubmitRegularization');
+        btn.disabled = true;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> Submitting...`;
+
+        const formData = new FormData();
+        formData.append('EmpSysId', document.getElementById('modalEmpSysId').value);
+        formData.append('PeriodType', document.getElementById('modalPeriodType').value);
+        formData.append('ItemsJson', JSON.stringify(itemsToSubmit));
+
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        const fileInput = document.getElementById('fileAttachmentInput');
+        if (fileInput.files && fileInput.files[0]) {
+            formData.append('attachment', fileInput.files[0]);
+        }
+
+        fetch('/Attendance/HrEmpAttendExp/SubmitRegularization', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(result => {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-paper-plane mr-1"></i> Submit Regularization`;
+
+            if (result.success || result.Success) {
+                $('#modalRequestRegularization').modal('hide');
+                showAppToast('Regularization', result.message || result.Message || 'Request Submitted Successfully');
+                setTimeout(() => window.location.reload(), 1500);
+            } else {
+                showAppToast('Submission Failed', result.message || result.Message, true);
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            btn.innerHTML = `<i class="fas fa-paper-plane mr-1"></i> Submit Regularization`;
+            showAppToast('Error', err.message, true);
+        });
+    }
+
+    // =========================================================================
+    // APPROVAL / REJECTION ACTIONS (REPORTING MANAGER & HR)
+    // =========================================================================
+    function promptApprovalAction(regId, isApprove, reqNo) {
+        document.getElementById('actionRegId').value = regId;
+        document.getElementById('actionIsApprove').value = isApprove ? '1' : '0';
+        document.getElementById('actionComments').value = '';
+
+        const title = document.getElementById('approvalActionTitle');
+        const prompt = document.getElementById('actionPromptText');
+        const btn = document.getElementById('btnConfirmApprovalAction');
+
+        if (isApprove) {
+            title.innerHTML = `<span class="text-success"><i class="fas fa-check-circle mr-1"></i> Approve Regularization</span>`;
+            prompt.innerHTML = `Are you sure you want to <strong>APPROVE</strong> regularization request <strong>${reqNo}</strong>?`;
+            btn.className = 'btn btn-sm btn-success';
+            btn.innerText = 'Approve Request';
+        } else {
+            title.innerHTML = `<span class="text-danger"><i class="fas fa-times-circle mr-1"></i> Reject Regularization</span>`;
+            prompt.innerHTML = `Are you sure you want to <strong>REJECT</strong> regularization request <strong>${reqNo}</strong>? (Full-day rejections will apply Loss of Pay).`;
+            btn.className = 'btn btn-sm btn-danger';
+            btn.innerText = 'Reject Request';
+        }
+
+        $('#modalApprovalAction').modal('show');
+    }
+
+    function executeApprovalAction() {
+        const regId = document.getElementById('actionRegId').value;
+        const isApprove = document.getElementById('actionIsApprove').value === '1';
+        const comments = document.getElementById('actionComments').value.trim();
+
+        if (!isApprove && !comments) {
+            showAppToast('Validation', 'Please enter comments explaining why the request is rejected.', true);
+            return;
+        }
+
+        const endpoint = isApprove ? '/Attendance/HrEmpAttendExp/ApproveRequest' : '/Attendance/HrEmpAttendExp/RejectRequest';
+        const formData = new FormData();
+        formData.append('regId', regId);
+        formData.append('comments', comments);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(result => {
+            $('#modalApprovalAction').modal('hide');
+            if (result.success || result.Success) {
+                showAppToast('Workflow', result.message || result.Message);
+                setTimeout(() => window.location.reload(), 1400);
+            } else {
+                showAppToast('Action Failed', result.message || result.Message, true);
+            }
+        })
+        .catch(err => {
+            showAppToast('Error', err.message, true);
+        });
+    }
+
+    // =========================================================================
+    // WORKFLOW HISTORY TRACKING
+    // =========================================================================
+    function viewWorkflowHistory(regId) {
+        fetch(`/Attendance/HrEmpAttendExp/GetWorkflowHistory?regId=${regId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success && !data.Success) {
+                    showAppToast('Error', data.message || data.Message, true);
+                    return;
+                }
+
+                const reqNo = data.ReqNo || data.reqNo || `REG-${regId}`;
+                const currentStatus = data.CurrentStatus || data.currentStatus || 'Pending';
+                const isLop = data.IsLop !== undefined ? data.IsLop : data.isLop;
+                const historyList = data.History || data.history || [];
+
+                document.getElementById('modalHistoryTitle').innerHTML = `<i class="fas fa-history text-primary mr-1"></i> Workflow Tracking - ${reqNo}`;
+                document.getElementById('historyStatusBadge').innerText = currentStatus;
+                document.getElementById('historyLopWarning').style.display = isLop ? 'block' : 'none';
+
+                let html = '<div class="list-group list-group-flush">';
+                if (historyList && historyList.length > 0) {
+                    historyList.forEach(h => {
+                        const stepName = h.StepName || h.stepName || '';
+                        const action = h.Action || h.action || '';
+                        const actorName = h.ActorName || h.actorName || '';
+                        const actionDateTime = h.ActionDateTime || h.actionDateTime || '';
+                        const comments = h.Comments || h.comments || '';
+
+                        let actionColor = 'badge-secondary';
+                        if (action === 'Approved') actionColor = 'badge-success';
+                        else if (action === 'Rejected') actionColor = 'badge-danger';
+                        else if (action === 'Submitted') actionColor = 'badge-primary';
+
+                        html += `
+                            <div class="list-group-item px-0 py-2">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <strong class="text-dark small">${stepName}</strong>
+                                    <span class="badge ${actionColor}">${action}</span>
+                                </div>
+                                <div class="small text-muted mb-1">
+                                    <i class="far fa-user mr-1"></i> ${actorName} &bull; <i class="far fa-clock mr-1"></i> ${actionDateTime}
+                                </div>
+                                ${comments ? `<div class="small bg-light p-2 rounded text-dark">${comments}</div>` : ''}
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="text-center py-3 text-muted small">No workflow history records logged yet.</div>';
+                }
+                html += '</div>';
+
+                document.getElementById('historyTimelineContent').innerHTML = html;
+                $('#modalWorkflowHistory').modal('show');
+            });
+    }
+
+    // =========================================================================
+    // CONFIGURATION SAVE (ADMINS ONLY)
+    // =========================================================================
+    function saveConfiguration(e) {
+        e.preventDefault();
+        const maxDays = document.getElementById('cfgMaxDays').value;
+        const allowFuture = document.getElementById('cfgAllowFuture').checked;
+        const workingDays = document.getElementById('cfgWorkingDays').value;
+
+        const formData = new FormData();
+        formData.append('maxDays', maxDays);
+        formData.append('allowFuture', allowFuture);
+        formData.append('workingDays', workingDays);
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value;
+        if (token) formData.append('__RequestVerificationToken', token);
+
+        const btn = document.getElementById('btnSaveConfig');
+        btn.disabled = true;
+
+        fetch('/Attendance/HrEmpAttendExp/SaveConfig', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            btn.disabled = false;
+            if (data.success || data.Success) {
+                showAppToast('Configuration', data.message || data.Message);
+            } else {
+                showAppToast('Config Error', data.message || data.Message, true);
+            }
+        })
+        .catch(err => {
+            btn.disabled = false;
+            showAppToast('Error', err.message, true);
+        });
     }
 </script>

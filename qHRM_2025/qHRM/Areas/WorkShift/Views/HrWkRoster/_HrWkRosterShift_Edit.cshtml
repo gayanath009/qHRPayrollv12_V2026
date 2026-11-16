@@ -1,94 +1,103 @@
 @model qHRM.Areas.WorkShift.Models.HrWkRosterShift
 <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
-@using (Html.BeginForm("EditSft", "HrWkRoster"))
+
+@using (Html.BeginForm("EditSft", "HrWkRoster", FormMethod.Post, new { id = "frmEditSft" }))
 {
-<span class="alert-success">
-    @Html.ValidationSummary(true)
-</span>
-<div class="dl-horizontal">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-    <input id="txtSchId" asp-for="SchId" hidden />
-    <input id="txtRstId" asp-for="RstId" hidden />
+    @Html.AntiForgeryToken()
+    <span class="text-danger">
+        @Html.ValidationSummary(true)
+    </span>
+    <input id="txtSchId" asp-for="SchId" type="hidden" />
+    <input id="txtRstId" asp-for="RstId" type="hidden" />
     @Html.HiddenFor(model => model.EntId)
     @Html.HiddenFor(model => model.Day)
-</div>
-<div class="card-body">
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label asp-for="RstId" class="control-label"></label>
-            <p>
-                @Html.LabelFor(model => model.SchId, ((string)ViewBag.RstName))
-            </p>
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-6">
-            <label asp-for="Day" class="control-label"></label>
-            <p>@Html.DisplayFor(model => model.Day)</p>
-            <span asp-validation-for="Day" class="text-danger"></span>
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-12">
-            <label asp-for="SftId" class="control-label"></label>
-            <select asp-for="SftId" id="dpSftE" class="form-control form-control-sm select2-dropdown"
-                    asp-items="@(new SelectList(ViewBag.lstSft, "SftId", "ShtDtl", Model?.SftId))">
-                <option value="">-- Select Shift --</option>
-            </select>
-            <span asp-validation-for="SftId" class="text-danger"></span>
-        </div>
-    </div>
-    <div class="form-row">
-        <div class="form-group col-md-12">
-            <label asp-for="DescEng" class="control-label"></label>
-            <input asp-for="DescEng" class="form-control form-control-sm" />
-            <span asp-validation-for="DescEng" class="text-danger"></span>
-        </div>
-    </div>
 
-    <div class="form-group"></div>
+    <div class="card-body p-1">
+        <div class="form-row">
+            <div class="form-group col-md-6 mb-3">
+                <label class="control-label font-weight-bold text-muted small text-uppercase">Roster</label>
+                <div class="p-2 bg-light rounded border text-dark font-weight-bold">
+                    <i class="fas fa-calendar-alt text-primary mr-2"></i>@ViewBag.RstName
+                </div>
+            </div>
+            <div class="form-group col-md-6 mb-3">
+                <label class="control-label font-weight-bold text-muted small text-uppercase">Day</label>
+                <div class="p-2 bg-light rounded border text-dark font-weight-bold">
+                    <i class="far fa-calendar-day text-info mr-2"></i>@Model.Day
+                </div>
+            </div>
+        </div>
 
-    <div class="form-group">
-        <input type="submit" value="Update" class="btn btn-sm btn-primary btn-block" />
-        <input type="button" value="Remove" class="btn btn-sm btn-primary btn-block" onclick="removeShift()"/>
-        <input type="button" value="Back" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+        <div class="form-row">
+            <div class="form-group col-md-12 mb-3">
+                <label asp-for="SftId" class="control-label font-weight-bold">Shift <span class="text-danger">*</span></label>
+                <select asp-for="SftId" id="dpSftE" class="form-control form-control-sm select2-rst-edit" required
+                        asp-items="@(new SelectList(ViewBag.lstSft, "SftId", "ShtDtl", Model?.SftId))">
+                    <option value="">-- Select Shift --</option>
+                </select>
+                <span asp-validation-for="SftId" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group col-md-12 mb-3">
+                <label asp-for="DescEng" class="control-label font-weight-bold">Description</label>
+                <input asp-for="DescEng" id="txtEditDescEng" class="form-control form-control-sm" placeholder="Shift description" />
+                <span asp-validation-for="DescEng" class="text-danger small"></span>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mt-3">
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeShift()">
+                <i class="fas fa-trash-alt mr-1"></i> Remove Shift
+            </button>
+            <div style="gap: 10px;" class="d-flex">
+                <button type="button" class="btn btn-sm btn-outline-secondary px-3" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-sm btn-primary px-4">
+                    <i class="fas fa-save mr-1"></i> Update Shift
+                </button>
+            </div>
+        </div>
     </div>
-</div> 
 }
+
 <script>
     function removeShift() {
+        if (!confirm('Are you sure you want to remove this shift from the roster?')) return;
         var schId = $("#txtSchId").val();
         var rstId = $("#txtRstId").val();
-        var returnurl = "/WorkShift/HrWkRoster/Index?rstId=" + rstId;             
+        var returnurl = "/WorkShift/HrWkRoster/Index?rstId=" + rstId;
 
         $.ajax({
             type: "GET",
             contentType: "application/json; charset=utf-8",
             url: '/WorkShift/HrWkRoster/DeleteSft',
             dataType: "json",
-            data: { schId: schId},
+            data: { schId: schId },
             success: function (data) {
-                if (data.data == 1) {
-                    $('#modalRstSftEdit').modal('hide');
-                    window.location.href = returnurl;
-                }
+                $('#modalRstSftEdit').modal('hide');
+                window.location.href = returnurl;
             },
             error: function (xhr, err) {
-                alert("Error: " + data.Message);
+                alert("Error removing shift");
             }
         });
     }
 
     $(function () {
-        $('#modalEdit').find('.select2-dropdown').select2({
+        $('#modalRstSftEdit .select2-rst-edit').select2({
             theme: 'bootstrap4',
             width: '100%',
-            dropdownParent: $('#modalEdit')
+            dropdownParent: $('#modalRstSftEdit')
         });
 
-        $('#modalEdit').find('.select2-dropdown').on('change', function () {
-            try { $(this).valid(); } catch (e) { }
+        $('#dpSftE').on('change', function () {
+            var selectedText = $(this).find('option:selected').text();
+            if (selectedText && selectedText.indexOf('--') < 0 && !$('#txtEditDescEng').val()) {
+                var parts = selectedText.split(' - ');
+                $('#txtEditDescEng').val(parts.length > 1 ? parts[1] : selectedText);
+            }
         });
     });
 </script>

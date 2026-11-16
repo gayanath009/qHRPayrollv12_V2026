@@ -17,6 +17,10 @@ TestResults/
 build_out/
 publish/
 **/publish/
+publish_out/
+**/publish_out/
+~$*
+**/~$*
 
 ## Node.js / Frontend
 node_modules/

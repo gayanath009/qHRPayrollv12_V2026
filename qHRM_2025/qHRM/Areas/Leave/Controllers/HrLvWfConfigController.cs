@@ -128,6 +128,40 @@ namespace qHRM.Areas.Leave.Controllers
                     cfg.ApproverConfig = JsonSerializer.Serialize(approverConfig);
                     cfg.PolicyRules = JsonSerializer.Serialize(BuildPolicyRulesJson(cfg));
                 }
+                else if (cfg.WfType == "Regularization")
+                {
+                    var approverConfig = new
+                    {
+                        ReportingManagerEmpId = (int?)null,
+                        HrManagerEmpId        = cfg.HrManagerEmpId ?? 6,
+                        FinalApproverEmpId    = cfg.FinalApproverEmpId ?? 6
+                    };
+                    cfg.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    cfg.PolicyRules = JsonSerializer.Serialize(new
+                    {
+                        MaxDaysAllowed = cfg.MaxDaysAllowed > 0 ? cfg.MaxDaysAllowed : 14,
+                        AllowFutureDates = cfg.AllowFutureDates,
+                        WorkingDays = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday" }
+                    });
+                    cfg.LvTypId = null;
+
+                    var regCfg = _hrmContext.HrAtndcRegConfig.FirstOrDefault();
+                    if (regCfg == null)
+                    {
+                        _hrmContext.HrAtndcRegConfig.Add(new qHRM.Areas.Attendance.Models.HrAtndcRegConfig
+                        {
+                            MaxDaysAllowed = cfg.MaxDaysAllowed > 0 ? cfg.MaxDaysAllowed : 14,
+                            AllowFutureDates = cfg.AllowFutureDates
+                        });
+                    }
+                    else
+                    {
+                        regCfg.MaxDaysAllowed = cfg.MaxDaysAllowed > 0 ? cfg.MaxDaysAllowed : 14;
+                        regCfg.AllowFutureDates = cfg.AllowFutureDates;
+                        regCfg.MdfId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
+                        regCfg.MdfDateTime = DateTime.Now;
+                    }
+                }
                 else
                 {
                     var approverConfig = new
@@ -181,6 +215,39 @@ namespace qHRM.Areas.Leave.Controllers
             cfg.LvTypName = cfg.LvTypId.HasValue 
                 ? _hrmContext.HrLvType.FirstOrDefault(t => t.LvTypId == cfg.LvTypId)?.NameEng 
                 : (cfg.WfType ?? "—");
+
+            if (cfg.WfType == "Regularization")
+            {
+                if (!string.IsNullOrEmpty(cfg.ApproverConfig) && cfg.ApproverConfig.Trim() != "{}")
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(cfg.ApproverConfig);
+                        var root = doc.RootElement;
+                        cfg.HrManagerEmpId     = GetIntOrNull(root, "HrManagerEmpId") ?? 6;
+                        cfg.FinalApproverEmpId = GetIntOrNull(root, "FinalApproverEmpId") ?? 6;
+                    }
+                    catch { }
+                }
+                if (!cfg.HrManagerEmpId.HasValue) cfg.HrManagerEmpId = 6;
+                if (!cfg.FinalApproverEmpId.HasValue) cfg.FinalApproverEmpId = 6;
+
+                if (!string.IsNullOrEmpty(cfg.PolicyRules) && cfg.PolicyRules.Trim() != "{}")
+                {
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(cfg.PolicyRules);
+                        var root = doc.RootElement;
+                        cfg.MaxDaysAllowed   = GetInt(root, "MaxDaysAllowed", 14);
+                        cfg.AllowFutureDates = GetBool(root, "AllowFutureDates");
+                    }
+                    catch { }
+                }
+
+                SetPrivileges("LV_WF_CFG");
+                LoadDropdowns();
+                return PartialView("_HrLvWfConfig_Edit", cfg);
+            }
 
             if (cfg.WfType != "Leave Approval")
             {
@@ -357,6 +424,34 @@ namespace qHRM.Areas.Leave.Controllers
                     _hrmContext.SaveChanges();
 
                     SyncWorkflowEngineApprovers(cfg);
+                }
+                else if (existing.WfType == "Regularization")
+                {
+                    var approverConfig = new
+                    {
+                        ReportingManagerEmpId = (int?)null,
+                        HrManagerEmpId        = cfg.HrManagerEmpId ?? 6,
+                        FinalApproverEmpId    = cfg.FinalApproverEmpId ?? 6
+                    };
+                    existing.ApproverConfig = JsonSerializer.Serialize(approverConfig);
+                    existing.PolicyRules = JsonSerializer.Serialize(new
+                    {
+                        MaxDaysAllowed = cfg.MaxDaysAllowed > 0 ? cfg.MaxDaysAllowed : 14,
+                        AllowFutureDates = cfg.AllowFutureDates,
+                        WorkingDays = new[] { "Sunday", "Monday", "Tuesday", "Wednesday", "Thursday" }
+                    });
+
+                    _hrmContext.HrLvWfConfig.Update(existing);
+
+                    var regCfg = _hrmContext.HrAtndcRegConfig.FirstOrDefault();
+                    if (regCfg != null)
+                    {
+                        regCfg.MaxDaysAllowed = cfg.MaxDaysAllowed > 0 ? cfg.MaxDaysAllowed : 14;
+                        regCfg.AllowFutureDates = cfg.AllowFutureDates;
+                        regCfg.MdfId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
+                        regCfg.MdfDateTime = DateTime.Now;
+                    }
+                    _hrmContext.SaveChanges();
                 }
                 else
                 {

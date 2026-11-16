@@ -70,7 +70,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 hrPrLopTrns.EftYear = defaultPeriod.Year;
                 hrPrLopTrns.LopDays = 1m;
 
-                var lstEmp = _employeeContext.GetOutsourceEmployeeViewByEntId(entId, DateTime.Today).ToList();
+                var lstEmp = _employeeContext.GetEmployeeViewByEntId(entId, DateTime.Today).ToList();
                 var lstLvTyp = _payrollContext.GetActiveLvTypesByEntId(entId).ToList();
                 var lstMonths = _sysSelectListContext.GetElements(SysSelectListContext.SelectListTypeEnum.MONTHS);
 
@@ -133,9 +133,9 @@ namespace qHRM.Areas.Payroll.Controllers
                 ModelState.Remove("LvTyp");
 
                 var empGenInfo = _employeeContext.GetEmpGenInfoByEmpSysId(hrPrLopTrns.EmpSysId);
-                if (empGenInfo == null || empGenInfo.WrktypId != 2)
+                if (empGenInfo == null)
                 {
-                    return RedirectToAction(nameof(Index)).WithWarning("Loss of Pay (LOP)", "Restricted to Outsourced Employees only.");
+                    return RedirectToAction(nameof(Index)).WithWarning("Loss of Pay (LOP)", "Invalid Employee selected.");
                 }
 
                 if (hrPrLopTrns.LopAmt <= 0 && hrPrLopTrns.LopDays > 0)
@@ -212,9 +212,9 @@ namespace qHRM.Areas.Payroll.Controllers
                 ModelState.Remove("LvTyp");
 
                 var empGenInfo = _employeeContext.GetEmpGenInfoByEmpSysId(hrPrLopTrns.EmpSysId);
-                if (empGenInfo == null || empGenInfo.WrktypId != 2)
+                if (empGenInfo == null)
                 {
-                    return RedirectToAction(nameof(Index)).WithWarning("Loss of Pay (LOP)", "Restricted to Outsourced Employees only.");
+                    return RedirectToAction(nameof(Index)).WithWarning("Loss of Pay (LOP)", "Invalid Employee selected.");
                 }
 
                 if (hrPrLopTrns.LopAmt <= 0 && hrPrLopTrns.LopDays > 0)

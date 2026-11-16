@@ -339,7 +339,7 @@ namespace qHRM.Areas.Payroll.Data
                 var x = _hrmContext.HrPrLopTrns
                     .Join(_hrmContext.HrLvType, trn => trn.LvTypId, typ => typ.LvTypId, (trn, typ) => new { trn, typ })
                     .Join(_hrmContext.HrEmpGenInfo, p => p.trn.EmpSysId, emp => emp.EmpSysId, (p, emp) => new { p, emp })
-                    .Where(z => z.p.typ.EntId == entId && z.emp.WrktypId == 2 && (recStat == -1 || z.p.trn.RecStat == recStat))
+                    .Where(z => z.p.typ.EntId == entId && (recStat == -1 || z.p.trn.RecStat == recStat))
                     .Select(x => new HrPrLopTrnView
                     {
                         LopId = x.p.trn.LopId,
@@ -407,7 +407,7 @@ namespace qHRM.Areas.Payroll.Data
         {
             try
             {
-                var emp = _hrmContext.HrEmpGenInfo.FirstOrDefault(e => e.EmpSysId == empSysId && e.WrktypId == 2);
+                var emp = _hrmContext.HrEmpGenInfo.FirstOrDefault(e => e.EmpSysId == empSysId);
                 if (emp == null || lopDays <= 0)
                     return (0m, 0m, 0m);
 
@@ -1236,10 +1236,21 @@ namespace qHRM.Areas.Payroll.Data
 
                        });
 
-                return x;
+                if (x != null && x.Any() && !x.All(i => i.Emp_Sys_Id == 0))
+                {
+                    return x;
+                }
+                return GetSalaryDtlDirect(entId, eftYr, eftMnt);
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine("[WARN] GetSalaryDtl stored procedure fallback: " + ex.Message);
+                var directList = GetSalaryDtlDirect(entId, eftYr, eftMnt);
+                if (directList != null && directList.Any() && !directList.All(i => i.Emp_Sys_Id == 0))
+                {
+                    return directList;
+                }
+
                 List<PrSalarySheetView> temp = new List<PrSalarySheetView>
                 {
                     new PrSalarySheetView {
@@ -1281,6 +1292,196 @@ namespace qHRM.Areas.Payroll.Data
 
                 };
                 return temp;
+            }
+        }
+
+        public IEnumerable<PrSalarySheetView> GetSalaryDtlDirect(int entId, int eftYr, int eftMnt)
+        {
+            try
+            {
+                var hdr = _hrmContext.HrPrSlryPrcHdr
+                    .Where(h => h.EftYear == eftYr && h.EftMonth == eftMnt && (entId <= 0 || h.EntId == entId))
+                    .OrderByDescending(h => h.PrcId)
+                    .FirstOrDefault();
+
+                if (hdr == null)
+                {
+                    hdr = _hrmContext.HrPrSlryPrcHdr
+                        .Where(h => h.EftYear == eftYr && h.EftMonth == eftMnt)
+                        .OrderByDescending(h => h.PrcId)
+                        .FirstOrDefault();
+                }
+
+                if (hdr == null)
+                {
+                    return Enumerable.Empty<PrSalarySheetView>();
+                }
+
+                var conn = _hrmContext.Database.GetDbConnection();
+                bool wasOpen = conn.State == System.Data.ConnectionState.Open;
+                if (!wasOpen) conn.Open();
+
+                try
+                {
+                    int actvCount = 0;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT COUNT(DISTINCT Emp_Sys_Id) FROM HR_PrSlryPrcDtl_Actv WHERE Prc_Id = @PrcId AND Rec_Stat = 1";
+                        var p = cmd.CreateParameter();
+                        p.ParameterName = "@PrcId";
+                        p.Value = hdr.PrcId;
+                        cmd.Parameters.Add(p);
+                        actvCount = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+
+                    int psvCount = 0;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = "SELECT COUNT(DISTINCT Emp_Sys_Id) FROM HR_PrSlryPrcDtl_Psv WHERE Prc_Id = @PrcId AND Rec_Stat = 1";
+                        var p = cmd.CreateParameter();
+                        p.ParameterName = "@PrcId";
+                        p.Value = hdr.PrcId;
+                        cmd.Parameters.Add(p);
+                        psvCount = Convert.ToInt32(cmd.ExecuteScalar());
+                    }
+
+                    // When salary process is in Active/Draft mode (PrcStat != 3, e.g. 1 = Draft/Process, 2 = Verified),
+                    // or whenever active records exist and process is not completed, prioritize HR_PrSlryPrcDtl_Actv
+                    // so users can view the current active salary calculation!
+                    string tableName;
+                    if (hdr.PrcStat != 3 && actvCount > 0)
+                    {
+                        tableName = "HR_PrSlryPrcDtl_Actv";
+                    }
+                    else if (psvCount > 0)
+                    {
+                        tableName = "HR_PrSlryPrcDtl_Psv";
+                    }
+                    else if (actvCount > 0)
+                    {
+                        tableName = "HR_PrSlryPrcDtl_Actv";
+                    }
+                    else
+                    {
+                        tableName = "HR_PrSlryPrcDtl_Actv";
+                    }
+
+                    string sql = @"
+SELECT 
+    d.Emp_Sys_Id AS Emp_Sys_Id,
+    e.Emp_Id AS Emp_Id,
+    LTRIM(RTRIM(ISNULL(e.First_Name, '') + ' ' + ISNULL(e.Mdl_Name, '') + ' ' + ISNULL(e.Last_Name, ''))) AS Full_Name,
+    ISNULL(dp.Name_Eng, '') AS Department,
+    ISNULL(ds.Name_Eng, '') AS Designation,
+    ISNULL(d.Basic, 0) AS BasicSalary,
+    ISNULL(d.HR_Alwnc, 0) AS HouseRent,
+    ISNULL(d.Trns_Alwnc + d.TRA, 0) AS Transport,
+    ISNULL(d.Pstn_Alwnc, 0) AS Position,
+    ISNULL(d.Proj_Alwnc, 0) AS ProjectAllowance,
+    ISNULL(d.Incntv_Amt, 0) AS Incentives,
+    ISNULL(d.Mob_Alwnc, 0) AS Mobile,
+    ISNULL(d.Ot_Amt, 0) AS Overtime,
+    ISNULL(d.Med_Alwnc, 0) AS MedicalAllowance,
+    ISNULL(d.Bonus_Amt, 0) AS BonusAmt,
+    ISNULL(d.Othr_Alwnc, 0) AS OthrAlwnc,
+    ISNULL(d.Othr_Pmt, 0) AS OthrPmt,
+    ISNULL(d.AirTckt_Fee, 0) AS AirTcktFee,
+    ISNULL(d.Anl_Lv_Enchmnt, 0) AS AnlLvEnchmnt,
+    ISNULL(d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + d.Othr_Pmt + d.Ot_Amt + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt, 0) AS GrossSalary,
+    ISNULL(d.Slry_Adv, 0) AS SalaryAdvance,
+    ISNULL(d.Stf_Ln_Pmt, 0) AS StaffLoans,
+    ISNULL(d.Np_Amt, 0) AS NoPay,
+    ISNULL(d.Othr_Rcvry, 0) AS OthrRcvryAmt,
+    ISNULL(d.Slry_Adv + d.Stf_Ln_Pmt + d.Np_Amt + d.Othr_Rcvry, 0) AS TotalDeductions,
+    ISNULL((d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + d.Othr_Pmt + d.Ot_Amt + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt) - (d.Slry_Adv + d.Stf_Ln_Pmt + d.Np_Amt + d.Othr_Rcvry), 0) AS NtSlry,
+    ISNULL(d.Pmt_Mod, 1) AS PmtMod,
+    ISNULL(d.Bnk_Acct, '') AS BnkAcct,
+    ISNULL(d.Rmks, '') AS Remarks
+FROM " + tableName + @" d
+INNER JOIN (
+    SELECT Emp_Sys_Id, MAX(Prc_Rvsn) AS MaxRvsn
+    FROM " + tableName + @"
+    WHERE Prc_Id = @PrcId AND Rec_Stat = 1
+    GROUP BY Emp_Sys_Id
+) latest ON d.Emp_Sys_Id = latest.Emp_Sys_Id AND d.Prc_Rvsn = latest.MaxRvsn
+INNER JOIN HR_EmpGenInfo e ON d.Emp_Sys_Id = e.Emp_Sys_Id
+LEFT JOIN HR_EmpJobAssign jb ON d.Emp_Sys_Id = jb.Emp_Sys_Id AND jb.Wk_Stat = 1
+LEFT JOIN ORG_Department dp ON jb.Dept_Id = dp.Dept_Id
+LEFT JOIN ORG_Designation ds ON jb.Desig_Id = ds.Desig_Id
+WHERE d.Prc_Id = @PrcId AND d.Rec_Stat = 1
+ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
+
+                    var list = new List<PrSalarySheetView>();
+                    int idx = 0;
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = sql;
+                        var p = cmd.CreateParameter();
+                        p.ParameterName = "@PrcId";
+                        p.Value = hdr.PrcId;
+                        cmd.Parameters.Add(p);
+
+                        using (var rdr = cmd.ExecuteReader())
+                        {
+                            while (rdr.Read())
+                            {
+                                idx++;
+                                var row = new PrSalarySheetView
+                                {
+                                    Index = idx,
+                                    PrcPsvRecId = 0,
+                                    Department = rdr["Department"].ToString(),
+                                    Emp_Sys_Id = Convert.ToInt32(rdr["Emp_Sys_Id"]),
+                                    Emp_Id = rdr["Emp_Id"].ToString(),
+                                    Full_Name = rdr["Full_Name"].ToString(),
+                                    Designation = rdr["Designation"].ToString(),
+                                    BasicSalary = Convert.ToDecimal(rdr["BasicSalary"]),
+                                    HouseRent = Convert.ToDecimal(rdr["HouseRent"]),
+                                    Transport = Convert.ToDecimal(rdr["Transport"]),
+                                    Position = Convert.ToDecimal(rdr["Position"]),
+                                    ProjectAllowance = Convert.ToDecimal(rdr["ProjectAllowance"]),
+                                    Incentives = Convert.ToDecimal(rdr["Incentives"]),
+                                    Mobile = Convert.ToDecimal(rdr["Mobile"]),
+                                    Overtime = Convert.ToDecimal(rdr["Overtime"]),
+                                    MedicalAllowance = Convert.ToDecimal(rdr["MedicalAllowance"]),
+                                    BonusAmt = Convert.ToDecimal(rdr["BonusAmt"]),
+                                    OthrAlwnc = Convert.ToDecimal(rdr["OthrAlwnc"]),
+                                    OthrPmt = Convert.ToDecimal(rdr["OthrPmt"]),
+                                    AirTcktFee = Convert.ToDecimal(rdr["AirTcktFee"]),
+                                    AnlLvEnchmnt = Convert.ToDecimal(rdr["AnlLvEnchmnt"]),
+                                    GrossSalary = Convert.ToDecimal(rdr["GrossSalary"]),
+                                    SalaryAdvance = Convert.ToDecimal(rdr["SalaryAdvance"]),
+                                    StaffLoans = Convert.ToDecimal(rdr["StaffLoans"]),
+                                    NoPay = Convert.ToDecimal(rdr["NoPay"]),
+                                    OthrRcvryAmt = Convert.ToDecimal(rdr["OthrRcvryAmt"]),
+                                    TotalDeductions = Convert.ToDecimal(rdr["TotalDeductions"]),
+                                    NtSlry = Convert.ToDecimal(rdr["NtSlry"]),
+                                    PmtMod = Convert.ToInt16(rdr["PmtMod"]),
+                                    PmtModTxt = Convert.ToInt16(rdr["PmtMod"]) == 0 ? "Cash" : "Bank",
+                                    BnkAmt = Convert.ToInt16(rdr["PmtMod"]) == 1 ? Convert.ToDecimal(rdr["NtSlry"]) : 0,
+                                    CshAmt = Convert.ToInt16(rdr["PmtMod"]) == 0 ? Convert.ToDecimal(rdr["NtSlry"]) : 0,
+                                    RecStat = 1,
+                                    BnkAcct = rdr["BnkAcct"].ToString(),
+                                    PrcId = hdr.PrcId,
+                                    Remarks = rdr["Remarks"].ToString(),
+                                    YrMntTxt = new DateTime(eftYr, eftMnt, 1).ToString("MMMM yyyy"),
+                                    PrntTime = DateTime.Now.ToString("yyyy-MM-dd hh:mm:ss tt")
+                                };
+                                list.Add(row);
+                            }
+                        }
+                    }
+                    return list;
+                }
+                finally
+                {
+                    if (!wasOpen && conn.State == System.Data.ConnectionState.Open) conn.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("[ERROR] GetSalaryDtlDirect: " + ex.Message);
+                return Enumerable.Empty<PrSalarySheetView>();
             }
         }
 
@@ -1876,12 +2077,14 @@ namespace qHRM.Areas.Payroll.Data
                 var _filepath = "";
 
                 PdfDocument doc = new PdfDocument();
-                PdfStandardFont _headerTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 13, PdfFontStyle.Regular);
-                PdfStandardFont _smallTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Regular);
-                PdfStandardFont _medinumTxt12 = new PdfStandardFont(PdfFontFamily.Helvetica, 12, PdfFontStyle.Regular);
-                PdfStandardFont _medinumTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 14, PdfFontStyle.Regular);
-                PdfStandardFont _largeTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Regular);
-                PdfStandardFont _largeTxtBld = new PdfStandardFont(PdfFontFamily.Helvetica, 16, PdfFontStyle.Bold);
+                PdfStandardFont _headerTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 11, PdfFontStyle.Bold);
+                PdfStandardFont _smallTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 9, PdfFontStyle.Regular);
+                PdfStandardFont _medinumTxt12 = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Regular);
+                PdfStandardFont _medinumTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Regular);
+                PdfStandardFont _largeTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Regular);
+                PdfStandardFont _largeTxtBld = new PdfStandardFont(PdfFontFamily.Helvetica, 10.5f, PdfFontStyle.Bold);
+                PdfStandardFont _amtTxt = new PdfStandardFont(PdfFontFamily.Helvetica, 10, PdfFontStyle.Regular);
+                PdfStandardFont _amtTxtBld = new PdfStandardFont(PdfFontFamily.Helvetica, 10.5f, PdfFontStyle.Bold);
 
 
 
@@ -1906,8 +2109,14 @@ namespace qHRM.Areas.Payroll.Data
                 PdfStringFormat _formatLTL_H = new PdfStringFormat();
 
                 _formatRTL.Alignment = PdfTextAlignment.Right;
+                _formatRTL.LineAlignment = PdfVerticalAlignment.Middle;
+                _formatRTL.WordWrap = PdfWordWrapType.None;
+
                 _formatLTL.Alignment = PdfTextAlignment.Left;
+                _formatLTL.LineAlignment = PdfVerticalAlignment.Middle;
+
                 _formatMD.Alignment = PdfTextAlignment.Center;
+                _formatMD.LineAlignment = PdfVerticalAlignment.Middle;
 
                 _formatCustom.Alignment = PdfTextAlignment.Left;
                 _formatCustom.WordWrap = PdfWordWrapType.Word;
@@ -1918,33 +2127,70 @@ namespace qHRM.Areas.Payroll.Data
                 _formatLTL_H.Alignment = PdfTextAlignment.Center;
                 _formatLTL_H.LineAlignment = PdfVerticalAlignment.Middle;
 
-                List<PrSalarySheetView> obj = GetSalaryDtl(entId, "_paysheet", 0, eftMnt, eftYr).ToList();
-
-                if (obj.Count() > 0)
+                // Prioritize GetSalaryDtlDirect so the current active records (HR_PrSlryPrcDtl_Actv)
+                // are displayed when the salary process is in progress/draft, and passive multi-revision records
+                // are deduplicated correctly without stored procedure / EF Core LINQ join failures.
+                List<PrSalarySheetView> obj = GetSalaryDtlDirect(entId, eftYr, eftMnt).ToList();
+                if (obj == null || !obj.Any() || obj.All(i => i.Emp_Sys_Id == 0))
                 {
+                    obj = GetSalaryDtl(entId, "_paysheet", 0, eftMnt, eftYr).ToList();
+                }
 
+                if (obj.Count() > 0 && obj.Any(i => i.Emp_Sys_Id > 0))
+                {
                     doc.PageSettings.Size = PdfPageSize.A2;
                     doc.PageSettings.Orientation = PdfPageOrientation.Landscape;
                     PdfPage page = doc.Pages.Add();
 
                     PdfGrid pdfGrid = new PdfGrid();
+                    pdfGrid.Style.CellPadding = new PdfPaddings(2, 2, 2, 2);
                     PdfGraphics gphc = page.Graphics;
                     
-                    var _logopath = _host.WebRootPath + "\\images\\qcs.png";
-                    var _rubbersealpath = _host.WebRootPath + "\\images\\rubbrStmp.png";
-
+                    string webRoot = _host?.WebRootPath;
+                    if (string.IsNullOrEmpty(webRoot) || !Directory.Exists(webRoot))
+                    {
+                        string baseDir = AppContext.BaseDirectory;
+                        string cand = Path.Combine(baseDir, "wwwroot");
+                        if (Directory.Exists(cand)) webRoot = cand;
+                    }
+                    if (string.IsNullOrEmpty(webRoot) || !Directory.Exists(webRoot))
+                    {
+                        string curDir = Directory.GetCurrentDirectory();
+                        string cand = Path.Combine(curDir, "wwwroot");
+                        if (Directory.Exists(cand)) webRoot = cand;
+                    }
+                    if (string.IsNullOrEmpty(webRoot) || !Directory.Exists(webRoot))
+                    {
+                        if (Directory.Exists(@"C:\inetpub\wwwroot\qHRM\wwwroot"))
+                            webRoot = @"C:\inetpub\wwwroot\qHRM\wwwroot";
+                        else if (Directory.Exists(@"d:\My Projects\04_QCS Applications\HR_Payroll\Application\qHRPayrollv12_V2026\qHRM_2025\qHRM\wwwroot"))
+                            webRoot = @"d:\My Projects\04_QCS Applications\HR_Payroll\Application\qHRPayrollv12_V2026\qHRM_2025\qHRM\wwwroot";
+                    }
+                    if (string.IsNullOrEmpty(webRoot))
+                    {
+                        webRoot = Directory.GetCurrentDirectory();
+                    }
+                    var _logopath = Path.Combine(webRoot, "images", "qcs.png");
 
                     //Header
-
                     DateTime SalryDate = new DateTime(eftYr, eftMnt, 1);
                     gphc.DrawRectangle(new PdfSolidBrush(gray), new Syncfusion.Drawing.RectangleF(0, 0, page.Graphics.ClientSize.Width, 40));
                     gphc.DrawString("Salary Sheet", _largeTxt, new PdfSolidBrush(black), new Syncfusion.Drawing.PointF(750, 15));
                     gphc.DrawString(new DateTime(eftYr, eftMnt, 1).ToString("MMMM", CultureInfo.InvariantCulture) + "  " + eftYr, _largeTxt, new PdfSolidBrush(black), new Syncfusion.Drawing.PointF(1500, 15));
 
                     //Logo
-                    FileStream imageStream = new FileStream(_logopath, FileMode.Open, FileAccess.Read);
-                    PdfImage _logo = PdfImage.FromStream(imageStream);
-                    page.Graphics.DrawImage(_logo, 10, 10, 70, 25); //QCS Logo
+                    if (File.Exists(_logopath))
+                    {
+                        try
+                        {
+                            using (FileStream imageStream = new FileStream(_logopath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                PdfImage _logo = PdfImage.FromStream(imageStream);
+                                page.Graphics.DrawImage(_logo, 10, 10, 70, 25); //QCS Logo
+                            }
+                        }
+                        catch { }
+                    }
                                         
                     MemoryStream stream = new MemoryStream();
                     //List
@@ -1982,11 +2228,11 @@ namespace qHRM.Areas.Payroll.Data
                     decimal _totDedctn = 0;
                     decimal _netSlry = 0;
 
-                    float columnWidthA = 35;
-                    float columnWidthB = 50;
-                    float columnWidthC = 150;
-                    float columnWidthD = 140;
-                    float columnWidthE = 60;
+                    float columnWidthA = 32;
+                    float columnWidthB = 48;
+                    float columnWidthC = 110;
+                    float columnWidthD = 135;
+                    float columnWidthE = 63;
 
 
                     //Add Columns.
@@ -2099,41 +2345,41 @@ namespace qHRM.Areas.Payroll.Data
                         pdfGridRow1.Cells[3].Value = itm.Designation;
                         pdfGridRow1.Cells[3].Style.Font = _medinumTxt;
                         pdfGridRow1.Cells[4].Value = String.Format("{0:n0}", itm.BasicSalary);
-                        pdfGridRow1.Cells[4].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[4].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[5].Value = String.Format("{0:n0}", itm.HouseRent);
-                        pdfGridRow1.Cells[5].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[5].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[6].Value = String.Format("{0:n0}", itm.Transport);
-                        pdfGridRow1.Cells[6].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[6].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[7].Value = String.Format("{0:n0}", itm.Position);
-                        pdfGridRow1.Cells[7].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[7].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[8].Value = String.Format("{0:n0}", itm.ProjectAllowance);
-                        pdfGridRow1.Cells[8].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[8].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[9].Value = String.Format("{0:n0}", itm.Mobile);
-                        pdfGridRow1.Cells[9].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[9].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[10].Value = String.Format("{0:n0}", itm.MedicalAllowance);
-                        pdfGridRow1.Cells[10].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[10].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[11].Value = String.Format("{0:n0}", itm.OthrAlwnc);
-                        pdfGridRow1.Cells[11].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[11].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[12].Value = String.Format("{0:n0}", itm.Incentives);
-                        pdfGridRow1.Cells[12].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[12].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[13].Value = String.Format("{0:n0}", itm.Overtime);
-                        pdfGridRow1.Cells[13].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[13].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[14].Value = String.Format("{0:n0}", itm.OthrPmt);
-                        pdfGridRow1.Cells[14].Style.Font = _largeTxt;                        
+                        pdfGridRow1.Cells[14].Style.Font = _amtTxt;                        
                         pdfGridRow1.Cells[15].Value = String.Format("{0:n0}", itm.GrossSalary);
-                        pdfGridRow1.Cells[15].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[15].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[16].Value = String.Format("{0:n0}", itm.SalaryAdvance);
-                        pdfGridRow1.Cells[16].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[16].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[17].Value = String.Format("{0:n0}", itm.StaffLoans);
-                        pdfGridRow1.Cells[17].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[17].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[18].Value = String.Format("{0:n0}", itm.NoPay);
-                        pdfGridRow1.Cells[18].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[18].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[19].Value = String.Format("{0:n0}", itm.OthrRcvryAmt);
-                        pdfGridRow1.Cells[19].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[19].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[20].Value = String.Format("{0:n0}", itm.TotalDeductions);
-                        pdfGridRow1.Cells[20].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[20].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[21].Value = String.Format("{0:n0}", itm.NtSlry);
-                        pdfGridRow1.Cells[21].Style.Font = _largeTxt;
+                        pdfGridRow1.Cells[21].Style.Font = _amtTxt;
                         pdfGridRow1.Cells[22].Value = itm.Remarks;
                         pdfGridRow1.Cells[22].Style.Font = _smallTxt;
                         pdfGridRow1.Cells[22].Style.StringFormat = format;
@@ -2165,11 +2411,6 @@ namespace qHRM.Areas.Payroll.Data
                         pdfGridRow1.Cells[20].StringFormat = _formatRTL; pdfGridRow1.Cells[21].StringFormat = _formatRTL; pdfGridRow1.Cells[22].StringFormat = _formatLTL;
                         //pdfGridRow1.Height = 15;
                         //pdfGridRow1.Style = _gridCellSmallTxtStyle;             
-
-
-                        FileStream imageRubber = new FileStream(_rubbersealpath, FileMode.Open, FileAccess.Read);
-                        PdfImage _seal = PdfImage.FromStream(imageRubber);
-                        page.Graphics.DrawImage(_seal, 1475,985,100, 100); //QCS Rubber Seal
 
                         x += 1;
                     }
@@ -2205,7 +2446,7 @@ namespace qHRM.Areas.Payroll.Data
                     pdfGridRowFooter.Cells[15].StringFormat = _formatRTL; pdfGridRowFooter.Cells[16].StringFormat = _formatRTL; pdfGridRowFooter.Cells[17].StringFormat = _formatRTL; pdfGridRowFooter.Cells[18].StringFormat = _formatRTL; pdfGridRowFooter.Cells[19].StringFormat = _formatRTL;
                     pdfGridRowFooter.Cells[20].StringFormat = _formatRTL; pdfGridRowFooter.Cells[21].StringFormat = _formatRTL;
                     pdfGridRowFooter.Style = _gridCellColorStyle;
-                    pdfGridRowFooter.Style.Font = _largeTxtBld;
+                    pdfGridRowFooter.Style.Font = _amtTxtBld;
 
                     //---------------------------------------------------
                     PdfGridCell gridRow1 = pdfGrid.Rows[0].Cells[0];
@@ -2367,30 +2608,43 @@ namespace qHRM.Areas.Payroll.Data
 
 
                     pdfGrid.Draw(page, new PointF(10, 110));
-                    doc.Save(stream);
-                    stream.Position = 0;
-                    doc.Close(true);
 
-                    //---------------------------------------------------------------------------
-                    _filename = "Salary_Sheet_" + eftYr.ToString() + "_" + eftMnt.ToString() + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".pdf";
-                    _filepath = _host.WebRootPath + @"\attach\slrySheet\" + $@"\{_filename}";
-                    using (FileStream fs = new FileStream(_filepath, FileMode.OpenOrCreate))
+                    // Save directly to file
+                    string attachDir = Path.Combine(webRoot, "attach", "slrySheet");
+                    if (!Directory.Exists(attachDir))
                     {
-                        stream.CopyTo(fs);
-                        stream.Flush();
+                        Directory.CreateDirectory(attachDir);
                     }
 
+                    _filename = "Salary_Sheet_" + eftYr.ToString() + "_" + eftMnt.ToString() + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".pdf";
+                    _filepath = Path.Combine(attachDir, _filename);
+
+                    using (FileStream fs = new FileStream(_filepath, FileMode.Create, FileAccess.Write))
+                    {
+                        doc.Save(fs);
+                    }
+                    doc.Close(true);
+
+                    try
+                    {
+                        string iisDir = @"C:\inetpub\wwwroot\qHRM\wwwroot\attach\slrySheet";
+                        if (Directory.Exists(iisDir) && !string.Equals(attachDir, iisDir, StringComparison.OrdinalIgnoreCase))
+                        {
+                            File.Copy(_filepath, Path.Combine(iisDir, _filename), true);
+                        }
+                    }
+                    catch { }
 
                     return _filename;
                 }
                 else
                 {
-                    return _filename;
-
+                    return "";
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Console.WriteLine("[ERROR] GetSalarySheet exception: " + ex);
                 return "";
             }
         }
@@ -3036,6 +3290,12 @@ SELECT
     ISNULL(SUM(d.Np_Amt), 0) AS TotalNoPay,
     ISNULL(SUM(d.Othr_Rcvry), 0) AS TotalOthrRcvry
 FROM HR_PrSlryPrcDtl_Psv d
+INNER JOIN (
+    SELECT Emp_Sys_Id, MAX(Prc_Rvsn) AS MaxRvsn
+    FROM HR_PrSlryPrcDtl_Psv
+    WHERE Prc_Id = @PrcId AND Rec_Stat = 1
+    GROUP BY Emp_Sys_Id
+) latest ON d.Emp_Sys_Id = latest.Emp_Sys_Id AND d.Prc_Rvsn = latest.MaxRvsn
 INNER JOIN HR_EmpGenInfo e ON d.Emp_Sys_Id = e.Emp_Sys_Id
 WHERE d.Prc_Id = @PrcId AND d.Rec_Stat = 1
 GROUP BY ISNULL(e.Wrktyp_Id, 1)";

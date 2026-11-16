@@ -233,6 +233,16 @@ namespace qHRM.Areas.SysAdmin.Data
             }
         }
 
+        public bool IsSessionLogged(string sessionId)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(sessionId)) return false;
+                return _hrmContext.AdmUserLogs.Any(x => x.SessionId == sessionId);
+            }
+            catch (Exception ex) { throw ex; }
+        }
+
         public IEnumerable<AdmUserLogs> GetLoggedUserList()
         {
             try

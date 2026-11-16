@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 using qHRM.Areas.Identity.Data;
 using qHRM.Data;
 using qHRM.Models;
@@ -37,7 +38,7 @@ namespace qHRM.Extensions
                 try
                 {
                     // Brief delay to allow web server to bind ports and finish pipeline setup
-                    await Task.Delay(1000, cancellationToken).ConfigureAwait(false);
+                    await Task.Delay(100, cancellationToken).ConfigureAwait(false);
 
                     using var scope = _serviceProvider.CreateScope();
 
@@ -75,7 +76,49 @@ namespace qHRM.Extensions
                         _logger.LogWarning(ex, "[Warmup] Failed to warm up qHRMContext: {Message}", ex.Message);
                     }
 
-                    // 3. Warm up Microsoft Entra ID OpenID Connect discovery metadata and JWKS signing keys
+                    // 3. Warm up Login & Privilege Stored Procedures and SQL connection pools
+                    try
+                    {
+                        var loginContext = scope.ServiceProvider.GetService<LoginContext>();
+                        if (loginContext != null)
+                        {
+                            _logger.LogInformation("[Warmup] Pre-executing login procedure to warm connection pool and execution plan...");
+                            await loginContext.GetLoginSystemAsync("_login", 0, "warmup", "").ConfigureAwait(false);
+                        }
+
+                        var prvContext = scope.ServiceProvider.GetService<qHRM.Areas.SysAdmin.Data.AdmUserGrpPrvContext>();
+                        if (prvContext != null)
+                        {
+                            _logger.LogInformation("[Warmup] Pre-executing privilege procedure...");
+                            await prvContext.GetAsync("_user_priv_group", 1).ConfigureAwait(false);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[Warmup] Failed to pre-warm login/privilege procedures: {Message}", ex.Message);
+                    }
+
+                    // 4. Warm up WorkflowEngineDb connection pool
+                    try
+                    {
+                        var config = scope.ServiceProvider.GetService<Microsoft.Extensions.Configuration.IConfiguration>();
+                        var wfConStr = config?.GetConnectionString("workflowconstring");
+                        if (!string.IsNullOrEmpty(wfConStr))
+                        {
+                            _logger.LogInformation("[Warmup] Pre-warming WorkflowEngineDb connection pool...");
+                            using var wfConn = new Microsoft.Data.SqlClient.SqlConnection(wfConStr);
+                            await wfConn.OpenAsync(cancellationToken).ConfigureAwait(false);
+                            using var wfCmd = new Microsoft.Data.SqlClient.SqlCommand("SELECT 1;", wfConn);
+                            await wfCmd.ExecuteScalarAsync(cancellationToken).ConfigureAwait(false);
+                            _logger.LogInformation("[Warmup] WorkflowEngineDb connection warmed up.");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "[Warmup] Failed to warm up WorkflowEngineDb: {Message}", ex.Message);
+                    }
+
+                    // 5. Warm up Microsoft Entra ID OpenID Connect discovery metadata and JWKS signing keys
                     try
                     {
                         var oidcOptionsMonitor = scope.ServiceProvider.GetService<IOptionsMonitor<OpenIdConnectOptions>>();

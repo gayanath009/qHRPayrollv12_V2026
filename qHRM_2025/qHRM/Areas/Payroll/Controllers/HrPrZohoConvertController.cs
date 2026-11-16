@@ -44,7 +44,8 @@ namespace qHRM.Areas.Payroll.Controllers
 
         private bool HasAccess()
         {
-            return HttpContext.Session.GetString("ZH_CVT") != null || HttpContext.Session.GetString("SY_ADM") != null;
+            int grpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+            return (grpId == 1 || grpId == 2 || grpId == 7) && HttpContext.Session.GetString("ZH_CVT") != null;
         }
 
         private string GetSessionKey()

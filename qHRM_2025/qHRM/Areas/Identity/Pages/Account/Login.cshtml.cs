@@ -84,8 +84,8 @@ namespace qHRM.Areas.Identity.Pages.Account
                 ModelState.AddModelError(string.Empty, ErrorMessage);
             }
 
-            // Normalize returnUrl: if empty or pointing to login page, default to root dashboard
-            if (string.IsNullOrEmpty(returnUrl) || returnUrl.Contains("/Login", StringComparison.OrdinalIgnoreCase))
+            // Normalize returnUrl: if empty or pointing to login page or error page, default to root dashboard
+            if (string.IsNullOrEmpty(returnUrl) || returnUrl.Contains("/Login", StringComparison.OrdinalIgnoreCase) || returnUrl.Contains("/Error", StringComparison.OrdinalIgnoreCase))
             {
                 returnUrl = Url.Content("~/");
             }
@@ -215,7 +215,7 @@ namespace qHRM.Areas.Identity.Pages.Account
             if (await PopulateSessionForUserAsync(admUser.UsrName, "logged", ensureIdentitySignIn: false))
             {
                 _logger.LogInformation("User {UserName} logged in successfully.", admUser.UsrName);
-                if (string.IsNullOrEmpty(returnUrl) || returnUrl.Contains("/Login", StringComparison.OrdinalIgnoreCase) || returnUrl == "/")
+                if (string.IsNullOrEmpty(returnUrl) || returnUrl.Contains("/Login", StringComparison.OrdinalIgnoreCase) || returnUrl.Contains("/Error", StringComparison.OrdinalIgnoreCase) || returnUrl == "/")
                 {
                     return RedirectToAction("Index", "Home", new { area = "" });
                 }

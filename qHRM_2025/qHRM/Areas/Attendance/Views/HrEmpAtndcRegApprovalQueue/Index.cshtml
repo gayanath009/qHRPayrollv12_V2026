@@ -1,0 +1,855 @@
+@model qHRM.Areas.Attendance.Models.RegularizationApprovalQueueViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Regularization Approval Queue";
+}
+
+@Html.AntiForgeryToken()
+
+<style>
+    :root {
+        --org-primary: #540033;
+        --org-primary-hover: #3e0026;
+        --org-primary-light: #fdf2f8;
+        --org-primary-border: #fbcfe8;
+        --clr-border: rgba(2,6,23,0.08);
+        --clr-text: #0f172a;
+        --clr-muted: #64748b;
+        --radius-sm: 8px;
+        --shadow-sm: 0 1px 6px rgba(2,6,23,0.04);
+        --shadow-md: 0 4px 16px rgba(2,6,23,0.08);
+    }
+
+    .org-hero-card {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border);
+        padding: 0.85rem 1.35rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .org-hero-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #540033 0%, #830050 100%);
+    }
+
+    .org-icon-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
+        flex-shrink: 0;
+    }
+
+    .org-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--clr-text);
+        letter-spacing: -0.01em;
+        line-height: 1.2;
+        margin: 0;
+    }
+
+    .org-category-pill {
+        background-color: var(--org-primary-light);
+        color: var(--org-primary);
+        font-weight: 700;
+        font-size: 0.65rem;
+        letter-spacing: 0.05em;
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        border: 1px solid var(--org-primary-border);
+        text-transform: uppercase;
+    }
+
+    .org-breadcrumb {
+        font-size: 0.75rem;
+        color: var(--clr-muted);
+        margin-top: 0.2rem;
+        line-height: 1.2;
+    }
+
+    .filter-tab {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--clr-muted);
+        background: #ffffff;
+        border: 1px solid var(--clr-border);
+        margin-right: 0.5rem;
+        margin-bottom: 0.5rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none !important;
+    }
+
+    .filter-tab:hover {
+        background: #f8fafc;
+        color: var(--org-primary);
+        border-color: var(--org-primary-border);
+    }
+
+    .filter-tab.active {
+        background: var(--org-primary);
+        color: #ffffff;
+        border-color: var(--org-primary);
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.25);
+    }
+
+    .filter-tab .badge {
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+    }
+
+    .filter-tab.active .badge {
+        background: rgba(255, 255, 255, 0.25) !important;
+        color: #ffffff !important;
+    }
+
+    .cycle-control-box {
+        background: #ffffff;
+        border-radius: 10px;
+        border: 1px solid var(--clr-border);
+        padding: 0.75rem 1rem;
+        margin-bottom: 1rem;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .queue-table {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid var(--clr-border);
+        overflow: hidden;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .queue-table table {
+        margin-bottom: 0;
+    }
+
+    .queue-table th {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        font-size: 0.78rem;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        border-top: none;
+        border-bottom: 1px solid #e2e8f0;
+        padding: 0.85rem 1rem;
+        white-space: nowrap;
+    }
+
+    .queue-table td {
+        padding: 0.85rem 1rem;
+        vertical-align: middle;
+        font-size: 0.85rem;
+        border-bottom: 1px solid #f1f5f9;
+        color: var(--clr-text);
+    }
+
+    .queue-table tr:hover td {
+        background-color: #fbfcfe;
+    }
+
+    .badge-status {
+        padding: 0.35rem 0.65rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 6px;
+        letter-spacing: 0.02em;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .status-approved {
+        background-color: #ecfdf5;
+        color: #047857;
+        border: 1px solid #a7f3d0;
+    }
+
+    .status-pending {
+        background-color: #fffbeb;
+        color: #b45309;
+        border: 1px solid #fde68a;
+    }
+
+    .status-rejected {
+        background-color: #fef2f2;
+        color: #b91c1c;
+        border: 1px solid #fecaca;
+    }
+
+    .status-cancelled {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+
+    .btn-action-approve {
+        background-color: #1bc387 !important;
+        color: #ffffff !important;
+        border: 1px solid #1bc387 !important;
+        border-radius: 6px !important;
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        transition: all 0.15s ease !important;
+        box-shadow: 0 1px 3px rgba(27, 195, 135, 0.3) !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        cursor: pointer;
+    }
+
+    .btn-action-approve:hover {
+        background-color: #17a673 !important;
+        border-color: #17a673 !important;
+        color: #ffffff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(27, 195, 135, 0.4) !important;
+    }
+
+    .btn-action-reject {
+        background-color: #e74a3b !important;
+        color: #ffffff !important;
+        border: 1px solid #e74a3b !important;
+        border-radius: 6px !important;
+        padding: 0.35rem 0.75rem !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        transition: all 0.15s ease !important;
+        box-shadow: 0 1px 3px rgba(231, 74, 59, 0.3) !important;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        cursor: pointer;
+    }
+
+    .btn-action-reject:hover {
+        background-color: #d52a1a !important;
+        border-color: #d52a1a !important;
+        color: #ffffff !important;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(231, 74, 59, 0.4) !important;
+    }
+
+    .btn-action-details {
+        background: #f8fafc;
+        color: #475569 !important;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 0.35rem 0.65rem;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .btn-action-details:hover {
+        background: #f1f5f9;
+        color: var(--org-primary) !important;
+    }
+</style>
+
+<div class="container-fluid px-4 py-3">
+
+    <!-- HERO HEADER -->
+    <div class="org-hero-card">
+        <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center" style="gap: 0.75rem;">
+            <div class="d-flex align-items-center">
+                <div class="org-icon-badge mr-3">
+                    <i class="fas fa-user-check"></i>
+                </div>
+                <div>
+                    <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                        <h1 class="org-title">Regularization Approval Queue</h1>
+                        <span class="org-category-pill">Attendance</span>
+                    </div>
+                    <div class="org-breadcrumb">
+                        Attendance / Regularization Approval Queue &bull; Payroll Cycle Review, Approval &amp; Attendance Regularization
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                <span class="badge badge-light border px-3 py-2" style="font-size: 0.85rem; font-weight: 600; color: #540033;">
+                    <i class="fas fa-calendar-alt mr-1"></i> Cycle: @Model.CycleStart.ToString("dd-MMM-yyyy") to @Model.CycleEnd.ToString("dd-MMM-yyyy")
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAYROLL CYCLE FILTER & CONTROLS -->
+    <div class="cycle-control-box">
+        <form method="get" asp-action="Index" id="cycleFilterForm" class="row align-items-center">
+            <input type="hidden" name="filter" value="@Model.ActiveFilter" />
+            
+            <div class="col-lg-5 col-md-12 mb-2 mb-lg-0">
+                <div class="d-flex align-items-center" style="gap: 0.5rem;">
+                    <span class="text-muted small font-weight-bold" style="white-space:nowrap;">Quick Cycle:</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="shiftCycle(-1)">
+                        <i class="fas fa-chevron-left"></i> Prev Cycle
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" style="color:#540033; border-color:#540033;" onclick="resetToCurrentCycle()">
+                        Current Cycle
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="shiftCycle(1)">
+                        Next Cycle <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="col-lg-4 col-md-7 mb-2 mb-lg-0">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light text-muted" style="font-size:0.75rem;">From</span>
+                    </div>
+                    <input type="date" class="form-control form-control-sm" id="fromDate" name="fromDate" value="@Model.CycleStart.ToString("yyyy-MM-dd")" />
+                    <div class="input-group-prepend input-group-append">
+                        <span class="input-group-text bg-light text-muted" style="font-size:0.75rem;">To</span>
+                    </div>
+                    <input type="date" class="form-control form-control-sm" id="toDate" name="toDate" value="@Model.CycleEnd.ToString("yyyy-MM-dd")" />
+                    <div class="input-group-append">
+                        <button type="submit" class="btn btn-sm" style="background:#540033; color:#fff;">
+                            <i class="fas fa-filter"></i> Apply
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-md-5">
+                <div class="input-group input-group-sm">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text bg-light text-muted"><i class="fas fa-search"></i></span>
+                    </div>
+                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search employee, reason, approver..." value="@Model.SearchQuery" onkeyup="filterTableLocally()" />
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- QUICK FILTER TABS -->
+    <div class="d-flex flex-wrap align-items-center mb-3">
+        <a asp-action="Index" asp-route-fromDate="@Model.CycleStart.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.CycleEnd.ToString("yyyy-MM-dd")" asp-route-filter="all" class="filter-tab @(Model.ActiveFilter == "all" ? "active" : "")">
+            All Requests <span class="badge badge-secondary">@Model.TotalCount</span>
+        </a>
+        <a asp-action="Index" asp-route-fromDate="@Model.CycleStart.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.CycleEnd.ToString("yyyy-MM-dd")" asp-route-filter="pending" class="filter-tab @(Model.ActiveFilter == "pending" ? "active" : "")">
+            Pending <span class="badge badge-warning">@Model.PendingCount</span>
+        </a>
+        <a asp-action="Index" asp-route-fromDate="@Model.CycleStart.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.CycleEnd.ToString("yyyy-MM-dd")" asp-route-filter="approved" class="filter-tab @(Model.ActiveFilter == "approved" ? "active" : "")">
+            Approved <span class="badge badge-success">@Model.ApprovedCount</span>
+        </a>
+        <a asp-action="Index" asp-route-fromDate="@Model.CycleStart.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.CycleEnd.ToString("yyyy-MM-dd")" asp-route-filter="rejected" class="filter-tab @(Model.ActiveFilter == "rejected" ? "active" : "")">
+            Rejected <span class="badge badge-danger">@Model.RejectedCount</span>
+        </a>
+        <a asp-action="Index" asp-route-fromDate="@Model.CycleStart.ToString("yyyy-MM-dd")" asp-route-toDate="@Model.CycleEnd.ToString("yyyy-MM-dd")" asp-route-filter="cancelled" class="filter-tab @(Model.ActiveFilter == "cancelled" ? "active" : "")">
+            Cancelled <span class="badge badge-light">@Model.CancelledCount</span>
+        </a>
+    </div>
+
+    <!-- NOTICE BANNER FOR PAYROLL IMPACT -->
+    <div class="alert alert-light border d-flex align-items-center py-2 px-3 mb-3" style="border-left: 4px solid #1bc387 !important; font-size: 0.82rem; background: #f0fdf4;">
+        <i class="fas fa-info-circle text-success mr-2 fa-lg"></i>
+        <span>
+            <strong>Attendance Regularization &amp; LOP Waiver:</strong> When approved directly from this screen, regularization requests are <strong>finalized immediately</strong> and daily attendance records are updated to Present with a <strong>0 salary deduction factor (Slry_Dct_Fct = 0.00)</strong>, ensuring they are <strong>never considered as LOP / NoPay deductions</strong> during payroll processing.
+        </span>
+    </div>
+
+    <!-- REGULARIZATION DATA TABLE -->
+    <div class="queue-table">
+        <div class="table-responsive">
+            <table class="table table-hover" id="queueTable">
+                <thead>
+                    <tr>
+                        <th style="width: 100px;">Req #</th>
+                        <th>Employee</th>
+                        <th>Department &amp; Designation</th>
+                        <th style="width: 110px;">Date</th>
+                        <th>Requested Times</th>
+                        <th>Actual Punches</th>
+                        <th>Reason &amp; Description</th>
+                        <th>Pending With / Approver</th>
+                        <th class="text-center" style="width: 100px;">Status</th>
+                        <th class="text-center" style="width: 170px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.Items == null || !Model.Items.Any())
+                    {
+                        <tr id="noRecordsRow">
+                            <td colspan="10" class="text-center py-5 text-muted">
+                                <i class="fas fa-user-check fa-3x mb-3 text-gray-300 d-block"></i>
+                                <strong>No attendance regularization requests found for the selected payroll cycle and filter.</strong>
+                                <div class="small mt-1">Try switching to another cycle or clearing the filter.</div>
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var item in Model.Items)
+                        {
+                            <tr id="row-@item.AtnExpId" data-search="@item.EmpId @item.EmpName @item.Department @item.Designation @item.ReqNo @item.ReasonCategory @item.ReasonDescription @item.PendingWith @item.ApproverName">
+                                <td class="font-weight-bold text-muted">
+                                    <span class="badge badge-light border">@item.ReqNo</span>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold text-dark" style="font-size:0.88rem;">@item.EmpName</div>
+                                    <div class="small text-muted font-italic"><i class="far fa-id-badge mr-1"></i>@item.EmpId</div>
+                                </td>
+                                <td>
+                                    <div>@(string.IsNullOrEmpty(item.Department) ? "—" : item.Department)</div>
+                                    <div class="small text-muted">@(string.IsNullOrEmpty(item.Designation) ? "—" : item.Designation)</div>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold text-dark">@item.AttendanceDate.ToString("dd-MMM-yyyy")</div>
+                                    <div class="small text-muted">@item.AttendanceDate.DayOfWeek</div>
+                                </td>
+                                <td>
+                                    <div class="font-weight-bold" style="font-size:0.83rem; color:#0f172a;">
+                                        <i class="far fa-clock text-primary mr-1"></i>
+                                        @(item.ReqInTime.HasValue ? DateTime.Today.Add(item.ReqInTime.Value).ToString("hh:mm tt") : "-")
+                                        &rarr;
+                                        @(item.ReqOutTime.HasValue ? DateTime.Today.Add(item.ReqOutTime.Value).ToString("hh:mm tt") : "-")
+                                    </div>
+                                    <div class="small text-muted font-weight-bold">
+                                        Total: @item.TotalHours hrs
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="small text-muted">
+                                        @(item.ActualInTime.HasValue ? DateTime.Today.Add(item.ActualInTime.Value).ToString("hh:mm tt") : "-")
+                                        &rarr;
+                                        @(item.ActualOutTime.HasValue ? DateTime.Today.Add(item.ActualOutTime.Value).ToString("hh:mm tt") : "-")
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge badge-light border px-2 py-1" style="font-size:0.78rem; font-weight:600; color:#540033;">
+                                        @item.ReasonCategory
+                                    </span>
+                                    @if (!string.IsNullOrWhiteSpace(item.ReasonDescription))
+                                    {
+                                        <div class="small text-muted text-truncate mt-1" style="max-width: 200px;" title="@item.ReasonDescription">
+                                            @item.ReasonDescription
+                                        </div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Status == "Approved")
+                                    {
+                                        <div class="text-success font-weight-bold small"><i class="fas fa-check-circle mr-1"></i>Approved</div>
+                                        <div class="small text-muted text-truncate" style="max-width: 170px;" title="@item.ApproverName">@item.ApproverName</div>
+                                    }
+                                    else if (item.Status == "Rejected")
+                                    {
+                                        <div class="text-danger font-weight-bold small"><i class="fas fa-times-circle mr-1"></i>Rejected</div>
+                                        <div class="small text-muted text-truncate" style="max-width: 170px;" title="@item.ApproverName">@item.ApproverName</div>
+                                    }
+                                    else if (item.Status == "Cancelled")
+                                    {
+                                        <div class="text-muted font-weight-bold small"><i class="fas fa-ban mr-1"></i>Cancelled</div>
+                                    }
+                                    else
+                                    {
+                                        <div class="text-warning font-weight-bold small"><i class="fas fa-hourglass-half mr-1"></i>Pending</div>
+                                        <div class="small text-muted text-truncate" style="max-width: 170px;" title="@item.PendingWith">@item.PendingWith</div>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    @if (item.Status == "Approved")
+                                    {
+                                        <span class="badge-status status-approved"><i class="fas fa-check-circle"></i> Approved</span>
+                                    }
+                                    else if (item.Status == "Rejected")
+                                    {
+                                        <span class="badge-status status-rejected"><i class="fas fa-times-circle"></i> Rejected</span>
+                                    }
+                                    else if (item.Status == "Cancelled")
+                                    {
+                                        <span class="badge-status status-cancelled"><i class="fas fa-ban"></i> Cancelled</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-status status-pending"><i class="fas fa-clock"></i> Pending</span>
+                                    }
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex align-items-center" style="gap: 0.35rem;">
+                                        @if (item.Status == "Pending" && item.CanAction)
+                                        {
+                                            <button type="button" class="btn-action-approve" onclick="openApproveModal(@item.AtnExpId, '@item.ReqNo', '@item.EmpName', '@item.AttendanceDate.ToString("dd-MMM-yyyy")')">
+                                                <i class="fas fa-check"></i> Approve
+                                            </button>
+                                            <button type="button" class="btn-action-reject" onclick="openRejectModal(@item.AtnExpId, '@item.ReqNo', '@item.EmpName')">
+                                                <i class="fas fa-times"></i> Reject
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="btn-action-details" onclick="viewDetails(@item.AtnExpId)">
+                                                <i class="fas fa-eye"></i> Details
+                                            </button>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- APPROVE MODAL -->
+<div class="modal fade" id="approveModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-success text-white py-3">
+                <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                    <i class="fas fa-check-circle mr-2"></i> Approve Regularization Request
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="approveAtnExpId" />
+                <div class="alert alert-light border mb-3 py-2 px-3">
+                    <div class="font-weight-bold text-dark" id="approveSummary"></div>
+                    <div class="small text-muted mt-1">
+                        Approving will immediately finalize this regularization and mark the employee's attendance as Present with <strong>0 salary deduction (no LOP)</strong>.
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold small text-muted">Approval Remarks / Comments (Optional):</label>
+                    <textarea class="form-control" id="approveComments" rows="2" placeholder="e.g. Approved as per manager request."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-action-approve" onclick="submitApprove()">
+                    <i class="fas fa-check mr-1"></i> Confirm Approval
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REJECT MODAL -->
+<div class="modal fade" id="rejectModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-danger text-white py-3">
+                <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                    <i class="fas fa-times-circle mr-2"></i> Reject Regularization Request
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <input type="hidden" id="rejectAtnExpId" />
+                <div class="alert alert-light border mb-3 py-2 px-3">
+                    <div class="font-weight-bold text-dark" id="rejectSummary"></div>
+                    <div class="small text-muted mt-1">
+                        Rejecting will discard this regularization request. If the employee had no biometric punches for this day, full Loss of Pay (LOP) will apply.
+                    </div>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold small text-muted">Reason for Rejection (Optional):</label>
+                    <textarea class="form-control" id="rejectComments" rows="2" placeholder="e.g. Regularization request submitted after allowable deadline."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-sm btn-action-reject" onclick="submitReject()">
+                    <i class="fas fa-times mr-1"></i> Confirm Rejection
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- DETAILS MODAL -->
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header text-white py-3" style="background: linear-gradient(135deg, #540033 0%, #750047 100%);">
+                <h5 class="modal-title font-weight-bold" style="font-size: 1.05rem;">
+                    <i class="fas fa-file-invoice mr-2"></i> Regularization Request Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4" id="detailsModalBody">
+                <div class="text-center py-4">
+                    <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                    <div class="small text-muted mt-2">Loading request details...</div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light py-2 px-3">
+                <button type="button" class="btn btn-sm btn-outline-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function getAntiForgeryToken() {
+            return $('input[name="__RequestVerificationToken"]').val();
+        }
+
+        function shiftCycle(direction) {
+            var fromInput = document.getElementById('fromDate');
+            var toInput = document.getElementById('toDate');
+            var currFrom = new Date(fromInput.value);
+
+            // Move month
+            var newFromMonth = new Date(currFrom.getFullYear(), currFrom.getMonth() + direction, 21);
+            var newToMonth = new Date(newFromMonth.getFullYear(), newFromMonth.getMonth() + 1, 20);
+
+            fromInput.value = formatDateToISO(newFromMonth);
+            toInput.value = formatDateToISO(newToMonth);
+
+            document.getElementById('cycleFilterForm').submit();
+        }
+
+        function resetToCurrentCycle() {
+            var today = new Date();
+            var fromDate, toDate;
+            if (today.getDate() <= 20) {
+                fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 21);
+                toDate = new Date(today.getFullYear(), today.getMonth(), 20);
+            } else {
+                fromDate = new Date(today.getFullYear(), today.getMonth(), 21);
+                toDate = new Date(today.getFullYear(), today.getMonth() + 1, 20);
+            }
+
+            document.getElementById('fromDate').value = formatDateToISO(fromDate);
+            document.getElementById('toDate').value = formatDateToISO(toDate);
+
+            document.getElementById('cycleFilterForm').submit();
+        }
+
+        function formatDateToISO(d) {
+            var year = d.getFullYear();
+            var month = ('0' + (d.getMonth() + 1)).slice(-2);
+            var day = ('0' + d.getDate()).slice(-2);
+            return year + '-' + month + '-' + day;
+        }
+
+        function filterTableLocally() {
+            var query = document.getElementById('searchInput').value.toLowerCase().trim();
+            var rows = document.querySelectorAll('#queueTable tbody tr[data-search]');
+            var visibleCount = 0;
+
+            rows.forEach(function (row) {
+                var searchText = row.getAttribute('data-search').toLowerCase();
+                if (searchText.indexOf(query) > -1) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            var noRec = document.getElementById('noRecordsRow');
+            if (noRec) {
+                noRec.style.display = (visibleCount === 0) ? '' : 'none';
+            }
+        }
+
+        function openApproveModal(id, reqNo, empName, date) {
+            $('#approveAtnExpId').val(id);
+            $('#approveSummary').html('<strong>Request:</strong> ' + reqNo + ' &bull; <strong>Employee:</strong> ' + empName + '<br><strong>Attendance Date:</strong> ' + date);
+            $('#approveComments').val('');
+            $('#approveModal').modal('show');
+        }
+
+        function openRejectModal(id, reqNo, empName) {
+            $('#rejectAtnExpId').val(id);
+            $('#rejectSummary').html('<strong>Request:</strong> ' + reqNo + ' &bull; <strong>Employee:</strong> ' + empName);
+            $('#rejectComments').val('');
+            $('#rejectModal').modal('show');
+        }
+
+        function submitApprove() {
+            var atnExpId = parseInt($('#approveAtnExpId').val());
+            var comment = $('#approveComments').val();
+
+            $.ajax({
+                url: '@Url.Action("ApproveRegularization", "HrEmpAtndcRegApprovalQueue", new { area = "Attendance" })',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                data: JSON.stringify({
+                    atnExpId: atnExpId,
+                    comment: comment
+                }),
+                success: function (res) {
+                    $('#approveModal').modal('hide');
+                    if (res && (res.success || res.Success)) {
+                        toastr.success((res.message || res.Message) || 'Regularization request approved.');
+                        setTimeout(function () { location.reload(); }, 900);
+                    } else {
+                        toastr.error((res && (res.message || res.Message)) || 'Error approving request.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#approveModal').modal('hide');
+                    toastr.error('Server error: ' + error);
+                }
+            });
+        }
+
+        function submitReject() {
+            var atnExpId = parseInt($('#rejectAtnExpId').val());
+            var comment = $('#rejectComments').val();
+
+            $.ajax({
+                url: '@Url.Action("RejectRegularization", "HrEmpAtndcRegApprovalQueue", new { area = "Attendance" })',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'RequestVerificationToken': getAntiForgeryToken()
+                },
+                data: JSON.stringify({
+                    atnExpId: atnExpId,
+                    comment: comment
+                }),
+                success: function (res) {
+                    $('#rejectModal').modal('hide');
+                    if (res && (res.success || res.Success)) {
+                        toastr.warning((res.message || res.Message) || 'Regularization request rejected.');
+                        setTimeout(function () { location.reload(); }, 900);
+                    } else {
+                        toastr.error((res && (res.message || res.Message)) || 'Error rejecting request.');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#rejectModal').modal('hide');
+                    toastr.error('Server error: ' + error);
+                }
+            });
+        }
+
+        function viewDetails(id) {
+            $('#detailsModal').modal('show');
+            $('#detailsModalBody').html('<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-muted"></i><div class="small text-muted mt-2">Loading details...</div></div>');
+
+            $.ajax({
+                url: '@Url.Action("GetDetails", "HrEmpAtndcRegApprovalQueue", new { area = "Attendance" })',
+                type: 'GET',
+                data: { id: id },
+                success: function (res) {
+                    if (res && (res.success || res.Success)) {
+                        var d = res.data || res.Data || {};
+                        var empName = d.EmpName || d.empName || '—';
+                        var empId = d.EmpId || d.empId || '';
+                        var department = d.Department || d.department || '—';
+                        var designation = d.Designation || d.designation || '—';
+                        var reqNo = d.ReqNo || d.reqNo || '—';
+                        var date = d.Date || d.date || '—';
+                        var dayOfWeek = d.DayOfWeek || d.dayOfWeek || '';
+                        var createdDate = d.CreatedDate || d.createdDate || '—';
+                        var reqIn = d.ReqIn || d.reqIn || '-';
+                        var reqOut = d.ReqOut || d.reqOut || '-';
+                        var totalHours = (d.TotalHours != null ? d.TotalHours : d.totalHours) || '0';
+                        var actualIn = d.ActualIn || d.actualIn || '-';
+                        var actualOut = d.ActualOut || d.actualOut || '-';
+                        var reasonCategory = d.ReasonCategory || d.reasonCategory || 'Other';
+                        var reasonDescription = d.ReasonDescription || d.reasonDescription || '—';
+                        var wfStatus = d.WfStatus || d.wfStatus || 'Pending';
+                        var approverRemarks = d.ApproverRemarks || d.approverRemarks || '';
+
+                        var histHtml = '';
+                        var histList = res.history || res.History || [];
+                        if (histList && histList.length > 0) {
+                            histHtml += '<h6 class="font-weight-bold text-dark mt-3 mb-2"><i class="fas fa-history mr-1"></i> Workflow Audit History</h6>';
+                            histHtml += '<ul class="list-group list-group-flush border rounded">';
+                            histList.forEach(function (h) {
+                                var step = h.StepName || h.stepName || 'Step';
+                                var comments = h.Comments || h.comments || h.Action || h.action || '';
+                                var actor = h.ActorName || h.actorName || 'System';
+                                var actionDate = h.ActionDate || h.actionDate || '';
+                                histHtml += '<li class="list-group-item py-2 px-3 small d-flex justify-content-between align-items-center">';
+                                histHtml += '<div><strong>' + step + '</strong>: ' + comments + '<div class="text-muted font-italic">By: ' + actor + '</div></div>';
+                                histHtml += '<span class="badge badge-light border">' + actionDate + '</span>';
+                                histHtml += '</li>';
+                            });
+                            histHtml += '</ul>';
+                        }
+
+                        var statusBadgeClass = wfStatus === 'Approved' ? 'success' : (wfStatus === 'Rejected' ? 'danger' : 'warning');
+
+                        var html = `
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <div class="text-muted small">Employee</div>
+                                    <div class="font-weight-bold text-dark">${empName} ${empId ? '(' + empId + ')' : ''}</div>
+                                    <div class="small text-muted">${department} &bull; ${designation}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="text-muted small">Request # &amp; Date</div>
+                                    <div class="font-weight-bold text-dark">${reqNo} &bull; ${date} ${dayOfWeek ? '(' + dayOfWeek + ')' : ''}</div>
+                                    <div class="small text-muted">Created: ${createdDate}</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="text-muted small">Requested Regularized Hours</div>
+                                    <div class="font-weight-bold text-primary">${reqIn} &rarr; ${reqOut} (${totalHours} hrs)</div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="text-muted small">Original Biometric Punches</div>
+                                    <div class="font-weight-bold text-dark">${actualIn} &rarr; ${actualOut}</div>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <div class="text-muted small">Reason &amp; Description</div>
+                                    <div class="p-2 bg-light rounded border small">
+                                        <span class="badge badge-secondary mr-1">${reasonCategory}</span> ${reasonDescription}
+                                    </div>
+                                </div>
+                                <div class="col-12 mb-2">
+                                    <div class="text-muted small">Status</div>
+                                    <span class="badge badge-${statusBadgeClass} px-2 py-1">${wfStatus}</span>
+                                    ${approverRemarks ? '<div class="small text-muted mt-1"><strong>Remarks:</strong> ' + approverRemarks + '</div>' : ''}
+                                </div>
+                            </div>
+                            ${histHtml}
+                        `;
+                        $('#detailsModalBody').html(html);
+                    } else {
+                        var errMsg = (res && (res.message || res.Message)) || 'Failed to load details.';
+                        $('#detailsModalBody').html('<div class="alert alert-danger">' + errMsg + '</div>');
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#detailsModalBody').html('<div class="alert alert-danger">Error loading details: ' + error + '</div>');
+                }
+            });
+        }
+    </script>
+}
+

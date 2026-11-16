@@ -703,7 +703,7 @@ namespace qHRM.Areas.Attendance.Data
         }
         #endregion
 
-        #region ==============Dashboard 7-Day Attendance Summary==============
+        #region ==============Dashboard 7-Day & Cycle Attendance Summary==============
         public class EmpAttendanceDayDto
         {
             public DateTime Date { get; set; }
@@ -719,6 +719,13 @@ namespace qHRM.Areas.Attendance.Data
             public string Status { get; set; }
             public string StatusClass { get; set; }
             public string Note { get; set; }
+            public bool HasRegularization { get; set; }
+            public string RegularizationStatus { get; set; }
+            public int? RegularizationReqId { get; set; }
+            public string RegularizationReqNo { get; set; }
+            public bool IsToday { get; set; }
+            public bool IsWeekend { get; set; }
+            public bool CanRegularize { get; set; }
         }
 
         public class EmpAttendanceSummaryDto
@@ -730,8 +737,63 @@ namespace qHRM.Areas.Attendance.Data
             public int PresentDays { get; set; }
             public int AbsentDays { get; set; }
             public int LateCount { get; set; }
+            public int RegularizedCount { get; set; }
             public string TotalWorkHoursFormatted { get; set; }
+            public int Last7PresentDays { get; set; }
+            public int Last7AbsentDays { get; set; }
+            public int Last7LateCount { get; set; }
+            public int Last7RegularizedCount { get; set; }
+            public string Last7TotalWorkHoursFormatted { get; set; }
             public List<EmpAttendanceDayDto> Days { get; set; } = new List<EmpAttendanceDayDto>();
+        }
+
+        public DateTime? GetTodayFirstPunch(string empId)
+        {
+            if (string.IsNullOrWhiteSpace(empId)) return null;
+            try
+            {
+                var conn = _hrmContext.Database.GetDbConnection();
+                bool wasClosed = conn.State != System.Data.ConnectionState.Open;
+                if (wasClosed)
+                    conn.Open();
+
+                try
+                {
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandTimeout = 4;
+                        cmd.CommandText = @"
+                            DECLARE @todayLocal DATETIME = CAST(CAST(GETDATE() AS DATE) AS DATETIME);
+                            DECLARE @startUtc DATETIME = DATEADD(HOUR, -3, @todayLocal);
+                            DECLARE @endUtc DATETIME = DATEADD(HOUR, 24, @startUtc);
+                            SELECT MIN(DATEADD(HOUR, 3, eventTime)) AS FirstPunch
+                            FROM dbo.vw_zoho_atndclogs
+                            WHERE (employeeID = @empId OR TRY_CAST(employeeID AS INT) = TRY_CAST(@empId AS INT))
+                              AND eventTime >= @startUtc AND eventTime < @endUtc;";
+
+                        var p = cmd.CreateParameter();
+                        p.ParameterName = "@empId";
+                        p.Value = empId.Trim();
+                        cmd.Parameters.Add(p);
+
+                        var result = cmd.ExecuteScalar();
+                        if (result != null && result != DBNull.Value && DateTime.TryParse(result.ToString(), out var dt))
+                        {
+                            return dt;
+                        }
+                    }
+                }
+                finally
+                {
+                    if (wasClosed && conn.State == System.Data.ConnectionState.Open)
+                        conn.Close();
+                }
+            }
+            catch (Exception)
+            {
+                // Fail-safe: if linked server query fails or times out, gracefully return null
+            }
+            return null;
         }
 
         public EmpAttendanceSummaryDto GetEmployee7DaysAttendance(int empSysId, DateTime? asOfDate = null)
@@ -752,6 +814,13 @@ namespace qHRM.Areas.Attendance.Data
 
             try
             {
+                DateTime today = DateTime.Today;
+                DateTime? todayPunch = null;
+                if (startDate <= today && endDate >= today && emp != null && !string.IsNullOrEmpty(emp.EmpId))
+                {
+                    todayPunch = GetTodayFirstPunch(emp.EmpId);
+                }
+
                 var records = (from a in _hrmContext.HrEmpAtndcSft
                                join s in _hrmContext.SysAtndcStat on a.AtndcStatId equals s.AtndcStatId into sts
                                from s in sts.DefaultIfEmpty()
@@ -769,22 +838,396 @@ namespace qHRM.Areas.Attendance.Data
                                    a.Note
                                }).ToList();
 
+                var regRequests = (from exp in _hrmContext.HrEmpAttendExp
+                                   where exp.EmpSysId == empSysId && exp.StDate >= startDate.Date && exp.StDate <= endDate.Date && exp.RecStat == 1
+                                   select new
+                                   {
+                                       exp.AtnExpId,
+                                       exp.ReqNo,
+                                       exp.StDate,
+                                       exp.WfStatus,
+                                       exp.AprvdStatId
+                                   }).ToList();
+
                 int totalWrkMins = 0;
                 int presentCount = 0;
                 int absentCount = 0;
                 int lateCount = 0;
+                int regCount = 0;
 
                 for (var d = startDate; d <= endDate; d = d.AddDays(1))
                 {
                     var rec = records.FirstOrDefault(r => r.AtndcDate.Date == d);
+                    var reg = regRequests.FirstOrDefault(r => r.StDate.Date == d);
+                    bool isToday = (d.Date == today);
+                    bool isWeekend = (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday);
+
                     var dayItem = new EmpAttendanceDayDto
                     {
                         Date = d,
                         DateFormatted = d.ToString("dd MMM yyyy"),
-                        DayName = d.ToString("ddd")
+                        DayName = d.ToString("ddd"),
+                        IsToday = isToday,
+                        IsWeekend = isWeekend
                     };
 
-                    if (rec != null)
+                    if (reg != null)
+                    {
+                        dayItem.HasRegularization = true;
+                        dayItem.RegularizationReqId = reg.AtnExpId;
+                        dayItem.RegularizationReqNo = reg.ReqNo;
+                        dayItem.RegularizationStatus = reg.WfStatus ?? (reg.AprvdStatId == 1 ? "Approved" : "Pending");
+                    }
+
+                    if (isToday)
+                    {
+                        dayItem.CanRegularize = false;
+                        if (rec != null && rec.InTime.HasValue)
+                        {
+                            dayItem.InTime = DateTime.Today.Add(rec.InTime.Value).ToString("hh:mm tt");
+                            dayItem.OutTime = rec.OutTime.HasValue ? DateTime.Today.Add(rec.OutTime.Value).ToString("hh:mm tt") : "--";
+                            dayItem.WorkMinutes = rec.WrkMnt;
+                            dayItem.WorkHours = rec.WrkMnt > 0 ? $"{rec.WrkMnt / 60:D2}h {rec.WrkMnt % 60:D2}m" : "--";
+                            dayItem.LateMinutes = rec.LateInMnt;
+                            dayItem.EarlyLeaveMinutes = rec.ErlyLvMnt;
+                            dayItem.OtMinutes = rec.OtMnt;
+                            dayItem.Note = rec.Note;
+                            dayItem.Status = "Checked In";
+                            dayItem.StatusClass = "badge-success";
+                            presentCount++;
+                            totalWrkMins += rec.WrkMnt;
+                            if (dayItem.LateMinutes > 0) lateCount++;
+                        }
+                        else if (todayPunch.HasValue)
+                        {
+                            dayItem.InTime = todayPunch.Value.ToString("hh:mm tt");
+                            dayItem.OutTime = "--";
+                            dayItem.WorkHours = "--";
+                            dayItem.WorkMinutes = 0;
+                            dayItem.LateMinutes = 0;
+                            dayItem.EarlyLeaveMinutes = 0;
+                            dayItem.OtMinutes = 0;
+                            dayItem.Note = "";
+                            dayItem.Status = "Checked In";
+                            dayItem.StatusClass = "badge-success";
+                            presentCount++;
+                        }
+                        else
+                        {
+                            dayItem.InTime = "--";
+                            dayItem.OutTime = "--";
+                            dayItem.WorkHours = "--";
+                            dayItem.WorkMinutes = 0;
+                            dayItem.LateMinutes = 0;
+                            dayItem.EarlyLeaveMinutes = 0;
+                            dayItem.OtMinutes = 0;
+                            dayItem.Note = "";
+                            if (isWeekend)
+                            {
+                                dayItem.Status = "Off Day";
+                                dayItem.StatusClass = "badge-secondary";
+                            }
+                            else
+                            {
+                                dayItem.Status = "Not Checked In";
+                                dayItem.StatusClass = "badge-warning";
+                            }
+                        }
+                    }
+                    else if (rec != null)
+                    {
+                        dayItem.InTime = rec.InTime.HasValue ? DateTime.Today.Add(rec.InTime.Value).ToString("hh:mm tt") : "--";
+                        dayItem.OutTime = rec.OutTime.HasValue ? DateTime.Today.Add(rec.OutTime.Value).ToString("hh:mm tt") : "--";
+                        dayItem.WorkMinutes = rec.WrkMnt;
+                        dayItem.WorkHours = rec.WrkMnt > 0 ? $"{rec.WrkMnt / 60:D2}h {rec.WrkMnt % 60:D2}m" : "--";
+                        dayItem.LateMinutes = rec.LateInMnt;
+                        dayItem.EarlyLeaveMinutes = rec.ErlyLvMnt;
+                        dayItem.OtMinutes = rec.OtMnt;
+                        dayItem.Note = rec.Note;
+
+                        var stat = rec.StatTxt;
+                        if (string.IsNullOrEmpty(stat))
+                        {
+                            if (rec.InTime.HasValue) stat = "Present";
+                            else if (isWeekend) stat = "Off Day";
+                            else stat = "Absent";
+                        }
+
+                        // Override status with regularization status if exists
+                        if (dayItem.HasRegularization)
+                        {
+                            if (string.Equals(dayItem.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                            {
+                                stat = "Regularized";
+                                regCount++;
+                            }
+                            else if (string.Equals(dayItem.RegularizationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                            {
+                                stat = "Reg. Pending";
+                            }
+                        }
+
+                        dayItem.Status = stat;
+                        totalWrkMins += rec.WrkMnt;
+                        if (dayItem.LateMinutes > 0) lateCount++;
+
+                        bool isWeekendStat = isWeekend || stat.Contains("Weekend", StringComparison.OrdinalIgnoreCase) || stat.Contains("Off", StringComparison.OrdinalIgnoreCase);
+                        dayItem.IsWeekend = isWeekendStat;
+
+                        if (stat.Equals("Regularized", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-info";
+                            presentCount++;
+                        }
+                        else if (stat.Equals("Reg. Pending", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-warning";
+                        }
+                        else if (stat.Equals("Present", StringComparison.OrdinalIgnoreCase) || stat.Equals("Checked In", StringComparison.OrdinalIgnoreCase))
+                        {
+                            presentCount++;
+                            dayItem.StatusClass = "badge-success";
+                        }
+                        else if (stat.Contains("Absent", StringComparison.OrdinalIgnoreCase))
+                        {
+                            absentCount++;
+                            dayItem.StatusClass = "badge-danger";
+                        }
+                        else if (stat.Contains("Leave", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-info";
+                        }
+                        else if (isWeekendStat)
+                        {
+                            dayItem.StatusClass = "badge-secondary";
+                        }
+                        else if (stat.Contains("Holiday", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-primary";
+                        }
+                        else
+                        {
+                            dayItem.StatusClass = "badge-warning";
+                        }
+
+                        dayItem.CanRegularize = (!isWeekendStat && d.Date < today && (stat == "Absent" || dayItem.LateMinutes > 0 || dayItem.InTime == "--" || dayItem.OutTime == "--"));
+                    }
+                    else
+                    {
+                        // No record found for day
+                        dayItem.InTime = "--";
+                        dayItem.OutTime = "--";
+                        dayItem.WorkHours = "--";
+
+                        if (dayItem.HasRegularization)
+                        {
+                            if (string.Equals(dayItem.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                            {
+                                dayItem.Status = "Regularized";
+                                dayItem.StatusClass = "badge-info";
+                                regCount++;
+                                presentCount++;
+                            }
+                            else if (string.Equals(dayItem.RegularizationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                            {
+                                dayItem.Status = "Reg. Pending";
+                                dayItem.StatusClass = "badge-warning";
+                            }
+                            else
+                            {
+                                dayItem.Status = "Reg. " + dayItem.RegularizationStatus;
+                                dayItem.StatusClass = "badge-danger";
+                            }
+                        }
+                        else if (isWeekend)
+                        {
+                            dayItem.Status = "Off Day";
+                            dayItem.StatusClass = "badge-secondary";
+                        }
+                        else if (d > today)
+                        {
+                            dayItem.Status = "Upcoming";
+                            dayItem.StatusClass = "badge-light";
+                        }
+                        else
+                        {
+                            dayItem.Status = "Absent";
+                            dayItem.StatusClass = "badge-danger";
+                            absentCount++;
+                        }
+
+                        dayItem.CanRegularize = (!isWeekend && d.Date < today && dayItem.Status == "Absent");
+                    }
+
+                    summary.Days.Add(dayItem);
+                }
+
+                summary.PresentDays = presentCount;
+                summary.AbsentDays = absentCount;
+                summary.LateCount = lateCount;
+                summary.RegularizedCount = regCount;
+                summary.TotalWorkHoursFormatted = $"{totalWrkMins / 60}h {totalWrkMins % 60:D2}m";
+                summary.Last7PresentDays = presentCount;
+                summary.Last7AbsentDays = absentCount;
+                summary.Last7LateCount = lateCount;
+                summary.Last7RegularizedCount = regCount;
+                summary.Last7TotalWorkHoursFormatted = summary.TotalWorkHoursFormatted;
+                return summary;
+            }
+            catch (Exception)
+            {
+                return summary;
+            }
+        }
+
+        public EmpAttendanceSummaryDto GetEmployeeCycleAttendance(int empSysId, DateTime startDate, DateTime endDate)
+        {
+            var emp = _hrmContext.HrEmpGenInfo.FirstOrDefault(e => e.EmpSysId == empSysId);
+            var empName = emp != null ? $"{emp.FirstName} {(string.IsNullOrEmpty(emp.MdlName) ? "" : emp.MdlName + " ")}{emp.LastName}".Trim() : $"Employee #{empSysId}";
+
+            var summary = new EmpAttendanceSummaryDto
+            {
+                EmpSysId = empSysId,
+                EmpName = empName,
+                DateRangeText = $"{startDate:dd MMM yyyy} – {endDate:dd MMM yyyy}",
+                TotalDays = (endDate.Date - startDate.Date).Days + 1
+            };
+
+            try
+            {
+                DateTime today = DateTime.Today;
+                DateTime? todayPunch = null;
+                if (startDate.Date <= today && endDate.Date >= today && emp != null && !string.IsNullOrEmpty(emp.EmpId))
+                {
+                    todayPunch = GetTodayFirstPunch(emp.EmpId);
+                }
+
+                var records = (from a in _hrmContext.HrEmpAtndcSft
+                               join s in _hrmContext.SysAtndcStat on a.AtndcStatId equals s.AtndcStatId into sts
+                               from s in sts.DefaultIfEmpty()
+                               where a.EmpSysId == empSysId && a.AtndcDate >= startDate.Date && a.AtndcDate <= endDate.Date && a.RecStat == 1
+                               select new
+                               {
+                                   a.AtndcDate,
+                                   a.InTime,
+                                   a.OutTime,
+                                   a.WrkMnt,
+                                   a.OtMnt,
+                                   a.LateInMnt,
+                                   a.ErlyLvMnt,
+                                   StatTxt = s != null ? s.AtndcStatTxt : null,
+                                   a.Note
+                               }).ToList();
+
+                var regRequests = (from exp in _hrmContext.HrEmpAttendExp
+                                   where exp.EmpSysId == empSysId && exp.StDate >= startDate.Date && exp.StDate <= endDate.Date && exp.RecStat == 1
+                                   select new
+                                   {
+                                       exp.AtnExpId,
+                                       exp.ReqNo,
+                                       exp.StDate,
+                                       exp.WfStatus,
+                                       exp.AprvdStatId,
+                                       exp.ReqInTime,
+                                       exp.ReqOutTime,
+                                       exp.ReasonCategory,
+                                       exp.ReasonDescription
+                                   }).ToList();
+
+                int totalWrkMins = 0;
+                int presentCount = 0;
+                int absentCount = 0;
+                int lateCount = 0;
+                int regCount = 0;
+
+                // When viewing current cycle (today falls within start and end date), cap the dates at today so upcoming days and weekends are not shown
+                DateTime loopEndDate = endDate.Date;
+                if (startDate.Date <= today && endDate.Date >= today)
+                {
+                    loopEndDate = today;
+                }
+
+                // Dates in descending order so the most recent dates are at the top
+                for (var d = loopEndDate; d >= startDate.Date; d = d.AddDays(-1))
+                {
+                    var rec = records.FirstOrDefault(r => r.AtndcDate.Date == d);
+                    var reg = regRequests.FirstOrDefault(r => r.StDate.Date == d);
+                    bool isToday = (d.Date == today);
+                    bool isWeekend = (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday);
+
+                    var dayItem = new EmpAttendanceDayDto
+                    {
+                        Date = d,
+                        DateFormatted = d.ToString("dd MMM yyyy"),
+                        DayName = d.ToString("ddd"),
+                        IsToday = isToday,
+                        IsWeekend = isWeekend
+                    };
+
+                    if (reg != null)
+                    {
+                        dayItem.HasRegularization = true;
+                        dayItem.RegularizationReqId = reg.AtnExpId;
+                        dayItem.RegularizationReqNo = reg.ReqNo;
+                        dayItem.RegularizationStatus = reg.WfStatus ?? (reg.AprvdStatId == 1 ? "Approved" : "Pending");
+                    }
+
+                    if (isToday)
+                    {
+                        dayItem.CanRegularize = false;
+                        if (rec != null && rec.InTime.HasValue)
+                        {
+                            dayItem.InTime = DateTime.Today.Add(rec.InTime.Value).ToString("hh:mm tt");
+                            dayItem.OutTime = rec.OutTime.HasValue ? DateTime.Today.Add(rec.OutTime.Value).ToString("hh:mm tt") : "--";
+                            dayItem.WorkMinutes = rec.WrkMnt;
+                            dayItem.WorkHours = rec.WrkMnt > 0 ? $"{rec.WrkMnt / 60:D2}h {rec.WrkMnt % 60:D2}m" : "--";
+                            dayItem.LateMinutes = rec.LateInMnt;
+                            dayItem.EarlyLeaveMinutes = rec.ErlyLvMnt;
+                            dayItem.OtMinutes = rec.OtMnt;
+                            dayItem.Note = rec.Note;
+                            dayItem.Status = "Checked In";
+                            dayItem.StatusClass = "badge-success";
+                            presentCount++;
+                            totalWrkMins += rec.WrkMnt;
+                            if (dayItem.LateMinutes > 0) lateCount++;
+                        }
+                        else if (todayPunch.HasValue)
+                        {
+                            dayItem.InTime = todayPunch.Value.ToString("hh:mm tt");
+                            dayItem.OutTime = "--";
+                            dayItem.WorkHours = "--";
+                            dayItem.WorkMinutes = 0;
+                            dayItem.LateMinutes = 0;
+                            dayItem.EarlyLeaveMinutes = 0;
+                            dayItem.OtMinutes = 0;
+                            dayItem.Note = "";
+                            dayItem.Status = "Checked In";
+                            dayItem.StatusClass = "badge-success";
+                            presentCount++;
+                        }
+                        else
+                        {
+                            dayItem.InTime = "--";
+                            dayItem.OutTime = "--";
+                            dayItem.WorkHours = "--";
+                            dayItem.WorkMinutes = 0;
+                            dayItem.LateMinutes = 0;
+                            dayItem.EarlyLeaveMinutes = 0;
+                            dayItem.OtMinutes = 0;
+                            dayItem.Note = "";
+                            if (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday)
+                            {
+                                dayItem.Status = "Off Day";
+                                dayItem.StatusClass = "badge-secondary";
+                            }
+                            else
+                            {
+                                dayItem.Status = "Not Checked In";
+                                dayItem.StatusClass = "badge-warning";
+                            }
+                        }
+                    }
+                    else if (rec != null)
                     {
                         dayItem.InTime = rec.InTime.HasValue ? DateTime.Today.Add(rec.InTime.Value).ToString("hh:mm tt") : "--";
                         dayItem.OutTime = rec.OutTime.HasValue ? DateTime.Today.Add(rec.OutTime.Value).ToString("hh:mm tt") : "--";
@@ -802,12 +1245,35 @@ namespace qHRM.Areas.Attendance.Data
                             else if (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday) stat = "Off Day";
                             else stat = "Absent";
                         }
-                        dayItem.Status = stat;
 
+                        // Override status with regularization status if exists
+                        if (dayItem.HasRegularization)
+                        {
+                            if (string.Equals(dayItem.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                            {
+                                stat = "Regularized";
+                                regCount++;
+                            }
+                            else if (string.Equals(dayItem.RegularizationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                            {
+                                stat = "Reg. Pending";
+                            }
+                        }
+
+                        dayItem.Status = stat;
                         totalWrkMins += rec.WrkMnt;
                         if (dayItem.LateMinutes > 0) lateCount++;
 
-                        if (stat.Equals("Present", StringComparison.OrdinalIgnoreCase))
+                        if (stat.Equals("Regularized", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-info";
+                            presentCount++;
+                        }
+                        else if (stat.Equals("Reg. Pending", StringComparison.OrdinalIgnoreCase))
+                        {
+                            dayItem.StatusClass = "badge-warning";
+                        }
+                        else if (stat.Equals("Present", StringComparison.OrdinalIgnoreCase) || stat.Equals("Checked In", StringComparison.OrdinalIgnoreCase))
                         {
                             presentCount++;
                             dayItem.StatusClass = "badge-success";
@@ -833,19 +1299,43 @@ namespace qHRM.Areas.Attendance.Data
                         {
                             dayItem.StatusClass = "badge-warning";
                         }
+
+                        bool isWeekendStat = isWeekend || stat.Contains("Weekend", StringComparison.OrdinalIgnoreCase) || stat.Contains("Off", StringComparison.OrdinalIgnoreCase);
+                        dayItem.IsWeekend = isWeekendStat;
+                        dayItem.CanRegularize = (!isWeekendStat && d.Date < today && (stat == "Absent" || dayItem.LateMinutes > 0 || dayItem.InTime == "--" || dayItem.OutTime == "--"));
                     }
                     else
                     {
-                        // No record found for day
                         dayItem.InTime = "--";
                         dayItem.OutTime = "--";
                         dayItem.WorkHours = "--";
-                        if (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday)
+
+                        if (dayItem.HasRegularization)
+                        {
+                            if (string.Equals(dayItem.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                            {
+                                dayItem.Status = "Regularized";
+                                dayItem.StatusClass = "badge-info";
+                                regCount++;
+                                presentCount++;
+                            }
+                            else if (string.Equals(dayItem.RegularizationStatus, "Pending", StringComparison.OrdinalIgnoreCase))
+                            {
+                                dayItem.Status = "Reg. Pending";
+                                dayItem.StatusClass = "badge-warning";
+                            }
+                            else
+                            {
+                                dayItem.Status = "Reg. " + dayItem.RegularizationStatus;
+                                dayItem.StatusClass = "badge-danger";
+                            }
+                        }
+                        else if (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday)
                         {
                             dayItem.Status = "Off Day";
                             dayItem.StatusClass = "badge-secondary";
                         }
-                        else if (d > DateTime.Today)
+                        else if (d > today)
                         {
                             dayItem.Status = "Upcoming";
                             dayItem.StatusClass = "badge-light";
@@ -856,6 +1346,8 @@ namespace qHRM.Areas.Attendance.Data
                             dayItem.StatusClass = "badge-danger";
                             absentCount++;
                         }
+
+                        dayItem.CanRegularize = (!isWeekend && d.Date < today && dayItem.Status == "Absent");
                     }
 
                     summary.Days.Add(dayItem);
@@ -864,7 +1356,17 @@ namespace qHRM.Areas.Attendance.Data
                 summary.PresentDays = presentCount;
                 summary.AbsentDays = absentCount;
                 summary.LateCount = lateCount;
+                summary.RegularizedCount = regCount;
                 summary.TotalWorkHoursFormatted = $"{totalWrkMins / 60}h {totalWrkMins % 60:D2}m";
+
+                var last7 = summary.Days.Take(7).ToList();
+                summary.Last7PresentDays = last7.Count(d => d.Status != null && (d.Status.Equals("Present", StringComparison.OrdinalIgnoreCase) || d.Status.Equals("Regularized", StringComparison.OrdinalIgnoreCase) || d.Status.Equals("Checked In", StringComparison.OrdinalIgnoreCase)));
+                summary.Last7AbsentDays = last7.Count(d => d.Status != null && d.Status.IndexOf("Absent", StringComparison.OrdinalIgnoreCase) >= 0);
+                summary.Last7LateCount = last7.Count(d => d.LateMinutes > 0);
+                summary.Last7RegularizedCount = last7.Count(d => (d.Status != null && d.Status.Equals("Regularized", StringComparison.OrdinalIgnoreCase)) || string.Equals(d.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase));
+                int last7WrkMins = last7.Sum(d => d.WorkMinutes);
+                summary.Last7TotalWorkHoursFormatted = $"{last7WrkMins / 60}h {last7WrkMins % 60:D2}m";
+
                 return summary;
             }
             catch (Exception)

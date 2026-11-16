@@ -38,6 +38,7 @@ namespace qHRM.Models
         public virtual DbSet<AdmUsrGrpEmpGrp> AdmUsrGrpEmpGrp { get; set; }
         public virtual DbSet<HrEmpAtndcSft> HrEmpAtndcSft { get; set; }
         public virtual DbSet<HrEmpAttendExp> HrEmpAttendExp { get; set; }
+        public virtual DbSet<HrAtndcRegConfig> HrAtndcRegConfig { get; set; }
         public virtual DbSet<HrOvrtmNoPayView> HrOvrtmNoPayView { get; set; }
         public virtual DbSet<HrEmpAttnSummary> HrEmpAttnSummary { get; set; }
         public virtual DbSet<HrEmpAttendToday> HrEmpAttendToday { get; set; }

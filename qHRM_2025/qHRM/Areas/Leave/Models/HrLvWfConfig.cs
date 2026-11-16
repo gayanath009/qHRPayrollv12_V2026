@@ -88,6 +88,8 @@ namespace qHRM.Areas.Leave.Models
         [NotMapped] public string GenderRequired    { get; set; }
         [NotMapped] public int    HoursPerDay       { get; set; }
         [NotMapped] public int    EligibilityDaysFromMaternity { get; set; } = 365;
+        [NotMapped] public int    MaxDaysAllowed { get; set; } = 14;
+        [NotMapped] public bool   AllowFutureDates { get; set; } = false;
 
         // Display helpers
         [NotMapped] public string LvTypName { get; set; }

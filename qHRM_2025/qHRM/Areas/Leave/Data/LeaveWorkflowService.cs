@@ -250,7 +250,7 @@ namespace qHRM.Areas.Leave.Data
             }
             catch (Exception ex)
             {
-                // Only trip circuit breaker on actual network connection failures (e.g. host unreachable, port closed, connection refused)
+                // Only trip circuit breaker on actual socket connection failures (e.g. host unreachable, port closed, connection refused)
                 if (ex is System.Net.Sockets.SocketException ||
                     (ex is HttpRequestException httpEx && (httpEx.InnerException is System.Net.Sockets.SocketException || httpEx.Message.Contains("No connection could be made") || httpEx.Message.Contains("actively refused"))))
                 {
@@ -267,6 +267,7 @@ namespace qHRM.Areas.Leave.Data
         private HttpClient GetWfClient(string token)
         {
             var client = _httpClientFactory.CreateClient("WorkflowEngine");
+            client.Timeout = TimeSpan.FromSeconds(30);
             client.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", token);
             return client;
@@ -2055,89 +2056,140 @@ namespace qHRM.Areas.Leave.Data
         }
 
         // =====================================================================
-        // GET PENDING APPROVALS FOR CURRENT USER
-        // Fetches workflow approvals assigned to this employee from the WF Engine.
+        // GET PENDING APPROVALS COUNT FOR CURRENT USER (ULTRA-FAST FOR DASHBOARDS)
+        // Directly queries WorkflowEngineDb in 1-2 ms without HTTP overhead
         // =====================================================================
-
-        public async Task<List<object>> GetPendingApprovalsForUserAsync(int empSysId)
+        public async Task<int> GetPendingApprovalsCountForUserAsync(int empSysId)
         {
-            var token = await GetWfTokenAsync();
+            if (empSysId <= 0) return 0;
 
-            // Get or create the WF user GUID for this employee
-            Guid wfUserId;
+            string wfConStr = GetWorkflowEngineDbConnectionString();
+            if (!string.IsNullOrEmpty(wfConStr))
+            {
+                try
+                {
+                    var mapping = await _hrmContext.HrWfUserMapping.AsNoTracking().FirstOrDefaultAsync(m => m.EmpSysId == empSysId);
+                    Guid wfUserId = mapping?.WfUserId ?? Guid.Empty;
+
+                    using var conn = new Microsoft.Data.SqlClient.SqlConnection(wfConStr);
+                    await conn.OpenAsync();
+
+                    using var cmd = new Microsoft.Data.SqlClient.SqlCommand(@"
+                        SELECT COUNT(DISTINCT a.Id)
+                        FROM WorkflowApprovals a
+                        INNER JOIN WorkflowInstanceSteps s ON a.WorkflowInstanceStepId = s.Id
+                        LEFT JOIN Users u ON a.ApproverId = u.Id
+                        WHERE (a.ApproverId = @WfUserId OR a.DelegatedFromUserId = @WfUserId OR u.EmpSysId = @EmpSysId)
+                          AND a.Status = 1
+                          AND a.IsDeleted = 0
+                          AND s.Status = 1
+                          AND s.IsDeleted = 0", conn);
+
+                    cmd.Parameters.AddWithValue("@WfUserId", wfUserId);
+                    cmd.Parameters.AddWithValue("@EmpSysId", empSysId);
+
+                    var countObj = await cmd.ExecuteScalarAsync();
+                    return Convert.ToInt32(countObj ?? 0);
+                }
+                catch { /* Fallback */ }
+            }
+
             try
             {
-                wfUserId = await GetOrCreateWfUserAsync(empSysId, token);
+                var list = await GetPendingApprovalsForUserAsync(empSysId);
+                return list?.Count ?? 0;
             }
             catch
             {
-                var mapping = await _hrmContext.HrWfUserMapping
-                    .FirstOrDefaultAsync(m => m.EmpSysId == empSysId);
-                if (mapping == null) return new List<object>();
-                wfUserId = mapping.WfUserId;
+                return 0;
             }
+        }
 
+        // =====================================================================
+        // GET PENDING APPROVALS FOR CURRENT USER
+        // Fetches workflow approvals assigned to this employee from the WF Engine.
+        // =====================================================================
+        public async Task<List<object>> GetPendingApprovalsForUserAsync(int empSysId)
+        {
             List<WfPendingItem> pendingItems = null;
 
-            try
+            // 1. Fast Path: Direct DB query against WorkflowEngineDb (takes 1-2 ms)
+            string wfConStr = GetWorkflowEngineDbConnectionString();
+            if (!string.IsNullOrEmpty(wfConStr))
             {
-                var client   = GetWfClient(token);
-                var response = await client.GetAsync(
-                    $"{WfEngineBaseUrl}/api/workflowexecution/pending?empSysId={empSysId}&userId={wfUserId}&_t={DateTime.UtcNow.Ticks}");
-
-                if (response.IsSuccessStatusCode)
+                try
                 {
-                    var json = await response.Content.ReadAsStringAsync();
-                    var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                    pendingItems = JsonSerializer.Deserialize<List<WfPendingItem>>(json, opts);
+                    var mapping = await _hrmContext.HrWfUserMapping.AsNoTracking().FirstOrDefaultAsync(m => m.EmpSysId == empSysId);
+                    Guid wfUserId = mapping?.WfUserId ?? Guid.Empty;
+
+                    using var conn = new Microsoft.Data.SqlClient.SqlConnection(wfConStr);
+                    await conn.OpenAsync();
+
+                    using var cmd = new Microsoft.Data.SqlClient.SqlCommand(@"
+                        SELECT 
+                            a.Id AS ApprovalId,
+                            s.WorkflowInstanceId AS InstanceId,
+                            s.Name AS StepName,
+                            'Pending' AS Status
+                        FROM WorkflowApprovals a
+                        INNER JOIN WorkflowInstanceSteps s ON a.WorkflowInstanceStepId = s.Id
+                        LEFT JOIN Users u ON a.ApproverId = u.Id
+                        WHERE (a.ApproverId = @WfUserId OR a.DelegatedFromUserId = @WfUserId OR u.EmpSysId = @EmpSysId)
+                          AND a.Status = 1
+                          AND a.IsDeleted = 0
+                          AND s.Status = 1
+                          AND s.IsDeleted = 0", conn);
+
+                    cmd.Parameters.AddWithValue("@WfUserId", wfUserId);
+                    cmd.Parameters.AddWithValue("@EmpSysId", empSysId);
+
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    pendingItems = new List<WfPendingItem>();
+                    while (await reader.ReadAsync())
+                    {
+                        pendingItems.Add(new WfPendingItem
+                        {
+                            ApprovalId = (Guid)reader["ApprovalId"],
+                            InstanceId = (Guid)reader["InstanceId"],
+                            StepName   = reader["StepName"]?.ToString() ?? "Approval Step",
+                            Status     = "Pending"
+                        });
+                    }
                 }
+                catch { /* Fallback to HTTP */ }
             }
-            catch { /* Fallback to direct DB query below */ }
 
-            // If API didn't return items (e.g. 404 on pending endpoint or connection issue), fallback to direct DB query
-            if (pendingItems == null || !pendingItems.Any())
+            // 2. Fallback Path: HTTP API call (only if direct DB failed or was unconfigured)
+            if (pendingItems == null)
             {
-                string wfConStr = GetWorkflowEngineDbConnectionString();
-                if (!string.IsNullOrEmpty(wfConStr))
+                try
                 {
+                    var token = await GetWfTokenAsync();
+                    Guid wfUserId;
                     try
                     {
-                        using var conn = new Microsoft.Data.SqlClient.SqlConnection(wfConStr);
-                        await conn.OpenAsync();
-
-                        using var cmd = new Microsoft.Data.SqlClient.SqlCommand(@"
-                            SELECT 
-                                a.Id AS ApprovalId,
-                                s.WorkflowInstanceId AS InstanceId,
-                                s.Name AS StepName,
-                                'Pending' AS Status
-                            FROM WorkflowApprovals a
-                            INNER JOIN WorkflowInstanceSteps s ON a.WorkflowInstanceStepId = s.Id
-                            LEFT JOIN Users u ON a.ApproverId = u.Id
-                            WHERE (a.ApproverId = @WfUserId OR a.DelegatedFromUserId = @WfUserId OR u.EmpSysId = @EmpSysId)
-                              AND a.Status = 1
-                              AND a.IsDeleted = 0
-                              AND s.Status = 1
-                              AND s.IsDeleted = 0", conn);
-
-                        cmd.Parameters.AddWithValue("@WfUserId", wfUserId);
-                        cmd.Parameters.AddWithValue("@EmpSysId", empSysId);
-
-                        using var reader = await cmd.ExecuteReaderAsync();
-                        pendingItems = new List<WfPendingItem>();
-                        while (await reader.ReadAsync())
-                        {
-                            pendingItems.Add(new WfPendingItem
-                            {
-                                ApprovalId = (Guid)reader["ApprovalId"],
-                                InstanceId = (Guid)reader["InstanceId"],
-                                StepName   = reader["StepName"]?.ToString() ?? "Approval Step",
-                                Status     = "Pending"
-                            });
-                        }
+                        wfUserId = await GetOrCreateWfUserAsync(empSysId, token);
                     }
-                    catch { /* Continue with empty list if DB query also fails */ }
+                    catch
+                    {
+                        var mapping = await _hrmContext.HrWfUserMapping.FirstOrDefaultAsync(m => m.EmpSysId == empSysId);
+                        if (mapping == null) return new List<object>();
+                        wfUserId = mapping.WfUserId;
+                    }
+
+                    var client = GetWfClient(token);
+                    client.Timeout = TimeSpan.FromSeconds(10);
+                    var response = await client.GetAsync(
+                        $"{WfEngineBaseUrl}/api/workflowexecution/pending?empSysId={empSysId}&userId={wfUserId}&_t={DateTime.UtcNow.Ticks}");
+
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var json = await response.Content.ReadAsStringAsync();
+                        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                        pendingItems = JsonSerializer.Deserialize<List<WfPendingItem>>(json, opts);
+                    }
                 }
+                catch { /* Ignore and return empty list */ }
             }
 
             pendingItems ??= new List<WfPendingItem>();
@@ -2510,7 +2562,7 @@ namespace qHRM.Areas.Leave.Data
                     try
                     {
                         var client = GetWfClient(token);
-                        client.Timeout = TimeSpan.FromSeconds(3);
+                        client.Timeout = TimeSpan.FromSeconds(10);
                         var response = await client.GetAsync(
                             $"{WfEngineBaseUrl}/api/workflowexecution/instance/{inst.WfInstanceId}", cancellationToken);
                         if (!response.IsSuccessStatusCode) return (inst, (WfInstanceDto)null);

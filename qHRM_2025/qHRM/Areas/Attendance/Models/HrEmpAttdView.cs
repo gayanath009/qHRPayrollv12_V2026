@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.AspNetCore.Mvc;
 using qHRM.Areas.Employee.Models;
 using System;
@@ -27,19 +27,15 @@ namespace qHRM.Areas.Attendance.Models
 
         [Display(Name = "In Time")]
         [DataType(DataType.Time)]
-        [Required(ErrorMessage = "Please specify In Time")]
         public string InTime { get; set; }
         public DateTime? EfctvInTime { get; set; }
         public string InSource { get; set; }
 
         [Display(Name = "Out Time")]
         [DataType(DataType.Time)]
-        [Required(ErrorMessage = "Please specify Out Time")]
-        [Remote(action: "ValidateTimeRange", controller: "HrEmpAttendance", ErrorMessage = "Invalid Time Range", AdditionalFields = "InTime,OvrNghtStat")]
         public string OutTime { get; set; }
         public DateTime? EfctvOutTime { get; set; }
        
-              
         public bool OvrNghtStat { get; set; }
         public int? CrtId { get; set; }
         public string AtdRmks { get; set; }
@@ -50,18 +46,16 @@ namespace qHRM.Areas.Attendance.Models
 
         public int AbsntStat { get; set; }
 
-
         [Display(Name = "From Date")]
         [DataType(DataType.Date)]
-        [Required(ErrorMessage = "Please specify From Date")]
         public DateTime FromDate { get; set; }
 
-        
         [Display(Name = "To Date")]        
-        [Required(ErrorMessage = "Please specify To Date")]
         [DataType(DataType.Date)]
-        //[Remote(action: "ValidateDateRange", controller: "HrEmpAttendance", ErrorMessage = "Invalid Date Range", AdditionalFields = "FromDate")]
         public DateTime ToDate { get; set; }
+
+        [Display(Name = "Remarks")]
+        [StringLength(300)]
         public string Note { get; set; }
 
 

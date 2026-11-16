@@ -1,39 +1,144 @@
-﻿@model  ErrorViewModel
+@model ErrorViewModel
 @{
-    ViewData["Title"] = "Exception";
+    ViewData["Title"] = ViewBag.ErrorTitle ?? "Error Notification";
+    int statusCode = ViewBag.StatusCode != null ? (int)ViewBag.StatusCode : 0;
+    bool isSessionExpired = ViewBag.IsSessionExpired == true || statusCode == 400 || statusCode == 401;
+    bool autoRedirect = ViewBag.AutoRedirect == true;
+    int redirectSeconds = ViewBag.RedirectSeconds != null ? (int)ViewBag.RedirectSeconds : 4;
+    string actionUrl = ViewBag.ActionUrl ?? "/Identity/Account/Login";
+    string actionText = ViewBag.ActionText ?? (isSessionExpired ? "Go to Login Page" : "Back to Home");
 }
-<div>
-    <main>
-        <div class="container-fluid">
-            <h1 class="mt-4"></h1>
-            <ol class="breadcrumb mb-4">
-                <li class="breadcrumb-item active">Error</li>
-            </ol>
-            <div class="card mb-4">
-                <div class="card-body">
-                    <h5>An Error occured while processing your request. </h5>
-                    <hr />
-                    <h6>Exception Details</h6>
-                    <div class="alert alert-info">
-                        <h6>Exception Path</h6>
-                        <hr />
-                        <p>@ViewBag.ExceptionPath</p>
+
+<div class="container-fluid py-4">
+    <ol class="breadcrumb mb-4 shadow-sm" style="background-color: #fdfdfd; border: 1px solid #edf2f7; border-radius: 8px;">
+        <li class="breadcrumb-item"><a href="@Url.Action("Index", "Home")" style="color: #540033;"><i class="fas fa-home mr-1"></i>Home</a></li>
+        <li class="breadcrumb-item active text-muted">Error @(statusCode > 0 ? $"({statusCode})" : "")</li>
+    </ol>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10">
+            <div class="card shadow border-0" style="border-radius: 12px; overflow: hidden; background: #ffffff;">
+                <!-- Top Accent Color Bar -->
+                <div style="height: 5px; background: @(isSessionExpired ? "linear-gradient(90deg, #540033, #a21d5c)" : (statusCode == 404 ? "#f6c23e" : "#e74a3b"));"></div>
+
+                <div class="card-body p-4 p-md-5 text-center">
+                    <!-- Icon Status Indicator -->
+                    <div class="mb-4">
+                        @if (isSessionExpired)
+                        {
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width: 84px; height: 84px; background-color: rgba(84, 0, 51, 0.08); color: #540033; box-shadow: 0 4px 14px rgba(84, 0, 51, 0.12);">
+                                <i class="fas fa-user-clock fa-2x"></i>
+                            </div>
+                        }
+                        else if (statusCode == 404)
+                        {
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width: 84px; height: 84px; background-color: rgba(246, 194, 62, 0.15); color: #b78103; box-shadow: 0 4px 14px rgba(246, 194, 62, 0.2);">
+                                <i class="fas fa-compass fa-2x"></i>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="rounded-circle d-inline-flex align-items-center justify-content-center"
+                                 style="width: 84px; height: 84px; background-color: rgba(231, 74, 59, 0.1); color: #e74a3b; box-shadow: 0 4px 14px rgba(231, 74, 59, 0.15);">
+                                <i class="fas fa-exclamation-triangle fa-2x"></i>
+                            </div>
+                        }
                     </div>
-                    <div class="alert alert-info">
-                        <h6>Message</h6>
-                        <hr />
-                        <p>@ViewBag.ExceptionMessage</p>
+
+                    <!-- Heading -->
+                    <h3 class="font-weight-bold mb-2" style="color: #2d3748; letter-spacing: -0.3px;">
+                        @(ViewBag.ErrorTitle ?? (isSessionExpired ? "Session Expired or Connection Interrupted" : "An Error Occurred"))
+                    </h3>
+
+                    <!-- Clear Description -->
+                    <p class="text-secondary mx-auto mb-3" style="max-width: 580px; font-size: 1rem; line-height: 1.6;">
+                        @(ViewBag.ExceptionMessage ?? "The application was offline or restarted, and your previous session has ended. For security reasons, please log in again to continue.")
+                    </p>
+
+                    @if (!string.IsNullOrWhiteSpace(ViewBag.ExceptionDescription))
+                    {
+                        <div class="alert alert-light border mx-auto mb-4 py-2 px-3 text-muted" style="max-width: 580px; border-radius: 8px; font-size: 0.9rem; background-color: #f8fafc; border-color: #e2e8f0 !important;">
+                            <i class="fas fa-info-circle mr-1 text-primary"></i> @ViewBag.ExceptionDescription
+                        </div>
+                    }
+
+                    <!-- Auto-redirect Countdown Notice -->
+                    @if (autoRedirect)
+                    {
+                        <div class="alert mb-4 mx-auto py-2 px-4 shadow-sm d-inline-flex align-items-center"
+                             style="max-width: 500px; background-color: #fff9e6; border: 1px solid #ffeeba; border-radius: 24px; color: #856404; font-size: 0.92rem;">
+                            <i class="fas fa-spinner fa-spin mr-2 text-warning"></i>
+                            <span>Redirecting to the login page in <strong id="countdownTimer" style="color: #540033; font-size: 1.1rem;">@redirectSeconds</strong> seconds...</span>
+                        </div>
+                    }
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap justify-content-center align-items-center mt-2" style="gap: 12px;">
+                        <a href="@actionUrl" class="btn text-white px-4 py-2 font-weight-bold shadow-sm"
+                           style="background-color: #540033; border: 1px solid #540033; border-radius: 8px; min-width: 190px;">
+                            <i class="fas fa-sign-in-alt mr-2"></i> @actionText
+                        </a>
+
+                        @if (isSessionExpired)
+                        {
+                            <a href="@Url.Action("Logout", "Error")" class="btn btn-outline-secondary px-3 py-2" style="border-radius: 8px;">
+                                <i class="fas fa-redo-alt mr-1"></i> Reset Session
+                            </a>
+                        }
+                        else
+                        {
+                            <a href="@Url.Action("Index", "Home")" class="btn btn-outline-secondary px-4 py-2" style="border-radius: 8px;">
+                                <i class="fas fa-home mr-1"></i> Back to Home
+                            </a>
+                        }
                     </div>
-                    <div class="alert alert-info">
-                        <h6>Exception Description</h6>
-                        <hr />
-                        <p>@ViewBag.StackTrace</p>
-                    </div>
-                    <a asp-action="Index" asp-controller="Home" class="btn btn-sm btn-outline-primary">
-                        Back to Home
-                    </a>
+
+                    <!-- Collapsible Technical Details (rendered only if actual error info exists) -->
+                    @if (!string.IsNullOrWhiteSpace(ViewBag.ExceptionPath) || !string.IsNullOrWhiteSpace(ViewBag.StackTrace))
+                    {
+                        <div class="mt-4 pt-3 border-top text-left">
+                            <button class="btn btn-sm btn-link text-muted p-0" type="button" data-toggle="collapse" data-target="#errorTechDetails" aria-expanded="false">
+                                <i class="fas fa-terminal mr-1"></i> Technical Details <i class="fas fa-chevron-down small ml-1"></i>
+                            </button>
+                            <div class="collapse mt-3" id="errorTechDetails">
+                                <div class="p-3 bg-light text-monospace small" style="border-radius: 8px; border: 1px solid #e2e8f0; max-height: 220px; overflow-y: auto; text-align: left;">
+                                    @if (!string.IsNullOrWhiteSpace(ViewBag.ExceptionPath))
+                                    {
+                                        <div class="mb-2"><strong class="text-secondary">Request Path:</strong> @ViewBag.ExceptionPath</div>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(ViewBag.StackTrace))
+                                    {
+                                        <div><strong class="text-secondary">Stack / Message:</strong><br /><pre class="mb-0 text-danger" style="white-space: pre-wrap; word-break: break-all;">@ViewBag.StackTrace</pre></div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>
-    </main>
+    </div>
 </div>
+
+@if (autoRedirect)
+{
+    <script>
+        (function () {
+            var remaining = @redirectSeconds;
+            var timerEl = document.getElementById("countdownTimer");
+            var destUrl = "@actionUrl";
+            var interval = setInterval(function () {
+                remaining--;
+                if (timerEl) {
+                    timerEl.innerText = remaining;
+                }
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    window.location.href = destUrl;
+                }
+            }, 1000);
+        })();
+    </script>
+}

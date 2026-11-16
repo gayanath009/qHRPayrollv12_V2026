@@ -286,9 +286,9 @@
             <div class="ctrl-group">
                 <div class="ctrl-label">Employee Category</div>
                 <select id="drpStaffTyp" class="ctrl-select">
-                    <option value="OUTSRC">Outsource Staff Only</option>                    
+                    <option value="ALL" selected="selected">All Staff</option>
+                    <option value="OUTSRC">Outsource Staff Only</option>
                     <option value="IN_HOUSE">In-house Staff Only</option>
-                    <option value="ALL">All Staff</option>
                 </select>
             </div>
 
@@ -325,9 +325,9 @@
                 </div>
                 <div id="dvReProcCat" style="margin-bottom:0.5rem;">
                     <select id="drpReProcCat" class="ctrl-select">
-                      <option value="OUTSRC">Outsource Staff Only</option>                    
+                      <option value="ALL" selected="selected">All Staff</option>
+                      <option value="OUTSRC">Outsource Staff Only</option>
                       <option value="IN_HOUSE">In-house Staff Only</option>
-                      <option value="ALL">All Staff</option>
                     </select>
                 </div>
                 <div id="dvEmp" style="display:none; margin-bottom:0.5rem;">
@@ -1167,7 +1167,13 @@
         $.ajax({
             type: "GET", url: "@(Url.Action("GetWPSFile", "HrPrSlryPrcDtl"))",
             data: { eftYr: efYr, eftMn: efMn }, dataType: "json",
-            success: function (data) { DownloadFile(data.data); }
+            success: function (data) {
+                if (data && data.ok) {
+                    DownloadFile(data.data);
+                } else {
+                    alert(data && data.message ? data.message : "Error generating WPS file.");
+                }
+            }
         });
     }
 

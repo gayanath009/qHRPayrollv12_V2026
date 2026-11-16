@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,24 +36,28 @@ namespace qHRM.Areas.Attendance.Controllers
         {
             try
             {
+                int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
                 //No Access Granted
-                if (HttpContext.Session.GetString("ATN_EXP_AP") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                if (HttpContext.Session.GetString("ATN_EXP_AP") == null && grpId != 1) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
                 var atndcPeriod = _atndcContext.GetAtndcPeriod();
-                var objEmp = _empContext.GetEmpView("ALL", 0, 1).Where(x => x.EmpSysId == 3).FirstOrDefault(); // (int)HttpContext.Session.GetInt32("userEmpSysId")
-                ViewBag.EmpId = objEmp.EmpId;
-                ViewBag.EmpName = objEmp.FullName;
-                ViewBag.Dpt = objEmp.DeptName;
-                ViewBag.Dsgntn = objEmp.DesigName;
+                int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                var objEmp = userEmpSysId > 0 
+                    ? _empContext.GetEmpView("ALL", 0, 1).Where(x => x.EmpSysId == userEmpSysId).FirstOrDefault()
+                    : _empContext.GetEmpView("ALL", 0, 1).FirstOrDefault();
+
+                ViewBag.EmpId = objEmp != null ? objEmp.EmpId : "N/A";
+                ViewBag.EmpName = objEmp != null ? objEmp.FullName : (HttpContext.Session.GetString("userName") ?? "System User");
+                ViewBag.Dpt = objEmp != null ? objEmp.DeptName : "Administration";
+                ViewBag.Dsgntn = objEmp != null ? objEmp.DesigName : "Administrator";
                 ViewBag.FromDate = atndcPeriod.frmDate.ToString("yyyy-MM-dd");
                 ViewBag.ToDate = atndcPeriod.toDate.ToString("yyyy-MM-dd");
 
                 //Start | Usr Prv//
-                int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
-                var objprv = _prvContext.Get("_user_priv_group", grpId).Where(x => x.PrvCode == "ATN_EXP").FirstOrDefault();
-                ViewBag.RecAdd = objprv.RecAdd;
-                ViewBag.RecEdit = objprv.RecEdit;
-                ViewBag.RecDelete = objprv.RecDelete;
+                var objprv = _prvContext.Get("_user_priv_group", grpId)?.Where(x => x.PrvCode == "ATN_EXP" || x.PrvCode == "ATN_EXP_AP").FirstOrDefault();
+                ViewBag.RecAdd = objprv != null ? objprv.RecAdd : (grpId == 1);
+                ViewBag.RecEdit = objprv != null ? objprv.RecEdit : (grpId == 1);
+                ViewBag.RecDelete = objprv != null ? objprv.RecDelete : (grpId == 1);
                 //End | Usr Prv//
 
                 return View();

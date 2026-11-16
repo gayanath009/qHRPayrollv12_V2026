@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +18,7 @@ using AspNetCore.Reporting;
 using qHRM.Areas.Entity.Data;
 using qHRM.Areas.SysAdmin.Data;
 using qHRM.Areas.Reports.Data;
+using qHRM.Areas.Attendance.Reports;
 
 namespace qHRM.Areas.Attendance.Controllers
 {
@@ -32,6 +34,7 @@ namespace qHRM.Areas.Attendance.Controllers
         private readonly IWebHostEnvironment _webHostEnvironment;
         private readonly AdmUserGrpPrvContext _prvContext;
         private readonly ReRptCntxt _reRptCntxt;
+        private readonly qHRMasterContext _hrmContext;
 
         public HrEmpAtndcSftController(AttnContext attnContext,
                                          EmployeeContext employeeContext,
@@ -40,7 +43,7 @@ namespace qHRM.Areas.Attendance.Controllers
                                          WorkShiftContext workShiftContext,
                                          IWebHostEnvironment webHostEnvironment,
                                          AdmUserGrpPrvContext prvContext,
-                                         ReRptCntxt reRptCntxt)
+                                         ReRptCntxt reRptCntxt, qHRMasterContext hrmContext)
         {
             _attnContext = attnContext;
             _employeeContext = employeeContext;
@@ -50,6 +53,7 @@ namespace qHRM.Areas.Attendance.Controllers
             _webHostEnvironment = webHostEnvironment;
             _prvContext = prvContext;
             _reRptCntxt = reRptCntxt;
+            _hrmContext = hrmContext;
         }
 
         public ActionResult Index()
@@ -57,7 +61,9 @@ namespace qHRM.Areas.Attendance.Controllers
             try
             {
                 //No Access Granted
-                if (HttpContext.Session.GetString("ATN_REG") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
+                if (HttpContext.Session.GetString("ATN_REG") == null || !(grpId == 1 || grpId == 2 || grpId == 7))
+                    return RedirectToPage("/Account/Login", new { area = "Identity" });
 
                 //---Loads Permitted Employees ---//                
 
@@ -86,11 +92,17 @@ namespace qHRM.Areas.Attendance.Controllers
 
                 ViewBag.ChartTitle = "";
 
-                ViewBag.FromDate = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
-                ViewBag.ToDate = DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd");
+                DateTime today = DateTime.Today;
+                DateTime cycleFrom = today.Day <= 20
+                    ? new DateTime(today.Year, today.Month, 21).AddMonths(-1)
+                    : new DateTime(today.Year, today.Month, 21);
+                DateTime cycleTo = cycleFrom.AddMonths(1).AddDays(-1);
+
+                ViewBag.FromDate = cycleFrom.ToString("yyyy-MM-dd");
+                ViewBag.ToDate = cycleTo.ToString("yyyy-MM-dd");
 
                 //Start | Usr Prv//
-                int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
+                grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
                 var objprv = _prvContext.Get("_user_priv_group", grpId).Where(x => x.PrvCode == "ATN_REG").FirstOrDefault();
                 ViewBag.RecAdd = objprv.RecAdd;
                 ViewBag.RecEdit = objprv.RecEdit;
@@ -108,12 +120,14 @@ namespace qHRM.Areas.Attendance.Controllers
 
         
         [HttpGet]
-        public JsonResult GetAtndcLogs(int refId, int dateFilter, string sDate, string eDate)
+        public JsonResult GetAtndcLogs(int refId, int dateFilter, string sDate, string eDate, bool onlyAbsent = false)
         {
             var fromDate = DateTime.Now.AddDays(-1).Date;
             var toDate = fromDate;
             try
             {
+                string[] dateFormats = { "yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "MM/dd/yyyy", "dd-MMM-yyyy" };
+
                 if (dateFilter == 1)
                     fromDate = DateTime.Now.AddDays(-1).Date;
                 else if (dateFilter == 7)
@@ -126,8 +140,19 @@ namespace qHRM.Areas.Attendance.Controllers
                     fromDate = DateTime.Now.AddDays(-90).Date;
                 else if (dateFilter == 0) //Date Range
                 {
-                    fromDate = Convert.ToDateTime(sDate);
-                    toDate = Convert.ToDateTime(eDate);
+                    if (!DateTime.TryParseExact(sDate, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out fromDate)
+                        && !DateTime.TryParse(sDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out fromDate)
+                        && !DateTime.TryParse(sDate, out fromDate))
+                    {
+                        fromDate = DateTime.Today.AddDays(-30);
+                    }
+
+                    if (!DateTime.TryParseExact(eDate, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out toDate)
+                        && !DateTime.TryParse(eDate, CultureInfo.InvariantCulture, DateTimeStyles.None, out toDate)
+                        && !DateTime.TryParse(eDate, out toDate))
+                    {
+                        toDate = DateTime.Today;
+                    }
                 }
 
                 var schTyp = "";
@@ -140,7 +165,43 @@ namespace qHRM.Areas.Attendance.Controllers
                 int empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
                 var atndcDtl = _attnContext.GetFullHrEmpAtndcSmry(schTyp, refId, fromDate, toDate, false,empSysId).ToList();
 
-                    return Json(new { ok = true, data = atndcDtl, message = "ok" });
+                var exemptEmpSysIds = _hrmContext.HrEmpWkRoster
+                    .Where(r => r.RecStat == 1 && r.CndrAtndc == false)
+                    .Select(r => new { r.EmpSysId, r.StDate, r.EndDate })
+                    .ToList();
+
+                if (exemptEmpSysIds.Count > 0)
+                {
+                    foreach (var log in atndcDtl)
+                    {
+                        if (DateTime.TryParse(log.AtndcDate, out var logDate))
+                        {
+                            bool isExempt = exemptEmpSysIds.Any(r => r.EmpSysId == log.EmpSysId
+                                && logDate >= r.StDate.Date
+                                && (!r.EndDate.HasValue || logDate <= r.EndDate.Value.Date));
+
+                            if (isExempt && (log.AtndcStatId == 0 || (log.Status != null && log.Status.IndexOf("Absent", StringComparison.OrdinalIgnoreCase) >= 0)))
+                            {
+                                log.AtndcStatId = 1;
+                                log.Status = "Present";
+                                log.SlryDctFct = 0;
+                            }
+                        }
+                    }
+                }
+
+                if (onlyAbsent)
+                {
+                    var absentEmpIds = atndcDtl
+                        .Where(x => x.AtndcStatId == 0 || (x.Status != null && x.Status.IndexOf("Absent", StringComparison.OrdinalIgnoreCase) >= 0))
+                        .Select(x => x.EmpSysId)
+                        .Distinct()
+                        .ToHashSet();
+
+                    atndcDtl = atndcDtl.Where(x => absentEmpIds.Contains(x.EmpSysId)).ToList();
+                }
+
+                return Json(new { ok = true, data = atndcDtl, message = "ok" });
             }
             catch (Exception ex)
             {
@@ -153,17 +214,21 @@ namespace qHRM.Areas.Attendance.Controllers
         {
             try
             {
-                //int usrId = Convert.ToInt32(HttpContext.Session.GetInt32("userID"));
                 int empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
                 var empAtndcView = _attnContext.GetFullHrEmpAtndcSmry("R", atndcSftId, DateTime.Today, DateTime.Today, false, empSysId).FirstOrDefault();
+                var atn = _attnContext.GetHrEmpAtndcSftById(atndcSftId);
+
+                if (atn == null && empAtndcView == null) return NotFound();
 
                 HrEmpAttdView attdView = new HrEmpAttdView();
-                attdView.EfctvDate = Convert.ToDateTime(empAtndcView.AtndcDate);
-                attdView.FullName = empAtndcView.FullName;
-                attdView.InTime = empAtndcView.InTime.ToString();
-                attdView.OutTime = empAtndcView.OutTime.ToString();
-                attdView.RecId = empAtndcView.AtndcSftId;
-                attdView.AtdRmks = empAtndcView.Status;
+                attdView.EfctvDate = empAtndcView != null ? Convert.ToDateTime(empAtndcView.AtndcDate) : atn.AtndcDate;
+                attdView.FullName = empAtndcView?.FullName ?? atn.EmpSys?.FullName ?? "";
+                attdView.InTime = atn?.InTime != null ? atn.InTime.Value.ToString(@"hh\:mm\:ss") : (empAtndcView?.InTime != null ? empAtndcView.InTime.Value.ToString(@"hh\:mm\:ss") : "");
+                attdView.OutTime = atn?.OutTime != null ? atn.OutTime.Value.ToString(@"hh\:mm\:ss") : (empAtndcView?.OutTime != null ? empAtndcView.OutTime.Value.ToString(@"hh\:mm\:ss") : "");
+                attdView.RecId = atndcSftId;
+                attdView.EmpSysId = atn?.EmpSysId ?? empAtndcView?.EmpSysId ?? 0;
+                attdView.AtdRmks = empAtndcView?.Status;
+                attdView.Note = atn?.Note ?? empAtndcView?.Note ?? "";
                 return PartialView("_HrEmpAtndcSft_Edit", attdView);
             }
             catch (Exception ex)
@@ -174,23 +239,117 @@ namespace qHRM.Areas.Attendance.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(HrEmpAttdView attdView)
+        public IActionResult Edit(HrEmpAttdView attdView)
         {
+            bool isAjax = Request.Headers["X-Requested-With"] == "XMLHttpRequest" || (Request.ContentType != null && Request.ContentType.Contains("application/json"));
             try
             {
-                var hrEmpAtndcSft = _attnContext.GetHrEmpAtndcSftById(attdView.RecId);
-                hrEmpAtndcSft.InTime = TimeSpan.Parse(attdView.InTime);
-                hrEmpAtndcSft.OutTime = TimeSpan.Parse(attdView.OutTime);
+                if (attdView == null || attdView.RecId <= 0)
+                {
+                    if (isAjax) return Json(new { success = false, message = "Invalid attendance record." });
+                    return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Invalid attendance record");
+                }
 
-                _dbCommitContext.commitChanges(LogEventTypes.UPD, hrEmpAtndcSft, (int)HttpContext.Session.GetInt32("userEmpSysId"));
+                // 1. Validate & Parse InTime
+                if (!TryParseFlexibleTime(attdView.InTime, out TimeSpan? inTime))
+                {
+                    if (isAjax) return Json(new { success = false, message = "Invalid In Time format. Please enter a valid time (e.g. 08:30 AM or 08:30:00)." });
+                    return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Invalid In Time format.");
+                }
+
+                // 2. Validate & Parse OutTime
+                if (!TryParseFlexibleTime(attdView.OutTime, out TimeSpan? outTime))
+                {
+                    if (isAjax) return Json(new { success = false, message = "Invalid Out Time format. Please enter a valid time (e.g. 05:00 PM or 17:00:00)." });
+                    return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Invalid Out Time format.");
+                }
+
+                // 3. At least one time entry must be specified
+                if (!inTime.HasValue && !outTime.HasValue)
+                {
+                    if (isAjax) return Json(new { success = false, message = "Please specify at least In Time or Out Time." });
+                    return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Please specify at least In Time or Out Time.");
+                }
+
+                // 4. Time Range validation: OutTime must be later than InTime unless Next Day is checked
+                if (inTime.HasValue && outTime.HasValue && !attdView.OvrNghtStat)
+                {
+                    if (outTime.Value <= inTime.Value)
+                    {
+                        if (isAjax) return Json(new { success = false, message = "Out Time must be later than In Time. If the shift ends the next day, please check 'Next Day'." });
+                        return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Out Time must be later than In Time unless Next Day is selected.");
+                    }
+                }
+
+                // 5. Load attendance entity and update
+                var hrEmpAtndcSft = _attnContext.GetHrEmpAtndcSftById(attdView.RecId);
+                if (hrEmpAtndcSft == null)
+                {
+                    if (isAjax) return Json(new { success = false, message = "Attendance record not found." });
+                    return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Attendance record not found.");
+                }
+
+                hrEmpAtndcSft.InTime = inTime;
+                if (inTime.HasValue) hrEmpAtndcSft.InSource = "MANUAL";
+
+                hrEmpAtndcSft.OutTime = outTime;
+                if (outTime.HasValue) hrEmpAtndcSft.OutSource = "MANUAL";
+
+                hrEmpAtndcSft.MnlMdfd = true;
+                hrEmpAtndcSft.Note = string.IsNullOrWhiteSpace(attdView.Note) ? null : attdView.Note.Trim();
+
+                int usrId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                _dbCommitContext.commitChanges(LogEventTypes.UPD, hrEmpAtndcSft, usrId);
                 _attnContext.ReCalcEmpAtndc(attdView.RecId, 0, false);
 
-                return RedirectToAction("Index", "HrEmpAtndcSft"); // .WithSuccess("Attendance", "Record Updated Successfully");
+                if (isAjax)
+                {
+                    return Json(new { success = true, message = "Attendance timings updated successfully." });
+                }
+
+                return RedirectToAction("Index", "HrEmpAtndcSft").WithSuccess("Attendance", "Record Updated Successfully");
             }
-            catch
+            catch (Exception ex)
             {
-                return RedirectToAction("Index", "HrEmpAtndcSft"); //.WithWarning("Attendance", "Updating Record got failed");
+                if (isAjax)
+                {
+                    return Json(new { success = false, message = "Error updating attendance: " + ex.Message });
+                }
+                return RedirectToAction("Index", "HrEmpAtndcSft").WithWarning("Attendance", "Updating record failed: " + ex.Message);
             }
+        }
+
+        private static bool TryParseFlexibleTime(string input, out TimeSpan? result)
+        {
+            result = null;
+            if (string.IsNullOrWhiteSpace(input)) return true; // valid empty time
+            input = input.Trim();
+
+            if (TimeSpan.TryParse(input, out var ts))
+            {
+                result = ts;
+                return true;
+            }
+
+            if (DateTime.TryParse(input, out var dt))
+            {
+                result = dt.TimeOfDay;
+                return true;
+            }
+
+            string[] formats = new[]
+            {
+                "h:mm:ss tt", "hh:mm:ss tt", "h:mm tt", "hh:mm tt",
+                "H:mm:ss", "HH:mm:ss", "H:mm", "HH:mm"
+            };
+
+            if (DateTime.TryParseExact(input, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out var dtExact))
+            {
+                result = dtExact.TimeOfDay;
+                return true;
+            }
+
+            return false;
         }
         #endregion Edit Attendance
 
@@ -429,25 +588,94 @@ namespace qHRM.Areas.Attendance.Controllers
 
         #region Print Attendance Report
 
-        //public long SetupStgngSsnForAtndcRpt(string prcTyp, int empSysId, DateTime frmDate, DateTime toDate, int entId, int usrId)
         [HttpPost]
-        public ActionResult PrintAtndcSht(RptParam rptParam)
+        public ActionResult PrintAtndcSht(RptParam rptParam, bool? chkAbsentOnly = false)
         {
             try
             {
-                var ssnId = _reRptCntxt.SetupStgngSsnForAtndcRpt("A", 0, DateTime.Today, DateTime.Today, 1, 2);
-                return Json(new { ok = true, ssnId, message = "ok" });
+                DateTime fromDate;
+                DateTime toDate;
+                string[] dateFormats = { "yyyy-MM-dd", "yyyy/MM/dd", "dd/MM/yyyy", "MM/dd/yyyy", "dd-MMM-yyyy" };
 
+                if (rptParam.prm5 == 1)
+                {
+                    fromDate = DateTime.Today.AddDays(-1);
+                    toDate = DateTime.Today.AddDays(-1);
+                }
+                else if (rptParam.prm5 == 7)
+                {
+                    fromDate = DateTime.Today.AddDays(-7);
+                    toDate = DateTime.Today.AddDays(-1);
+                }
+                else if (rptParam.prm5 == 30)
+                {
+                    fromDate = DateTime.Today.AddDays(-30);
+                    toDate = DateTime.Today.AddDays(-1);
+                }
+                else if (rptParam.prm5 == 60)
+                {
+                    fromDate = DateTime.Today.AddDays(-60);
+                    toDate = DateTime.Today.AddDays(-1);
+                }
+                else if (rptParam.prm5 == 90)
+                {
+                    fromDate = DateTime.Today.AddDays(-90);
+                    toDate = DateTime.Today.AddDays(-1);
+                }
+                else
+                {
+                    if (!DateTime.TryParseExact(rptParam.prm1, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out fromDate)
+                        && !DateTime.TryParse(rptParam.prm1, CultureInfo.InvariantCulture, DateTimeStyles.None, out fromDate)
+                        && !DateTime.TryParse(rptParam.prm1, out fromDate))
+                    {
+                        fromDate = DateTime.Today.AddDays(-30);
+                    }
+
+                    if (!DateTime.TryParseExact(rptParam.prm2, dateFormats, CultureInfo.InvariantCulture, DateTimeStyles.None, out toDate)
+                        && !DateTime.TryParse(rptParam.prm2, CultureInfo.InvariantCulture, DateTimeStyles.None, out toDate)
+                        && !DateTime.TryParse(rptParam.prm2, out toDate))
+                    {
+                        toDate = DateTime.Today;
+                    }
+                }
+
+                int empSysId = 0;
+                if (!string.IsNullOrWhiteSpace(rptParam.prm3) && int.TryParse(rptParam.prm3, out int parsedEmpId))
+                {
+                    empSysId = parsedEmpId;
+                }
+
+                int deptId = 0;
+                if (!string.IsNullOrWhiteSpace(rptParam.prm4) && int.TryParse(rptParam.prm4, out int parsedDeptId))
+                {
+                    deptId = parsedDeptId;
+                }
+
+                bool onlyAbsent = (chkAbsentOnly == true) || rptParam.prmAbsentOnly;
+
+                byte[] pdfBytes = AttendancePresentAbsentPdfReport.GenerateReport(
+                    fromDate,
+                    toDate,
+                    empSysId,
+                    deptId,
+                    _hrmContext,
+                    _webHostEnvironment?.WebRootPath,
+                    onlyAbsent
+                );
+
+                string fileName = onlyAbsent
+                    ? $"Employee_Absent_Status_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.pdf"
+                    : $"Employee_Present_Absent_Status_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.pdf";
+                Response.Headers.Add("Content-Disposition", $"inline; filename=\"{fileName}\"");
+                return File(pdfBytes, "application/pdf");
             }
-
             catch (Exception ex)
             {
-                return Json(new { success = false, error = ex.Message });
+                return BadRequest("Error generating Attendance Status Report: " + ex.Message);
             }
         }
 
-
-
+        /*
         //[HttpPost]
         //public ActionResult PrintAtndcSht(RptParam rptParam)
         //{
@@ -502,6 +730,7 @@ namespace qHRM.Areas.Attendance.Controllers
         //        return Json(new { success = false, error = ex.Message });
         //    }
         //}
+        */
         #endregion Pring Attendance Report
     }
 }

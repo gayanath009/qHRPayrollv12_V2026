@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -180,6 +180,42 @@ namespace qHRM.Areas.WorkShift.Controllers
             return Json(data: true);
         }
 
+                // GET: HrWkRoster/RstCancelGet
+        public IActionResult RstCancelGet(int rstId)
+        {
+            try
+            {
+                var hrWkRoster = _workShiftContext.GetHrWkRosterByRstId(rstId);
+                return PartialView("_HrWkRoster_Delete", hrWkRoster);
+            }
+            catch (Exception ex)
+            {
+                return RedirectToAction(nameof(Index)).WithWarning("Work Roster", ex.Message);
+            }
+        }
+
+        // POST: HrWkRoster/RstCancel
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult RstCancel(int rstId)
+        {
+            try
+            {
+                var hrWkRoster = _workShiftContext.GetHrWkRosterByRstId(rstId);
+                if (hrWkRoster != null)
+                {
+                    hrWkRoster.RecStat = 0;
+                    _dbCommitContext.commitChanges(LogEventTypes.UPD, hrWkRoster, (int)HttpContext.Session.GetInt32("userEmpSysId"));
+                    return RedirectToAction(nameof(Index)).WithSuccess("Work Roster", "Roster Deactivated Successfully");
+                }
+                return RedirectToAction(nameof(Index)).WithWarning("Work Roster", "Roster not found");
+            }
+            catch (Exception ex)
+            {
+                return RedirectToAction(nameof(Index)).WithWarning("Work Roster", ex.Message);
+            }
+        }
+
         #region Roster Shift
         // GET: HrWkRoster/GetRstSftCreate
         public IActionResult GetRstSftCreate(int rstId)
@@ -191,6 +227,7 @@ namespace qHRM.Areas.WorkShift.Controllers
                 ViewBag.RstName = _workShiftContext.GetHrWkRosterByRstId(hrWkRosterShift.RstId).NameEng;
                 var lstDays = _sysSelectListContext.GetElements(SysSelectListContext.SelectListTypeEnum.DAYS);
                 ViewBag.lstDays = lstDays;
+                ViewBag.lstSft = _workShiftContext.GetShiftVws((int)HttpContext.Session.GetInt32("userEntId"));
                 return PartialView("_HrWkRosterShift_Create", hrWkRosterShift);
             }
             catch (Exception ex)
@@ -206,27 +243,54 @@ namespace qHRM.Areas.WorkShift.Controllers
         {
             try
             {
+                ModelState.Remove("Ent");
+                ModelState.Remove("Rst");
+                ModelState.Remove("Sft");
+
+                if (string.IsNullOrWhiteSpace(hrWkRosterShift.DescEng))
+                {
+                    var sft = _workShiftContext.GetAllHrWkShiftById(hrWkRosterShift.SftId);
+                    hrWkRosterShift.DescEng = sft?.NameEng ?? "Shift";
+                    ModelState.Remove("DescEng");
+                }
+
                 if (ModelState.IsValid)
                 {
                     try
                     {
                         hrWkRosterShift.EntId = (int)HttpContext.Session.GetInt32("userEntId");
-                        _dbCommitContext1.commitChanges(LogEventTypes.INS, hrWkRosterShift, (int)HttpContext.Session.GetInt32("userEmpSysId"));
-                        return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithSuccess("Roster Shift", "Record Updated Successfully");
+                        hrWkRosterShift.RecStat = 1;
+                        hrWkRosterShift.CrtDateTime = DateTime.Now;
+
+                        var existing = _workShiftContext.GetHrWkRosterShiftByRstIdAndDay(hrWkRosterShift.RstId, hrWkRosterShift.Day);
+                        if (existing != null)
+                        {
+                            existing.SftId = hrWkRosterShift.SftId;
+                            existing.DescEng = hrWkRosterShift.DescEng;
+                            existing.RecStat = 1;
+                            _dbCommitContext1.commitChanges(LogEventTypes.UPD, existing, (int)HttpContext.Session.GetInt32("userEmpSysId"));
+                            return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithSuccess("Roster Shift", "Roster Shift Updated Successfully");
+                        }
+                        else
+                        {
+                            _dbCommitContext1.commitChanges(LogEventTypes.INS, hrWkRosterShift, (int)HttpContext.Session.GetInt32("userEmpSysId"));
+                            return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithSuccess("Roster Shift", "Shift Added to Roster Successfully");
+                        }
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Modifying Record got failed");
+                        return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Saving Roster Shift failed: " + ex.Message);
                     }
                 }
                 else
                 {
-                    return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId });
+                    var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                    return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Validation failed: " + errors);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", ex.Message);
             }
         }
 
@@ -256,6 +320,17 @@ namespace qHRM.Areas.WorkShift.Controllers
         {
             try
             {
+                ModelState.Remove("Ent");
+                ModelState.Remove("Rst");
+                ModelState.Remove("Sft");
+
+                if (string.IsNullOrWhiteSpace(hrWkRosterShift.DescEng))
+                {
+                    var sft = _workShiftContext.GetAllHrWkShiftById(hrWkRosterShift.SftId);
+                    hrWkRosterShift.DescEng = sft?.NameEng ?? "Shift";
+                    ModelState.Remove("DescEng");
+                }
+
                 if (ModelState.IsValid)
                 {
                     try
@@ -264,19 +339,20 @@ namespace qHRM.Areas.WorkShift.Controllers
                         _dbCommitContext1.commitChanges(LogEventTypes.UPD, hrWkRosterShift, (int)HttpContext.Session.GetInt32("userEmpSysId"));
                         return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithSuccess("Roster Shift", "Record Updated Successfully");
                     }
-                    catch (Exception)
+                    catch (Exception ex)
                     {
-                        return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Modifying Record got failed");
+                        return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Modifying Record failed: " + ex.Message);
                     }
                 }
                 else
                 {
-                    return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId });
+                    var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                    return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", "Validation failed: " + errors);
                 }
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                return RedirectToAction(nameof(Index), "HrWkRoster", new { rstId = hrWkRosterShift.RstId }).WithWarning("Roster Shift", ex.Message);
             }
         }
 

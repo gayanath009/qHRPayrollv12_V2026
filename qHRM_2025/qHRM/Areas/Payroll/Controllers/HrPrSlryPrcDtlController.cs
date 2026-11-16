@@ -13,6 +13,7 @@ using qHRM.Areas.Employee.Data;
 using qHRM.Areas.Entity.Data;
 using qHRM.Areas.Payroll.Data;
 using qHRM.Areas.Payroll.Models;
+using qHRM.Areas.Payroll.Reports;
 using qHRM.Data;
 using qHRM.Extensions.Alerts;
 using Syncfusion.EJ2.SplitButtons;
@@ -644,47 +645,54 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
-
-                int recSeq = 1;
-                string _filename = null;
-                string _filepath = null;
-                MemoryStream stream = new MemoryStream();
-                int wrknDays = DateTime.DaysInMonth(eftYr, eftMn); //Number of Days
-                _filename = "wps_" + eftYr.ToString() + "_" + eftMn.ToString() + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".csv";
-                _filepath = _host.WebRootPath + @"\attach\wps\" + $@"\{_filename}";
-
-
-                //var wpsVw = _payrollContext.GetWPSFile("_paysheet", 0, eftMn, eftYr);
-
-                // newly added
                 int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
                 if (entId <= 0) entId = 1;
+
                 var _salPrcDtl = _payrollContext.GetTopSalaryHeader(entId, eftYr, eftMn);
-                var wpsVw = _payrollContext.GetWPSFile("_passive", _salPrcDtl.PrcId, eftMn, eftYr);
-
-
-                decimal totNetSlry = wpsVw.Sum(x => x.NetSlry);
-                int rcrCount = wpsVw.Count();
-                using (StreamWriter writer = new StreamWriter(_filepath, true))
+                var wpsVw = _salPrcDtl != null ? _payrollContext.GetWPSFile("_passive", _salPrcDtl.PrcId, eftMn, eftYr) : null;
+                if (wpsVw == null || !wpsVw.Any())
                 {
-                    writer.WriteLine("Employer ID,File Creation Date,File Creation Time,Payer EID,Payer QID,Payer Bank Short Name,Payer IBAN,Salary Year And Month,Total Salaries,Total Records");
-                    writer.WriteLine("10169600," + DateTime.Today.ToString("yyyyMMdd") + "," + DateTime.Now.ToString("HHmm") + ",10169600," + ",CBQ," + "QA87CBQA000000006010162429001," + eftYr.ToString() + eftMn.ToString().PadLeft(2, '0') + "," + totNetSlry.ToString() + "," + rcrCount.ToString());
-                    writer.WriteLine("Record Sequence,Employee QID,Employee Visa ID,Employee Name,Employee Bank Short Name,Employee Account,Salary Frequency,Number Of Working Days,Net Salary,Basic Salary,Extra hours,Extra Income,Deductions,Payment Type,Notes/Comments");
+                    wpsVw = _payrollContext.GetWPSFile("_paysheet", 0, eftMn, eftYr);
                 }
-                using (StreamWriter writer = new StreamWriter(_filepath, true))
+
+                int wrknDays = DateTime.DaysInMonth(eftYr, eftMn);
+                var wpsList = wpsVw != null ? wpsVw.ToList() : new List<PayrollContext.HrPrSlryWPSVw>();
+                var records = wpsList.Select((x, idx) => new WpsEmployeeRecordDto
                 {
-                    foreach (var obj in wpsVw)
-                    {
-                        writer.WriteLine(recSeq + "," + obj.QID + "," + obj.VisaId + "," + obj.AcctName + "," + obj.BnkShrtNme + "," + obj.BnkAcctNo + ",M," + wrknDays.ToString() + "," + obj.NetSlry.ToString() + "," + obj.BscSlry.ToString() + "," + obj.ExtrHrs.ToString() + "," + obj.Incm.ToString() + "," + obj.Deduct.ToString() + ",," + obj.Cmnt);
-                    }
+                    RecordSequence = idx + 1,
+                    EmployeeQid = x.QID ?? "",
+                    EmployeeVisaId = x.VisaId ?? "",
+                    EmployeeName = x.AcctName ?? "",
+                    EmployeeBankShortName = string.IsNullOrWhiteSpace(x.BnkShrtNme) ? "CBQ" : x.BnkShrtNme,
+                    EmployeeAccount = x.BnkAcctNo ?? "",
+                    SalaryFrequency = "M",
+                    NumberOfWorkingDays = wrknDays,
+                    NetSalary = x.NetSlry,
+                    BasicSalary = x.BscSlry,
+                    ExtraHours = x.ExtrHrs,
+                    ExtraIncome = x.Incm,
+                    Deductions = x.Deduct,
+                    PaymentType = x.PayTyp ?? "",
+                    NotesComments = string.IsNullOrWhiteSpace(x.Cmnt) ? $"Salary for {new DateTime(eftYr, eftMn, 1):MMMM yyyy}" : x.Cmnt
+                }).ToList();
+
+                string templatePath = Path.Combine(_host.WebRootPath, "wps", "WPS Sample.xlsx");
+                byte[] excelBytes = WpsExcelReport.GenerateWpsExcel(templatePath, eftYr, eftMn, records);
+
+                string _filename = "wps_" + eftYr.ToString() + "_" + eftMn.ToString().PadLeft(2, '0') + "_" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".xlsx";
+                string folder = Path.Combine(_host.WebRootPath, "attach", "wps");
+                if (!Directory.Exists(folder))
+                {
+                    Directory.CreateDirectory(folder);
                 }
+                string _filepath = Path.Combine(folder, _filename);
+                System.IO.File.WriteAllBytes(_filepath, excelBytes);
 
                 return Json(new { ok = true, data = _filename, message = "ok" });
-
             }
             catch (Exception ex)
             {
-                    throw ex;
+                return Json(new { ok = false, message = ex.Message });
             }
         }
     }

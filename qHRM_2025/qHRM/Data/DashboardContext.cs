@@ -1,4 +1,4 @@
-﻿using qHRM.Models;
+using qHRM.Models;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
@@ -74,7 +74,7 @@ namespace qHRM.Data
                                 StfRatio = x.rto.StfRto,  
                             }).Concat(_hrmContext.OrgNltyEmpRatio
                                 .Join(_hrmContext.OrgNltyType, nltyTyp => nltyTyp.NltyTypId, rto => rto.NltyTypId, (rto, nltyTyp) => new { rto, nltyTyp })
-                                .Where(z => z.rto.NltyId == null)
+                                .Where(z => z.rto.NltyId == null && z.rto.EntId == entId)
                                 .Select(x => new NltyEmpCount
                                 {
                                     EmpRtoId = x.rto.EmpRtoId,

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,5 +13,6 @@ namespace qHRM.Models
         public string prm3 { get; set; }
         public string prm4 { get; set; }
         public int prm5 { get; set; }
+        public bool prmAbsentOnly { get; set; }
     }
 }

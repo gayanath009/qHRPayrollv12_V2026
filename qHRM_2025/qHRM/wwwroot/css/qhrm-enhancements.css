@@ -46,10 +46,18 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================================================
    SIDEBAR
    ============================================================ */
+#accordionSidebar,
 .sidebar {
     background: linear-gradient(180deg, var(--qhrm-primary-darker) 0%, var(--qhrm-primary) 100%) !important;
     box-shadow: 4px 0 18px rgba(0,0,0,.18) !important;
     transition: var(--qhrm-transition);
+    position: relative;
+    z-index: 1050 !important;
+}
+
+#content-wrapper {
+    position: relative;
+    z-index: 1;
 }
 
 .sidebar-brand {
@@ -87,12 +95,24 @@ h1, h2, h3, h4, h5, h6 {
     color: #fff !important;
 }
 
-/* Sidebar collapse items */
+/* Sidebar collapse items & flyout menus */
+.sidebar.toggled .nav-item {
+    position: relative;
+}
+
+.sidebar .nav-item .collapse,
+.sidebar.toggled .nav-item .collapse,
+.sidebar.toggled .nav-item .collapsing {
+    z-index: 1060 !important;
+}
+
 .sidebar .collapse-inner {
     border-radius: var(--qhrm-radius-lg) !important;
-    box-shadow: var(--qhrm-shadow) !important;
+    box-shadow: 0 0.5rem 1.75rem rgba(0, 0, 0, 0.22) !important;
     padding: 0.4rem 0.5rem !important;
-    border: 1px solid rgba(0,0,0,.06) !important;
+    border: 1px solid rgba(0,0,0,.08) !important;
+    position: relative;
+    z-index: 1065 !important;
 }
 
 /* Hide empty collapse dropdowns in sidebar if no items are present */

@@ -37,6 +37,27 @@
     <link href="~/css/select2.min.css" rel="stylesheet" />
     <link href="~/css/select2-bootstrap4.min.css" rel="stylesheet" />
     <!-- Core jQuery in head so partial views and body scripts can use $ without ReferenceError -->
+    <style>
+        /* Global Stacking Context: Sidebar & Flyout Menus ALWAYS stack above Page Content */
+        #accordionSidebar, .sidebar {
+            position: relative !important;
+            z-index: 1050 !important;
+        }
+        .sidebar .nav-item .collapse,
+        .sidebar.toggled .nav-item .collapse,
+        .sidebar.toggled .nav-item .collapsing {
+            z-index: 1060 !important;
+        }
+        .sidebar .collapse-inner {
+            position: relative !important;
+            z-index: 1065 !important;
+        }
+        /* Isolate main content into its own stacking context below sidebar */
+        #content-wrapper {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
     <script src="~/vendor/jquery/jquery.min.js"></script>
 </head>
 
@@ -90,8 +111,9 @@
                 //Attendance//
                 string ATN_REG = @HttpContextAccessor.HttpContext.Session.GetString("ATN_REG");
                 string ATN_EXP = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP");
-                string ATN_EXP_RQ = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP_RQ");
-                string ATN_EXP_AP = @HttpContextAccessor.HttpContext.Session.GetString("ATN_EXP_AP");
+
+
+                string ATN_REG_Q = @HttpContextAccessor.HttpContext.Session.GetString("ATN_REG_Q");
 
                 //Work SHift & Rosters//
                 string WK_SFT = @HttpContextAccessor.HttpContext.Session.GetString("WK_SFT");
@@ -104,6 +126,8 @@
                 string LV_GPLCY = @HttpContextAccessor.HttpContext.Session.GetString("LV_GPLCY");
                 string LV_GPLCYDT = @HttpContextAccessor.HttpContext.Session.GetString("LV_GPLCYDT");
                 string LV_REG = @HttpContextAccessor.HttpContext.Session.GetString("LV_REG");
+                string LV_APP_Q = @HttpContextAccessor.HttpContext.Session.GetString("LV_APP_Q");
+                string LV_PEND_AP = @HttpContextAccessor.HttpContext.Session.GetString("LV_PEND_AP");
                 // Leave Workflow Integration
                 string LV_WF_CFG = @HttpContextAccessor.HttpContext.Session.GetString("LV_WF_CFG");
                 string LV_WF_DLG = @HttpContextAccessor.HttpContext.Session.GetString("LV_WF_DLG");
@@ -135,19 +159,22 @@
                 string SY_PRV = @HttpContextAccessor.HttpContext.Session.GetString("SY_PRV");
                 string SY_USR = @HttpContextAccessor.HttpContext.Session.GetString("SY_USR");
 
+                int userGrpId = @HttpContextAccessor.HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool isAllowedAdminGrp = (userGrpId == 1 || userGrpId == 2 || userGrpId == 7);
+
                 // Module Privilege Section Aggregations
                 bool hasHRPrivs = (ORG_CHT != null || EM_GEN_INF != null);
-                bool hasAttnPrivs = (ATN_REG != null || ATN_EXP != null || ATN_EXP_RQ != null || ATN_EXP_AP != null);
-                bool hasWorkShiftPrivs = (WK_RST != null || WK_RST_EMP != null);
-                bool hasLeavePrivs = (LV_TYP != null || LV_REG != null || LV_WF_CFG != null || LV_WF_DLG != null);
-                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || ZH_CVT != null || AIR_TKT != null || STF_LV_TKT != null || SLRY_APP != null || ENCSH_APP != null);
+                bool hasAttnPrivs = ((ATN_REG != null && isAllowedAdminGrp) || ATN_EXP != null || ATN_REG_Q != null);
+                bool hasWorkShiftPrivs = (WK_RST_EMP != null);
+                bool hasLeavePrivs = (LV_REG != null || LV_PEND_AP != null || (LV_APP_Q != null && isAllowedAdminGrp) || LV_WF_CFG != null || LV_WF_DLG != null);
+                bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || (ZH_CVT != null && isAllowedAdminGrp) || AIR_TKT != null || STF_LV_TKT != null || SLRY_APP != null || ENCSH_APP != null);
                 bool hasSysAdminPrivs = (SY_ADM != null || SY_PRV != null || SY_USR != null);
 
                 // Settings Privileges
                 bool hasSettingsGeneralPrivs = (ADM_ORG != null || ADM_Entity != null || ADM_DEPT != null || ADM_LOC != null || ADM_CNTRY != null || ADM_NLTY != null || ADM_HLDY != null);
                 bool hasSettingsHRPrivs = (EM_CNF != null || ADM_EM_GRD != null || ADM_DESG != null || ADM_EM_GRP != null);
-                bool hasSettingsShiftPrivs = (WK_SFT != null);
-                bool hasSettingsPayrollPrivs = (PR_CONF != null || OT_RT != null || STF_LN_TYP != null);
+                bool hasSettingsShiftPrivs = (WK_SFT != null || WK_RST != null);
+                bool hasSettingsPayrollPrivs = (LV_TYP != null || PR_CONF != null || OT_RT != null || STF_LN_TYP != null);
                 bool hasSettingsPrivs = (hasSettingsGeneralPrivs || hasSettingsHRPrivs || hasSettingsShiftPrivs || hasSettingsPayrollPrivs);
             }
 
@@ -200,21 +227,17 @@
                         </a>
                         <div id="collapseAttn" class="collapse" aria-labelledby="headingAttn" data-parent="#accordionSidebar">
                             <div class="bg-white py-2 collapse-inner rounded">
-                                @if (ATN_REG != null)
+                                @if (ATN_REG != null && isAllowedAdminGrp)
                                 {
                                     <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcSft" asp-action="Index">Attendance</a>
                                 }
+                                @if (ATN_REG_Q != null)
+                                {
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcRegApprovalQueue" asp-action="Index">Regularization Approval Queue</a>
+                                }
                                 @if (ATN_EXP != null)
                                 {
-                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAttendExp" asp-action="Index">Excemption</a>
-                                }
-                                @if (ATN_EXP_RQ != null)
-                                {
-                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcExpRqst" asp-action="Index">Request Excemptions</a>
-                                }
-                                @if (ATN_EXP_AP != null)
-                                {
-                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAtndcExpAprv" asp-action="Index">Approve Excemptions</a>
+                                    <a class="collapse-item" asp-area="Attendance" asp-controller="HrEmpAttendExp" asp-action="Index">Attendance Regularization</a>
                                 }
                             </div>
                         </div>
@@ -231,10 +254,7 @@
                         </a>
                         <div id="collapseWkSft" class="collapse" aria-labelledby="headingWkSft" data-parent="#accordionSidebar">
                             <div class="bg-white py-2 collapse-inner rounded">
-                                @if (WK_RST != null)
-                                {
-                                    <a class="collapse-item" asp-area="WorkShift" asp-controller="HrWkRoster" asp-action="Index">Work Rosters</a>
-                                }
+
                                 @if (WK_RST_EMP != null)
                                 {
                                     <a class="collapse-item" asp-area="WorkShift" asp-controller="HrEmpWkRoster" asp-action="Index">Employee Rosters</a>
@@ -254,16 +274,22 @@
                         </a>
                         <div id="collapseLeave" class="collapse" aria-labelledby="headingLeave" data-parent="#accordionSidebar">
                             <div class="bg-white py-2 collapse-inner rounded">
-                                @if (LV_TYP != null)
-                                {
-                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvType" asp-action="Index">Leave Types</a>
-                                }
+
                                 @if (LV_REG != null)
                                 {
                                     <a class="collapse-item" asp-area="Leave" asp-controller="HrLvRegister" asp-action="Index">Leave Register</a>
-                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvRegister" asp-action="Pending">
-                                        <i class="fas fa-inbox fa-xs mr-1" style="color:#540033;opacity:.85;"></i>Pending Approvals
-                                    </a>
+                                    @if (LV_APP_Q != null && isAllowedAdminGrp)
+                                    {
+                                        <a class="collapse-item" asp-area="Leave" asp-controller="HrLvApprovalQueue" asp-action="Index">Leave Approval Queue</a>
+                                    }
+                                }
+                                else if (LV_APP_Q != null && isAllowedAdminGrp)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvApprovalQueue" asp-action="Index">Leave Approval Queue</a>
+                                }
+                                @if (LV_PEND_AP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvRegister" asp-action="Pending">Pending Leave Approval</a>
                                 }
                                 @* ── Leave Workflow Integration ─── *@
                                 @if (HttpContextAccessor.HttpContext.Session.GetString("LV_WF_CFG") != null)
@@ -350,7 +376,7 @@
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrSalSlip" asp-action="Index">Salary Reports</a>
                                 }
-                                @if (ZH_CVT != null)
+                                @if (ZH_CVT != null && isAllowedAdminGrp)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrZohoConvert" asp-action="Index">Convert Zoho File</a>
                                 }
@@ -456,12 +482,20 @@
                                 {
                                     <a class="collapse-item" asp-area="WorkShift" asp-controller="HrWkShift" asp-action="Index">Work Shifts</a>
                                 }
+                                @if (WK_RST != null)
+                                {
+                                    <a class="collapse-item" asp-area="WorkShift" asp-controller="HrWkRoster" asp-action="Index">Work Rosters</a>
+                                }
 
                                 @if (hasSettingsShiftPrivs && hasSettingsPayrollPrivs)
                                 {
                                     <hr style="margin:4px 16px;border:0;border-top:1px solid #eaecf4;" />
                                 }
 
+                                @if (LV_TYP != null)
+                                {
+                                    <a class="collapse-item" asp-area="Leave" asp-controller="HrLvType" asp-action="Index">Leave Types</a>
+                                }
                                 @if (PR_CONF != null)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrConfig" asp-action="Index">Payroll Configuration</a>

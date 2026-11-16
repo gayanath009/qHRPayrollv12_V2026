@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -30,15 +30,20 @@ namespace qHRM.Areas.Attendance.Controllers
         {
             try
             {
+                int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
                 //No Access Granted
-                if (HttpContext.Session.GetString("ATN_EXP_RQ") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                if (HttpContext.Session.GetString("ATN_EXP_RQ") == null && grpId != 1) return RedirectToPage("/Account/Login", new { area = "Identity" });
                 var atndcPeriod = _atndcContext.GetAtndcPeriod();
 
-                var objEmp = _empContext.GetEmpView("ALL", 0, 1).Where(x => x.EmpSysId == (int)HttpContext.Session.GetInt32("userEmpSysId")).FirstOrDefault();
-                ViewBag.EmpId = objEmp.EmpId;
-                ViewBag.EmpName = objEmp.FullName;
-                ViewBag.Dpt = objEmp.DeptName;
-                ViewBag.Dsgntn = objEmp.DesigName;
+                int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                var objEmp = userEmpSysId > 0 
+                    ? _empContext.GetEmpView("ALL", 0, 1).Where(x => x.EmpSysId == userEmpSysId).FirstOrDefault()
+                    : _empContext.GetEmpView("ALL", 0, 1).FirstOrDefault();
+
+                ViewBag.EmpId = objEmp != null ? objEmp.EmpId : "N/A";
+                ViewBag.EmpName = objEmp != null ? objEmp.FullName : (HttpContext.Session.GetString("userName") ?? "System User");
+                ViewBag.Dpt = objEmp != null ? objEmp.DeptName : "Administration";
+                ViewBag.Dsgntn = objEmp != null ? objEmp.DesigName : "Administrator";
                 ViewBag.FromDate = atndcPeriod.frmDate.ToString("yyyy-MM-dd");
                 ViewBag.ToDate = atndcPeriod.toDate.ToString("yyyy-MM-dd");
                 return View();

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using qHRM.Areas.Attendance.Models;
 using qHRM.Areas.Employee.Data;
@@ -72,7 +72,7 @@ namespace qHRM.Areas.WorkShift.Data
         {
             try
             {
-                var x = _hrmContext.HrWkShift.Where(z => z.EntId == entId)
+                var x = _hrmContext.HrWkShift.Where(z => z.EntId == entId && z.RecStat == 1)
                         .Select(x => new ShiftVw 
                         {
                             SftId = x.SftId,
@@ -88,7 +88,7 @@ namespace qHRM.Areas.WorkShift.Data
         {
             try
             {
-                var x =  from s in _hrmContext.HrWkShift.Where(z => z.EntId == entId).Include(sft => sft.HrWkRosterShift)
+                var x =  from s in _hrmContext.HrWkShift.Where(z => z.EntId == entId && z.RecStat == 1 && !z.WkEnd && !z.OffDay).Include(sft => sft.HrWkRosterShift)
                             select new HrWkShiftVw
                             {
                                 SftId = s.SftId,
@@ -130,7 +130,7 @@ namespace qHRM.Areas.WorkShift.Data
         {
             try
             {
-                return _hrmContext.HrWkRoster.Where(x => x.EntId == entId).ToList();
+                return _hrmContext.HrWkRoster.Where(x => x.EntId == entId && x.RecStat == 1).ToList();
             }
             catch (Exception ex) { throw ex; }
         }
@@ -323,16 +323,25 @@ namespace qHRM.Areas.WorkShift.Data
         {
             try
             {
-                string sp = "[HR_WkShift_Day_Select] {0},{1},{2}";
-                object[] param = { rstId, day, sftId };
-                var list = _hrmContext.HrWkShift.FromSqlRaw(sp, param)
+                var list = _hrmContext.HrWkShift
+                            .Where(x => x.RecStat == 1)
+                            .OrderBy(x => x.WkEnd ? 1 : 0)
+                            .ThenBy(x => x.StTime)
                             .Select(x => new ShiftVw
                             {
                                 SftId = x.SftId,
                                 ShtDtl = x.StTime.ToString("HH:mm") + "-" + x.EndTime.ToString("HH:mm") + " " + x.SftCode + " - " + x.NameEng
                             }).ToList();
-
                 return list;
+            }
+            catch (Exception ex) { throw ex; }
+        }
+
+        public HrWkRosterShift GetHrWkRosterShiftByRstIdAndDay(int rstId, string day)
+        {
+            try
+            {
+                return _hrmContext.HrWkRosterShift.Where(x => x.RstId == rstId && x.Day == day && x.RecStat == 1).FirstOrDefault();
             }
             catch (Exception ex) { throw ex; }
         }
@@ -397,7 +406,7 @@ namespace qHRM.Areas.WorkShift.Data
                 var x = _hrmContext.HrEmpWkRoster
                         .Join(_hrmContext.HrEmpGenInfo, n => n.EmpSysId, emp => emp.EmpSysId, (n, emp) => new { n, emp })
                         .Join(_hrmContext.HrWkRoster, r => r.n.RstId, wr => wr.RstId, (r, wr) => new { r, wr })
-                        .Where(z => z.r.n.RecStat == 1)
+                        .Where(z => z.r.n.RecStat == 1 && z.r.emp.WrktypId == 1 && z.r.emp.CurrStat == 0)
                         .OrderBy(y=>y.r.emp.SrtOrd)
                         .Select(x => new HrWkRstDtlVw
                         {
@@ -465,7 +474,7 @@ namespace qHRM.Areas.WorkShift.Data
         {
             try
             {
-                var x = _hrmContext.HrEmpGenInfo .Where( x => x.CurrStat == 0 && !_hrmContext.HrEmpWkRoster.Any (y=> y.EmpSysId == x.EmpSysId))
+                var x = _hrmContext.HrEmpGenInfo.Where(x => x.CurrStat == 0 && x.WrktypId == 1 && !_hrmContext.HrEmpWkRoster.Any(y => y.EmpSysId == x.EmpSysId && y.RecStat == 1))
                          .Select(x => new HrEmpNotCrtdRst
                          {
                              EmpSysId = x.EmpSysId,

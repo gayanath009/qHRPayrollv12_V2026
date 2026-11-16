@@ -1,56 +1,93 @@
-﻿@model qHRM.Areas.Attendance.Models.HrEmpAttdView
+@model qHRM.Areas.Attendance.Models.HrEmpAttdView
 <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
 
-<form asp-action="ReloadAtndc" asp-controller="HrEmpAtndcSft">
-    <div>
-        @Html.HiddenFor(model => model.EmpSysId)
-        @Html.HiddenFor(model => model.FromDate)
-        @Html.HiddenFor(model => model.ToDate)
-        <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+<form asp-action="ReloadAtndc" asp-controller="HrEmpAtndcSft" method="post" id="formReloadAtndc" onsubmit="return handleReloadSubmit(event);">
+    @Html.AntiForgeryToken()
+    @Html.HiddenFor(model => model.EmpSysId)
+    @Html.HiddenFor(model => model.FromDate)
+    @Html.HiddenFor(model => model.ToDate)
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-        <div class="form-row">
-            <div class="form-group col-md-12">
-                Are you sure to reload attendance?
+    <div id="reloadDetailsSection">
+        <div class="alert alert-light border mb-3 p-3 text-dark d-flex align-items-center" style="background: #fdf2f8; border-color: #fbcfe8 !important; border-radius: 8px;">
+            <div class="mr-3" style="width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #540033 0%, #750047 100%); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);">
+                <i class="fas fa-question fa-lg"></i>
+            </div>
+            <div>
+                <div class="font-weight-bold" style="color: #540033; font-size: 0.95rem;">Are you sure you want to reload attendance?</div>
+                <div class="text-muted small">This will reprocess punch logs and recalculate shift attendance for the selected date range.</div>
             </div>
         </div>
-        <div class="form-row">
-            <div class="form-group col-3">
-                @Html.DisplayNameFor(model => model.FullName)
+
+        <div class="bg-light p-3 rounded mb-3 border">
+            <div class="row mb-2">
+                <div class="col-4 text-muted small font-weight-bold text-uppercase">Employee</div>
+                <div class="col-8 font-weight-bold text-dark">: @Html.DisplayFor(model => model.FullName)</div>
             </div>
-            <div class="form-group col-9">
-                : @Html.DisplayFor(model => model.FullName)
+            <div class="row mb-2">
+                <div class="col-4 text-muted small font-weight-bold text-uppercase">From Date</div>
+                <div class="col-8 text-dark font-weight-bold">: @(Model.FromDate.ToString("dd-MMM-yyyy"))</div>
             </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group col-3">
-                @Html.DisplayNameFor(model => model.FromDate)
-            </div>
-            <div class="form-group col-9">
-                : @Html.DisplayFor(model => model.FromDate)
-            </div>
-        </div>
-        <div class="form-row">
-            <div class="form-group col-3">
-                @Html.DisplayNameFor(model => model.ToDate)
-            </div>
-            <div class="form-group col-9">
-                : @Html.DisplayFor(model => model.ToDate)
+            <div class="row">
+                <div class="col-4 text-muted small font-weight-bold text-uppercase">To Date</div>
+                <div class="col-8 text-dark font-weight-bold">: @(Model.ToDate.ToString("dd-MMM-yyyy"))</div>
             </div>
         </div>
-        <div class="form-group">
-            <input type="submit" value="Reload Attendance" class="btn btn-sm btn-primary btn-block" />
-            <input type="button" value="Cancel" class="btn btn-sm btn-outline-primary btn-block" data-dismiss="modal" />
+
+        <div id="reloadActionButtons" class="d-flex flex-column" style="gap: 0.5rem;">
+            <button type="submit" id="btnSubmitReloadAtndc" class="btn btn-block" style="background: linear-gradient(135deg, #540033 0%, #750047 100%); color: #ffffff; font-weight: 600; padding: 0.6rem; border-radius: 6px; box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);">
+                <i class="fas fa-sync-alt mr-2"></i> Reload Attendance
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-block" data-dismiss="modal" style="border-radius: 6px; padding: 0.5rem;">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <!-- Progress Indicator (shown when reloading) -->
+    <div id="reloadProcessingBox" style="display: none;" class="text-center py-4 my-2">
+        <div class="spinner-border mb-3" role="status" style="width: 3.2rem; height: 3.2rem; color: #540033;">
+            <span class="sr-only">Processing...</span>
+        </div>
+        <div class="font-weight-bold" style="color: #540033; font-size: 1.05rem;">
+            <i class="fas fa-sync-alt fa-spin mr-2"></i> Reloading Attendance...
+        </div>
+        <div class="text-muted small mt-2">
+            Please wait while attendance records are being loaded and recalculated.<br />
+            This may take a few moments.
         </div>
     </div>
 </form>
 
-<script type="text/javascript">    
+<script type="text/javascript">
+    function handleReloadSubmit(e) {
+        var $btn = $('#btnSubmitReloadAtndc');
+        if ($btn.data('submitting')) {
+            return false;
+        }
+        $btn.data('submitting', true);
+
+        $('#reloadDetailsSection').hide();
+        $('#reloadProcessingBox').fadeIn(150);
+
+        $('#modalReloadAtndc').find('.close').fadeOut(150);
+        try {
+            $('#modalReloadAtndc').data('bs.modal')._config.backdrop = 'static';
+            $('#modalReloadAtndc').data('bs.modal')._config.keyboard = false;
+        } catch (err) { }
+
+        return true;
+    }
 
     $(function () {
         $('#modalReloadAtndc').on('shown.bs.modal', function () {
             $(document).off('focusin.modal');
+            $('#reloadDetailsSection').show();
+            $('#reloadProcessingBox').hide();
+            $('#modalReloadAtndc').find('.close').show();
+            $('#btnSubmitReloadAtndc').data('submitting', false);
         });
-    }
+    });
 </script>
 <ejs-scripts></ejs-scripts>

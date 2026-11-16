@@ -151,11 +151,213 @@
 
     /* Filter Controls Modern styling */
     .attendance-filter-card {
-        background: #fdfdfe;
-        border: 1px solid #edf2f7;
-        border-radius: 10px;
-        padding: 1rem 1.25rem;
-        margin-bottom: 1rem;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.25rem;
+        box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .attendance-filter-card .form-control-sm {
+        height: 34px !important;
+        border-radius: 6px !important;
+        border: 1px solid #cbd5e1 !important;
+        font-size: 0.85rem !important;
+        color: #1e293b;
+    }
+    .attendance-filter-card .form-control-sm:focus {
+        border-color: #990049 !important;
+        box-shadow: 0 0 0 2px rgba(153, 0, 73, 0.15) !important;
+    }
+
+    /* Select2 customization for Employee & Department dropdowns */
+    .attendance-filter-card .select2-container .select2-selection--single {
+        height: 34px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 3px 8px !important;
+        display: flex;
+        align-items: center;
+    }
+    .attendance-filter-card .select2-container--bootstrap4 .select2-selection--single .select2-selection__rendered {
+        line-height: 28px !important;
+        font-size: 0.85rem !important;
+        color: #1e293b !important;
+        padding-left: 2px !important;
+    }
+    .attendance-filter-card .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+        height: 32px !important;
+        right: 8px !important;
+    }
+    .attendance-filter-card .select2-container--disabled .select2-selection--single {
+        background-color: #f1f5f9 !important;
+        border-color: #e2e8f0 !important;
+        opacity: 0.7 !important;
+        cursor: not-allowed !important;
+    }
+    .select2-dropdown {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+        font-size: 0.85rem !important;
+        z-index: 9999 !important;
+    }
+    .select2-search--dropdown .select2-search__field {
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        padding: 6px 10px !important;
+        font-size: 0.85rem !important;
+    }
+
+    /* Search & Print Grid Buttons */
+    .btn-atndc-search {
+        background: linear-gradient(135deg, #540033 0%, #750047 100%);
+        color: #ffffff !important;
+        border: none;
+        border-radius: 6px;
+        height: 34px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        box-shadow: 0 2px 6px rgba(84, 0, 51, 0.2);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        cursor: pointer;
+    }
+    .btn-atndc-search:hover {
+        background: linear-gradient(135deg, #6a0041 0%, #8a0054 100%);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(84, 0, 51, 0.35);
+    }
+    .btn-atndc-print-grid {
+        background: #ffffff;
+        color: #475569 !important;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        height: 34px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        cursor: pointer;
+    }
+    .btn-atndc-print-grid:hover {
+        background: #f8fafc;
+        color: #0f172a !important;
+        border-color: #94a3b8;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    /* Actions Panel & Buttons (Matching Payroll/HrPrSlryPrcDtl) */
+    .atndc-actions-panel {
+        border-left: 1px solid #edf2f7;
+        padding-left: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    @@media (max-width: 991px) {
+        .atndc-actions-panel {
+            border-left: none;
+            border-top: 1px solid #edf2f7;
+            padding-left: 0;
+            padding-top: 1.25rem;
+            margin-top: 1.25rem;
+        }
+    }
+
+    .atndc-action-btn {
+        width: 100%;
+        border: none;
+        border-radius: 6px;
+        height: 36px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        font-family: inherit;
+        letter-spacing: 0.01em;
+        text-decoration: none;
+        outline: none;
+    }
+
+    .atndc-action-btn:disabled, .atndc-action-btn[disabled] {
+        opacity: 0.38 !important;
+        cursor: not-allowed !important;
+        box-shadow: none !important;
+        filter: grayscale(25%) !important;
+        pointer-events: none !important;
+    }
+
+    /* 1. Mark Absent -> Maroon (Matching Run Salary Process: #990049, #b80058) */
+    .btn-mark-absent {
+        background: linear-gradient(135deg, #990049, #b80058);
+        color: #ffffff !important;
+        box-shadow: 0 2px 10px rgba(153, 0, 73, 0.35);
+    }
+    .btn-mark-absent:hover:not(:disabled) {
+        box-shadow: 0 4px 18px rgba(153, 0, 73, 0.55);
+        transform: translateY(-1px);
+        color: #ffffff !important;
+    }
+
+    /* 2. Reset Absent -> Purple / Lavender (Matching Salary Re-Process: #6366f1, #8b5cf6) */
+    .btn-reset-absent {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #ffffff !important;
+        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+    }
+    .btn-reset-absent:hover:not(:disabled) {
+        box-shadow: 0 4px 18px rgba(99, 102, 241, 0.55);
+        transform: translateY(-1px);
+        color: #ffffff !important;
+    }
+
+    /* 3. Load Attendance -> Teal / Cyan (Matching Verify: #06b6d4, #0891b2) */
+    .btn-load-atndc {
+        background: linear-gradient(135deg, #06b6d4, #0891b2);
+        color: #ffffff !important;
+        box-shadow: 0 2px 10px rgba(6, 182, 212, 0.35);
+    }
+    .btn-load-atndc:hover:not(:disabled) {
+        box-shadow: 0 4px 18px rgba(6, 182, 212, 0.55);
+        transform: translateY(-1px);
+        color: #ffffff !important;
+    }
+
+    /* 4. Print Attendance Report -> Green (Matching Complete: #22c55e, #16a34a) */
+    .btn-print-report {
+        background: linear-gradient(135deg, #22c55e, #16a34a);
+        color: #ffffff !important;
+        box-shadow: 0 2px 10px rgba(34, 197, 94, 0.35);
+    }
+    .btn-print-report:hover:not(:disabled) {
+        box-shadow: 0 4px 18px rgba(34, 197, 94, 0.55);
+        transform: translateY(-1px);
+        color: #ffffff !important;
+    }
+
+    /* 5. Print Grid in Actions Panel -> Ocean Blue (Matching Generate WPS: #0077b6, #0096c7) */
+    .btn-action-print-grid {
+        background: linear-gradient(135deg, #0077b6, #0096c7);
+        color: #ffffff !important;
+        box-shadow: 0 2px 10px rgba(0, 119, 182, 0.35);
+    }
+    .btn-action-print-grid:hover:not(:disabled) {
+        box-shadow: 0 4px 18px rgba(0, 119, 182, 0.55);
+        transform: translateY(-1px);
+        color: #ffffff !important;
     }
 
     /* Modern Modals */
@@ -196,6 +398,50 @@
     .org-modal-delete .modal-header {
         background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%) !important;
     }
+
+    /* Cycle Control Pills (Prev, Current, Next Cycle) */
+    .atndc-cycle-btn {
+        background-color: #ffffff;
+        color: #4e73df;
+        border: 1px solid #b7b9cc;
+        border-radius: 6px;
+        padding: 0.18rem 0.55rem;
+        font-size: 0.74rem;
+        font-weight: 500;
+        line-height: 1.3;
+        transition: all 0.15s ease-in-out;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        cursor: pointer;
+        text-decoration: none !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    }
+    .atndc-cycle-btn:hover {
+        background-color: #f8f9fc;
+        border-color: #858796;
+        color: #2e59d9;
+        transform: translateY(-1px);
+    }
+    .atndc-cycle-btn.btn-curr-cycle {
+        border: 1px solid #540033 !important;
+        color: #540033 !important;
+        font-weight: 600;
+    }
+    .atndc-cycle-btn.btn-curr-cycle:hover {
+        background-color: #fdf2f8 !important;
+        border-color: #3e0026 !important;
+        color: #3e0026 !important;
+    }
+
+    /* Syncfusion Grid Styling (Matching Payroll/HrPrSlryPrcDtl) */
+    .e-grid { background: transparent !important; border: none !important; }
+    .e-grid .e-headercell { background: #f8fafc !important; color: var(--clr-muted) !important; font-size: 0.72rem !important; font-weight: 600 !important; text-transform: uppercase !important; letter-spacing: 0.06em !important; border-color: var(--clr-border) !important; }
+    .e-grid .e-rowcell { background: transparent !important; border-color: var(--clr-border) !important; color: var(--clr-text) !important; font-size: 0.8rem !important; }
+    .e-grid .e-altrow .e-rowcell { background: #f8fafc !important; }
+    .e-grid .e-row:hover .e-rowcell { background: rgba(99,102,241,0.06) !important; }
+    .e-grid .e-pager { background: #f8fafc !important; border-color: var(--clr-border) !important; color: var(--clr-muted) !important; }
+    .e-grid .e-toolbar { background: #f8fafc !important; border-color: var(--clr-border) !important; }
 </style>
 
 <div class="org-page-container">
@@ -232,104 +478,143 @@
                         <e-toast-position X="Center"></e-toast-position>
                     </ejs-toast>
 
-                    <div class="attendance-filter-card">
-                        @using (Html.BeginForm("PrintAtndcSht", "HrEmpAtndcSft", FormMethod.Post, new { target = "_blank", onsubmit = "validateAttdReportForm()" }))
-                        {
-                            <div class="form-row">
-                                <div class="form-group col-md-6 mb-0">
-                                    <div class="form-row">
-                                        <div class="form-group col-md-6">
-                                            <div class="form-row">
-                                                <div class="form-group col-md-12">
-                                                    <div class="form-check mb-1">
-                                                        <input type="checkbox" class="form-check-input" id="chkEmpFltr" onclick="enblEmpFltr();">
-                                                        <label class="form-check-label font-weight-bold" for="chkEmpFltr">Employee</label>
-                                                    </div>
-                                                    <select placeholer="Select Employee" id="drpEmp" asp-for="prm3"
-                                                            asp-items="@(new SelectList(ViewBag.lstEmployee, "EmpSysId", "FullName"))" disabled onchange="loadAttdData(); loadAttdSummary();" class="form-control form-control-sm">
-                                                        <option value="0">All Employee</option>
-                                                    </select>
+                    <div class="row justify-content-center">
+                        <div class="col-12 col-md-6">
+                            <div class="attendance-filter-card">
+                                @using (Html.BeginForm("PrintAtndcSht", "HrEmpAtndcSft", FormMethod.Post, new { target = "_blank", onsubmit = "validateAttdReportForm(event)" }))
+                                {
+                                    <!-- Row 1: Filters (Employee/Dept on left, Predefined/Date Range on right) -->
+                                    <div class="row">
+                                        <!-- Sub-Col 1: Employee & Department -->
+                                        <div class="col-12 col-sm-6 mb-3 mb-sm-0">
+                                            <div class="form-group mb-3">
+                                                <div class="form-check mb-1">
+                                                    <input type="checkbox" class="form-check-input" id="chkEmpFltr" checked="checked" onclick="enblEmpFltr();">
+                                                    <label class="form-check-label font-weight-bold" for="chkEmpFltr">Employee</label>
                                                 </div>
+                                                <select placeholder="Select Employee" id="drpEmp" asp-for="prm3"
+                                                        asp-items="@(new SelectList(ViewBag.lstEmployee, "EmpSysId", "FullName"))" class="form-control form-control-sm select2-dropdown" onchange="loadAttdData();loadAttdSummary();">
+                                                    <option value="0">All Employee</option>
+                                                </select>
                                             </div>
-                                            <div class="form-row">
-                                                <div class="form-group col-md-12">
-                                                    <div class="form-check mb-1">
-                                                        <input type="checkbox" class="form-check-input" id="chkDeptFltr" onclick="enblDeptFltr();">
-                                                        <label class="form-check-label font-weight-bold" for="chkDeptFltr">Department</label>
-                                                    </div>
-                                                    <select placeholer="Select Employee" id="drpDept" asp-for="prm4"
-                                                            asp-items="@(new SelectList(ViewBag.lstDept, "DeptId", "DeptName"))" disabled onchange="loadAttdData(); loadAttdSummary();" class="form-control form-control-sm">
-                                                        <option value="0">All Departments</option>
-                                                    </select>
+                                            <div class="form-group mb-0">
+                                                <div class="form-check mb-1">
+                                                    <input type="checkbox" class="form-check-input" id="chkDeptFltr" onclick="enblDeptFltr();">
+                                                    <label class="form-check-label font-weight-bold" for="chkDeptFltr">Department</label>
                                                 </div>
+                                                <select placeholder="Select Department" id="drpDept" asp-for="prm4"
+                                                        asp-items="@(new SelectList(ViewBag.lstDept, "DeptId", "DeptName"))" disabled class="form-control form-control-sm select2-dropdown">
+                                                    <option value="0">All Departments</option>
+                                                </select>
                                             </div>
                                         </div>
-                                        <div class="form-group col-md-6">
-                                            <div class="form-row">
-                                                <div class="form-group col-md-12">
-                                                    <div class="form-check mb-1">
-                                                        <input type="radio" name="dateRange" class="form-check-input" id="chkFxRngFltr" checked onclick="enblFxRngFltr();loadAttdData();loadAttdSummary();">
-                                                        <label class="form-check-label font-weight-bold" for="chkFxRngFltr">Pre Defined Period</label>
-                                                    </div>
-                                                    <select placeholer="Select Date Range" id="drpRngs"
-                                                            asp-items="@(new  SelectList(ViewBag.lstFilter, "Prop", "Val"))" onchange="loadAttdData();loadAttdSummary();" class="form-control form-control-sm">
-                                                    </select>
+
+                                        <!-- Sub-Col 2: Predefined Period & Date Range -->
+                                        <div class="col-12 col-sm-6 mb-3 mb-sm-0">
+                                            <div class="form-group mb-3">
+                                                <div class="form-check mb-1">
+                                                    <input type="radio" name="dateRange" class="form-check-input" id="chkFxRngFltr" checked onclick="enblFxRngFltr();loadAttdData();loadAttdSummary();">
+                                                    <label class="form-check-label font-weight-bold" for="chkFxRngFltr">Pre Defined Period</label>
                                                 </div>
+                                                <select placeholder="Select Date Range" id="drpRngs"
+                                                        asp-items="@(new SelectList(ViewBag.lstFilter, "Prop", "Val"))" onchange="loadAttdData();loadAttdSummary();" class="form-control form-control-sm">
+                                                </select>
                                             </div>
-                                            <div class="form-row">
-                                                <div class="form-group col-md-6">
-                                                    <div class="form-check mb-1">
-                                                        <input type="radio" name="dateRange" class="form-check-input" id="chkDateRange" onclick="enblFxRngFltr();">
-                                                        <label class="form-check-label font-weight-bold" for="chkDateRange">Date Range</label>
+                                            <div class="form-group mb-0">
+                                                <div class="d-flex justify-content-between align-items-center mb-1 flex-wrap" style="gap: 0.35rem;">
+                                                    <div class="form-check">
+                                                        <input type="radio" name="dateRange" class="form-check-input" id="chkDateRange" onclick="resetAtndcCurrentCycle();">
+                                                        <label class="form-check-label font-weight-bold" for="chkDateRange" style="cursor: pointer;">Date Range</label>
                                                     </div>
-                                                    <label class="small text-muted mb-0">From</label>
-                                                    <input id="dtFrom" type="date" asp-for="prm1" disabled class="form-control form-control-sm" value="@ViewBag.FromDate" />
+                                                    <!-- Quick Payroll Cycle Controls (21st to 20th) -->
+                                                    <div class="d-inline-flex align-items-center" style="gap: 0.3rem;">
+                                                        <button type="button" class="atndc-cycle-btn" onclick="shiftAtndcCycle(-1)" title="Previous Payroll Cycle (21st to 20th)">
+                                                            <i class="fas fa-chevron-left fa-xs"></i> Prev Cycle
+                                                        </button>
+                                                        <button type="button" class="atndc-cycle-btn btn-curr-cycle" onclick="resetAtndcCurrentCycle()" title="Current Payroll Cycle (21st to 20th)">
+                                                            Current Cycle
+                                                        </button>
+                                                        <button type="button" class="atndc-cycle-btn" onclick="shiftAtndcCycle(1)" title="Next Payroll Cycle (21st to 20th)">
+                                                            Next Cycle <i class="fas fa-chevron-right fa-xs"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div class="form-group col-md-6">
-                                                    <label class="small text-muted mb-0">&nbsp;</label>
-                                                    <div>
+                                                <div class="form-row">
+                                                    <div class="col-6">
+                                                        <label class="small text-muted mb-0">From</label>
+                                                        <input id="dtFrom" type="date" asp-for="prm1" disabled class="form-control form-control-sm" value="@ViewBag.FromDate" onchange="onDateRangeChange();" />
+                                                    </div>
+                                                    <div class="col-6">
                                                         <label class="small text-muted mb-0">To</label>
-                                                        <input id="dtTo" type="date" asp-for="prm2" disabled class="form-control form-control-sm" value="@ViewBag.ToDate" />
+                                                        <input id="dtTo" type="date" asp-for="prm2" disabled class="form-control form-control-sm" value="@ViewBag.ToDate" onchange="onDateRangeChange();" />
                                                         <input id="valFxRngFilter" type="number" asp-for="prm5" class="form-control form-control-sm" hidden />
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="form-row mt-2">
-                                        <div class="form-group col-md-6">
-                                            <input type="button" value="Search" class="btn btn-sm btn-outline-primary btn-block font-weight-bold" onclick="loadAttdData(); loadAttdSummary();" />
+
+                                    <!-- Row 2: Filter - Absent any of the days -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="d-flex align-items-center p-2 rounded" style="background: rgba(220, 38, 38, 0.05); border: 1px dashed rgba(220, 38, 38, 0.35);">
+                                                <div class="form-check mb-0">
+                                                    <input type="checkbox" class="form-check-input" id="chkAbsentOnly" name="chkAbsentOnly" value="true" onchange="loadAttdData();">
+                                                    <input type="hidden" name="prmAbsentOnly" id="prmAbsentOnly" value="false" />
+                                                    <label class="form-check-label font-weight-bold text-danger" for="chkAbsentOnly" style="cursor: pointer; font-size: 0.85rem;">
+                                                        <i class="fas fa-user-times mr-1"></i> Whoever absent any of the days within that cycle
+                                                    </label>
+                                                </div>
+                                                <span class="badge badge-light border text-muted ml-auto font-weight-normal" style="font-size: 0.72rem;">
+                                                    Filters Print Report &amp; Grid
+                                                </span>
+                                            </div>
                                         </div>
-                                        <div class="form-group col-md-6">
-                                            <input type="button" value="Print Grid" class="btn btn-sm btn-outline-secondary btn-block font-weight-bold" onclick="prntGrid();">
+                                    </div>
+
+                                    <!-- Row 3: Search Button -->
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <button type="button" class="btn btn-block btn-atndc-search" onclick="loadAttdData(); loadAttdSummary();">
+                                                <i class="fas fa-search mr-1"></i> Search
+                                            </button>
                                         </div>
                                     </div>
-                                </div>
-                                <div class="form-group col-md-3">
-                                    <div class="form-group mb-2">
+
+                                    <!-- Row 4: Load Attendance & Print Attendance Report Underneath Search -->
+                                    <div class="row mt-2">
                                         @if (ViewBag.RecEdit == true)
                                         {
-                                            <input type="button" value="Mark Absent" class="btn btn-sm btn-outline-danger btn-block" onclick="markAbsentFunc();" />
+                                            <div class="col-12 col-sm-6 mb-2 mb-sm-0">
+                                                <button type="button" class="atndc-action-btn btn-load-atndc w-100" onclick="reloadAtndcFunc();" id="btnReloadAtndc">
+                                                    <i class="fas fa-sync-alt mr-2"></i> Load Attendance
+                                                </button>
+                                            </div>
+                                            <div class="col-12 col-sm-6">
+                                                <button type="submit" class="atndc-action-btn btn-print-report w-100" id="btnRpt">
+                                                    <i class="fas fa-print mr-2"></i> Print Attendance Report
+                                                </button>
+                                            </div>
                                         }
-                                    </div>
-                                    <div class="form-group mb-2">
-                                        @if (ViewBag.RecEdit == true)
+                                        else
                                         {
-                                            <input type="button" value="Reset Absent" class="btn btn-sm btn-outline-warning btn-block" onclick="markResetAbsentFunc();" />
+                                            <div class="col-12">
+                                                <button type="submit" class="atndc-action-btn btn-print-report w-100" id="btnRpt">
+                                                    <i class="fas fa-print mr-2"></i> Print Attendance Report
+                                                </button>
+                                            </div>
                                         }
                                     </div>
-                                    <div class="form-group mb-2">
-                                        @if (ViewBag.RecEdit == true)
-                                        {
-                                            <input type="button" value="Load Attendance" class="btn btn-sm btn-outline-info btn-block" onclick="reloadAtndcFunc();" id="btnReloadAtndc" disabled="disabled" />
-                                        }
+
+                                    <!-- Hidden Legacy Action Buttons -->
+                                    <div style="display: none !important;">
+                                        <button type="button" class="atndc-action-btn btn-mark-absent" onclick="markAbsentFunc();" id="btnMarkAbsent"></button>
+                                        <button type="button" class="atndc-action-btn btn-reset-absent" onclick="markResetAbsentFunc();" id="btnResetAbsent"></button>
+                                        <button type="button" class="atndc-action-btn btn-action-print-grid" onclick="prntGrid();" id="btnActionPrintGrid"></button>
                                     </div>
-                                    <div class="form-group mb-0">
-                                        <input type="submit" value="Print Attendance Report" class="btn btn-sm btn-outline-success btn-block" id="btnRpt" disabled="disabled" />
-                                    </div>
-                                </div>
+                                }
                             </div>
-                        }
+                        </div>
                     </div>
 
                     <!--Grid-->
@@ -349,8 +634,9 @@
                                 <e-grid-column field="WrkMnt" headerText="Work (Mins)" width="100"></e-grid-column>
                                 <e-grid-column field="LateInMnt" headerText="Late (Mins)" width="95"></e-grid-column>
                                 <e-grid-column field="ErlyLvMnt" headerText="Early Lv (Mins)" width="110"></e-grid-column>
-                                <e-grid-column field="OtMnt" headerText="OT (Mins)" width="90"></e-grid-column>
-                                <e-grid-column field="ExtOtMnt" headerText="Ext OT" width="90"></e-grid-column>
+                                <e-grid-column field="OtMnt" headerText="OT (Mins)" width="90" visible="false"></e-grid-column>
+                                <e-grid-column field="ExtOtMnt" headerText="Ext OT" width="90" visible="false"></e-grid-column>
+                                <e-grid-column field="Note" headerText="Remarks" width="180"></e-grid-column>
                                 <e-grid-column field="" headerText="Actions" template="#_actions" width="120" textAlign="Center"></e-grid-column>
                             </e-grid-columns>
                         </ejs-grid>
@@ -507,6 +793,115 @@
 
 <!-- Scripts -->
 <script>
+    $(document).ready(function () {
+        // Initialize Select2 on Employee and Department dropdowns
+        if ($.fn.select2) {
+            $('#drpEmp').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'All Employee'
+            });
+
+            $('#drpDept').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                placeholder: 'All Departments'
+            });
+
+            $('#drpEmp').on('change select2:select select2:clear', function () {
+                loadAttdData();
+                loadAttdSummary();
+            });
+
+            $('#drpDept').on('change select2:select select2:clear', function () {
+                loadAttdData();
+                loadAttdSummary();
+            });
+        }
+
+        enblFxRngFltr();
+    });
+
+    function onDateRangeChange() {
+        if ($('#chkDateRange').is(':checked')) {
+            var dtFrom = $("#dtFrom").val();
+            var dtTo = $("#dtTo").val();
+            if (dtFrom && dtTo) {
+                if (new Date(dtFrom) <= new Date(dtTo)) {
+                    loadAttdData();
+                    loadAttdSummary();
+                }
+            }
+        }
+    }
+
+    function parseISODate(str) {
+        if (!str) return new Date();
+        var parts = str.split('-');
+        if (parts.length === 3) {
+            var y = parseInt(parts[0], 10);
+            var m = parseInt(parts[1], 10) - 1;
+            var d = parseInt(parts[2], 10);
+            return new Date(y, m, d);
+        }
+        return new Date(str);
+    }
+
+    function formatAtndcDateToISO(d) {
+        var year = d.getFullYear();
+        var month = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return year + '-' + month + '-' + day;
+    }
+
+    function shiftAtndcCycle(direction) {
+        var fromInput = document.getElementById('dtFrom');
+        var toInput = document.getElementById('dtTo');
+
+        var currFromVal = fromInput ? fromInput.value : '';
+        var currFrom = currFromVal ? parseISODate(currFromVal) : new Date();
+
+        // Shift month by direction with cycle starting on the 21st and ending on the 20th
+        var newFrom = new Date(currFrom.getFullYear(), currFrom.getMonth() + direction, 21);
+        var newTo = new Date(newFrom.getFullYear(), newFrom.getMonth() + 1, 20);
+
+        // Auto select Date Range radio button and enable inputs
+        $('#chkDateRange').prop('checked', true);
+        $('#chkFxRngFltr').prop('checked', false);
+        enblFxRngFltr();
+
+        if (fromInput) fromInput.value = formatAtndcDateToISO(newFrom);
+        if (toInput) toInput.value = formatAtndcDateToISO(newTo);
+
+        loadAttdData();
+        loadAttdSummary();
+    }
+
+    function resetAtndcCurrentCycle() {
+        var today = new Date();
+        var fromDate, toDate;
+        if (today.getDate() <= 20) {
+            fromDate = new Date(today.getFullYear(), today.getMonth() - 1, 21);
+            toDate = new Date(today.getFullYear(), today.getMonth(), 20);
+        } else {
+            fromDate = new Date(today.getFullYear(), today.getMonth(), 21);
+            toDate = new Date(today.getFullYear(), today.getMonth() + 1, 20);
+        }
+
+        // Auto select Date Range radio button and enable inputs
+        $('#chkDateRange').prop('checked', true);
+        $('#chkFxRngFltr').prop('checked', false);
+        enblFxRngFltr();
+
+        var fromInput = document.getElementById('dtFrom');
+        var toInput = document.getElementById('dtTo');
+        if (fromInput) fromInput.value = formatAtndcDateToISO(fromDate);
+        if (toInput) toInput.value = formatAtndcDateToISO(toDate);
+
+        loadAttdData();
+        loadAttdSummary();
+    }
+
     var editFunc = function (atndcSftId) {
         var url = "/Attendance/HrEmpAtndcSft/EditGet?atndcSftId=" + atndcSftId;
         $("#editModalBody").load(url, function () {
@@ -536,13 +931,42 @@
     };
 
     var reloadAtndcFunc = function () {
-        drpEmp = $("#drpEmp").val();
-        dtFrom = $("#dtFrom").val();
-        dtTo = $("#dtTo").val();
+        var drpEmp = $('#chkEmpFltr').is(":checked") ? ($("#drpEmp").val() || 0) : 0;
+        var dtFrom = "";
+        var dtTo = "";
+
+        if ($('#chkFxRngFltr').is(':checked')) {
+            var valdrpRngs = parseInt($("#drpRngs").val()) || 1;
+            var toD = new Date();
+            toD.setDate(toD.getDate() - 1);
+            var fromD = new Date();
+            fromD.setDate(fromD.getDate() - valdrpRngs);
+
+            var formatD = function (d) {
+                var m = '' + (d.getMonth() + 1);
+                var day = '' + d.getDate();
+                var y = d.getFullYear();
+                if (m.length < 2) m = '0' + m;
+                if (day.length < 2) day = '0' + day;
+                return [y, m, day].join('-');
+            };
+
+            dtFrom = formatD(fromD);
+            dtTo = formatD(toD);
+        } else {
+            dtFrom = $("#dtFrom").val();
+            dtTo = $("#dtTo").val();
+        }
+
+        if (!dtFrom || !dtTo) {
+            alert("Please choose a valid date range or period.");
+            return;
+        }
+
         var url = "/Attendance/HrEmpAtndcSft/GetReloadAtndc?frmDate=" + dtFrom + '&toDate=' + dtTo + '&empSysId=' + drpEmp;
-        $("#reloadAtndcModalBody").load(url, function () {
-            $("#modalReloadAtndc").modal("show");
-        });
+        $("#reloadAtndcModalBody").html('<div class="text-center py-4"><div class="spinner-border text-danger mb-2" role="status" style="width: 2.5rem; height: 2.5rem; color: #540033 !important;"><span class="sr-only">Loading...</span></div><div class="font-weight-bold" style="color: #540033;"><i class="fas fa-spinner fa-spin mr-1"></i> Loading details...</div></div>');
+        $("#modalReloadAtndc").modal("show");
+        $("#reloadAtndcModalBody").load(url);
     };
 
     var resetFunc = function (recId) {
@@ -553,25 +977,31 @@
     };
 
     function enblEmpFltr() {
-        var chkEmpFltr = document.getElementById("chkEmpFltr");
-        var drpEmp = document.getElementById("drpEmp");
-        if (chkEmpFltr.checked == true) {
-            drpEmp.disabled = false;
+        var isChecked = $('#chkEmpFltr').is(':checked');
+        var $drpEmp = $('#drpEmp');
+        $drpEmp.prop('disabled', !isChecked);
+        if (!isChecked) {
+            $drpEmp.val('0');
         }
-        else {
-            drpEmp.disabled = true;
+        if ($.fn.select2 && $drpEmp.data('select2')) {
+            $drpEmp.trigger('change.select2');
         }
+        loadAttdData();
+        loadAttdSummary();
     }
 
     function enblDeptFltr() {
-        var chkDeptFltr = document.getElementById("chkDeptFltr");
-        var drpDept = document.getElementById("drpDept");
-        if (chkDeptFltr.checked == true) {
-            drpDept.disabled = false;
+        var isChecked = $('#chkDeptFltr').is(':checked');
+        var $drpDept = $('#drpDept');
+        $drpDept.prop('disabled', !isChecked);
+        if (!isChecked) {
+            $drpDept.val('0');
         }
-        else {
-            drpDept.disabled = true;
+        if ($.fn.select2 && $drpDept.data('select2')) {
+            $drpDept.trigger('change.select2');
         }
+        loadAttdData();
+        loadAttdSummary();
     }
 
     function enblFxRngFltr() {
@@ -580,37 +1010,39 @@
         var chkDateRange = document.getElementById("chkDateRange");
         var dtFrom = document.getElementById("dtFrom");
         var dtTo = document.getElementById("dtTo");
+        var btnReloadAtndc = document.getElementById("btnReloadAtndc");
+        var btnRpt = document.getElementById("btnRpt");
         var valdrpRngs = $("#drpRngs").val();
 
         if (chkFxRngFltr.checked == true) {
             drpRngs.disabled = false;
             dtFrom.disabled = true;
             dtTo.disabled = true;
-            btnReloadAtndc.disabled = true;
-            btnRpt.disabled = true;
+            if (btnReloadAtndc) btnReloadAtndc.disabled = false;
+            if (btnRpt) btnRpt.disabled = false;
             $("#valFxRngFilter").val(valdrpRngs);
         }
         else if (chkDateRange.checked == true) {
             drpRngs.disabled = true;
             dtFrom.disabled = false;
             dtTo.disabled = false;
-            btnReloadAtndc.disabled = false;
-            btnRpt.disabled = false;
+            if (btnReloadAtndc) btnReloadAtndc.disabled = false;
+            if (btnRpt) btnRpt.disabled = false;
             $("#valFxRngFilter").val(0);
         }
     }
 
     // Attendance Logs
     function loadAttdData() {
-        if (chkFxRngFltr.checked == true) {
+        if ($('#chkFxRngFltr').is(':checked')) {
             var valdrpRngs = $("#drpRngs").val();
             $("#valFxRngFilter").val(valdrpRngs);
         }
-        else if (chkDateRange.checked == true) {
+        else if ($('#chkDateRange').is(':checked')) {
             $("#valFxRngFilter").val(0);
         }
 
-        var drpEmp = $("#drpEmp").val();
+        var drpEmp = 0;
         var drpRngs = "";
         var dtFrom = "";
         var dtTo = "";
@@ -619,6 +1051,12 @@
             drpRngs = 0;
             dtFrom = $("#dtFrom").val();
             dtTo = $("#dtTo").val();
+            if (!dtFrom || !dtTo) {
+                return;
+            }
+            if (new Date(dtFrom) > new Date(dtTo)) {
+                return;
+            }
         }
         else {
             drpRngs = $("#drpRngs").val();
@@ -627,11 +1065,13 @@
         }
 
         if ($('#chkEmpFltr').is(":checked")) {
-            drpEmp = $("#drpEmp").val();
+            drpEmp = $("#drpEmp").val() || 0;
         }
         else {
             drpEmp = 0;
         }
+
+        var onlyAbsent = $('#chkAbsentOnly').is(':checked');
 
         var grid = document.getElementById('Grid').ej2_instances[0];
         grid.dataSource = null;
@@ -642,7 +1082,7 @@
             contentType: "application/json; charset=utf-8",
             url: "@(Url.Action("GetAtndcLogs", "HrEmpAtndcSft"))",
             dataType: "json",
-            data: { refId: drpEmp, dateFilter: drpRngs, sDate: dtFrom, eDate: dtTo },
+            data: { refId: drpEmp, dateFilter: drpRngs, sDate: dtFrom, eDate: dtTo, onlyAbsent: onlyAbsent },
             success: function (data) {
                 grid.dataSource = data.data;
                 grid.hideSpinner();
@@ -657,17 +1097,56 @@
     }
 
     function validateAttdReportForm(event) {
-        var fromDate = $("#dtFrom").val();
-        var toDate = $("#dtTo").val();
+        var isPredefined = $('#chkFxRngFltr').is(':checked');
+        var dtFromElem = document.getElementById("dtFrom");
+        var dtToElem = document.getElementById("dtTo");
 
-        if (fromDate.length == 0 || toDate.length == 0) {
-            toastObj.show(toasts[0]);
-            if (event) event.preventDefault();
+        if (isPredefined) {
+            var valdrpRngs = parseInt($("#drpRngs").val()) || 1;
+            $("#valFxRngFilter").val(valdrpRngs);
+
+            var toD = new Date();
+            toD.setDate(toD.getDate() - 1);
+            var fromD = new Date();
+            fromD.setDate(fromD.getDate() - valdrpRngs);
+
+            var formatD = function (d) {
+                var m = '' + (d.getMonth() + 1);
+                var day = '' + d.getDate();
+                var y = d.getFullYear();
+                if (m.length < 2) m = '0' + m;
+                if (day.length < 2) day = '0' + day;
+                return [y, m, day].join('-');
+            };
+
+            if (dtFromElem) dtFromElem.value = formatD(fromD);
+            if (dtToElem) dtToElem.value = formatD(toD);
+        } else {
+            $("#valFxRngFilter").val(0);
+            var fromDate = $("#dtFrom").val();
+            var toDate = $("#dtTo").val();
+
+            if (!fromDate || !toDate) {
+                if (window.toastObj && window.toasts) toastObj.show(toasts[0]);
+                else alert("Please choose the Date Range.");
+                if (event) event.preventDefault();
+                return false;
+            } else if (fromDate > toDate) {
+                if (window.toastObj && window.toasts) toastObj.show(toasts[3]);
+                else alert("From Date cannot be later than To Date.");
+                if (event) event.preventDefault();
+                return false;
+            }
         }
-        else if (fromDate > toDate) {
-            toastObj.show(toasts[3]);
-            if (event) event.preventDefault();
-        }
+
+        // Enable inputs before submission so their values are sent in POST
+        if (dtFromElem) dtFromElem.disabled = false;
+        if (dtToElem) dtToElem.disabled = false;
+
+        var isAbsentChecked = $('#chkAbsentOnly').is(':checked');
+        $('#prmAbsentOnly').val(isAbsentChecked);
+
+        return true;
     }
 
     function toolbarClick(args) {
@@ -678,8 +1157,8 @@
     }
 
     function excelQueryCellInfo(args) {
-        if (args.column.headerText === 'Status' && (args.value === "Late IN" || args.value === "Late IN/Early Leave")) {
-            args.style = { fontColor: '#ff4d4d' };
+        if (args.column.headerText === 'Status' && args.value && args.value.toString().includes("Absent")) {
+            args.style = { fontColor: '#dc2626' };
         }
     }
 
@@ -724,7 +1203,7 @@
 
     function mrkLteCmrs(args) {
         if (args.column.field === 'Status') {
-            if (args.data.Status && args.data.Status.includes("Late IN")) {
+            if (args.data.Status && args.data.Status.includes("Absent")) {
                 args.cell.setAttribute('style', 'background-color:#fee2e2;color:#991b1b;font-weight:600;');
             }
         }

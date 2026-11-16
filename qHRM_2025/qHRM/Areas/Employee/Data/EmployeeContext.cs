@@ -728,9 +728,11 @@ namespace qHRM.Areas.Employee.Data
             PayrollContext payrollContext = new PayrollContext(_hrmContext);
 
             var lstSlryPrcHdr = payrollContext.GetLstSlryPrcHdr(entId);
-            var curSlryMnt = new DateTime(lstSlryPrcHdr.EftYear, lstSlryPrcHdr.EftMonth, 01);
+            var curSlryMnt = lstSlryPrcHdr != null
+                ? new DateTime(lstSlryPrcHdr.EftYear, lstSlryPrcHdr.EftMonth, 01)
+                : new DateTime(curDate.Year, curDate.Month, 01);
 
-            if (lstSlryPrcHdr.PrcStat == 3)
+            if (lstSlryPrcHdr != null && lstSlryPrcHdr.PrcStat == 3)
             {
                 curSlryMnt = curSlryMnt.AddMonths(1);
             }
@@ -743,7 +745,7 @@ namespace qHRM.Areas.Employee.Data
                                 .Select(x => new EmpSimpleView1
                                 {
                                     EmpSysId = x.p.emp.EmpSysId,
-                                    EmpDesc = x.p.emp.FirstName + "" + (x.p.emp.MdlName == null ? "" : " " + x.p.emp.MdlName) + " " + x.p.emp.LastName
+                                    EmpDesc = x.p.emp.EmpId + " - " + x.p.emp.FirstName + (x.p.emp.MdlName == null ? "" : " " + x.p.emp.MdlName) + " " + x.p.emp.LastName
                                 }).ToList().OrderBy(n => n.EmpDesc);
         }
 

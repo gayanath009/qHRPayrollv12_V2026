@@ -6,7 +6,7 @@
 
     int selectedYear = ViewBag.Year ?? DateTime.Now.Year;
     int selectedMonth = ViewBag.Month ?? DateTime.Now.Month;
-    string selectedCat = ViewBag.StaffCat ?? "OUTSOURCE";
+    string selectedCat = ViewBag.StaffCat ?? "ALL";
     bool isLoaded = ViewBag.IsLoaded ?? false;
 
     var internalStaff = Model?.Where(x => x.StaffCategory == "INTERNAL").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
@@ -578,9 +578,9 @@
             <div class="ctrl-group">
                 <label class="ctrl-label">Employee Category</label>
                 <select id="selCategory" class="ctrl-select">
+                    <option value="ALL" selected="@(selectedCat == "ALL" ? "selected" : null)">All Staff</option>
                     <option value="OUTSOURCE" selected="@(selectedCat == "OUTSOURCE" ? "selected" : null)">Outsource Staff Only</option>
                     <option value="INTERNAL" selected="@(selectedCat == "INTERNAL" ? "selected" : null)">In-House Staff Only</option>
-                    <option value="ALL" selected="@(selectedCat == "ALL" ? "selected" : null)">All Staff</option>
                 </select>
             </div>
 
@@ -1099,4 +1099,16 @@
             }
         });
     }
+
+    $('#btnGenerateWps').on('click', function (e) {
+        if ($(this).attr('disabled')) {
+            e.preventDefault();
+            return false;
+        }
+        var y = $('#selYear').val() || '@selectedYear';
+        var m = $('#selMonth').val() || '@selectedMonth';
+        var cat = $('#selCategory').val() || '@selectedCat';
+        window.location.href = '/Payroll/HrPrStaffLvTktEncash/GenerateWps?year=' + y + '&month=' + m + '&staffCat=' + cat;
+        e.preventDefault();
+    });
 </script>

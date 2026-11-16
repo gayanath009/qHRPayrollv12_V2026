@@ -16,8 +16,8 @@ namespace qHRM.Areas.Payroll.Models
         [Required(ErrorMessage = "Select Leave Type")]
         public int LvTypId { get; set; }
 
-        [Display(Name = "Employee (Outsource)")]
-        [Required(ErrorMessage = "Select an Outsourced Employee")]
+        [Display(Name = "Employee")]
+        [Required(ErrorMessage = "Select an Employee")]
         public int EmpSysId { get; set; }
 
         [Display(Name = "Transaction Date")]

@@ -23,6 +23,7 @@
                     <option value="Leave Approval">Leave Approval</option>
                     <option value="Salary Process">Salary Process</option>
                     <option value="Leave Salary & Air Ticket Encashment">Leave Salary & Air Ticket Encashment</option>
+                    <option value="Regularization">Regularization</option>
                 </select>
             </div>
 
@@ -146,6 +147,63 @@
                     <small class="text-muted">Select employee assigned to provide final sign-off</small>
                 </div>
             </div>
+
+            <!-- REGULARIZATION APPROVERS (2 STEPS) -->
+            <div id="secRegularizationApprovers" style="display:none;">
+                <h6 class="text-muted font-weight-bold mb-3" style="color:#540033!important;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                    <i class="fas fa-users-cog"></i> Designated Approvers (Regularization)
+                </h6>
+                <small class="text-muted d-block mb-3">
+                    Step 1 routes to the employee's direct Reporting Manager based on the managerial hierarchy.
+                </small>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 1 - Reporting Manager</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="Dynamic (Employee Reporting Manager Hierarchy)" readonly />
+                    <small class="text-muted">Auto-resolved from HR Job Assignment (Rpt_Mng_Id)</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 2 - Final Approver HR</label>
+                    <select asp-for="FinalApproverEmpId" id="drpRegFinalApprover" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinalApproverEmpId ?? 6))">
+                    </select>
+                    <small class="text-muted">Default: Kaushalya Fonseka (HR Manager)</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- REGULARIZATION POLICY RULES -->
+    <div id="secRegularizationPolicies" style="display:none;">
+        <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
+        <h6 class="font-weight-bold mb-3" style="color:#540033;">
+            <i class="fas fa-calendar-check"></i> Regularization Policy Rules
+        </h6>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Maximum Allowed Window (Days)</label>
+                    <input asp-for="MaxDaysAllowed" type="number" min="1" max="90" class="form-control form-control-sm" value="14" />
+                    <small class="text-muted">Configurable regularization request window (Default: 14 days / 2 weeks)</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group pt-4">
+                    <div class="custom-control custom-checkbox">
+                        <input asp-for="AllowFutureDates" type="checkbox" class="custom-control-input" id="chkRegFutureDates" />
+                        <label class="custom-control-label font-weight-bold" for="chkRegFutureDates">Allow Future Dates</label>
+                    </div>
+                    <small class="text-muted">Leave unchecked to strictly disallow future dates</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Working Days Allowed</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="Sunday - Thursday" readonly />
+                    <small class="text-muted">Weekends (Fri & Sat) are disabled</small>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -203,6 +261,30 @@
                     <input asp-for="GenderRequired" class="form-control form-control-sm" placeholder="F" maxlength="1" />
                 </div>
             </div>
+
+            <!-- REGULARIZATION APPROVERS (2 STEPS) -->
+            <div id="secRegularizationApprovers" style="display:none;">
+                <h6 class="text-muted font-weight-bold mb-3" style="color:#540033!important;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                    <i class="fas fa-users-cog"></i> Designated Approvers (Regularization)
+                </h6>
+                <small class="text-muted d-block mb-3">
+                    Step 1 routes to the employee's direct Reporting Manager based on the managerial hierarchy.
+                </small>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 1 - Reporting Manager</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="Dynamic (Employee Reporting Manager Hierarchy)" readonly />
+                    <small class="text-muted">Auto-resolved from HR Job Assignment (Rpt_Mng_Id)</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 2 - Final Approver HR</label>
+                    <select asp-for="FinalApproverEmpId" id="drpRegFinalApprover" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinalApproverEmpId ?? 6))">
+                    </select>
+                    <small class="text-muted">Default: Kaushalya Fonseka (HR Manager)</small>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -237,10 +319,24 @@
                 $('#secLeaveApprovers').show();
                 $('#secPolicyRules').show();
                 $('#secPayrollApprovers').hide();
+                $('#secRegularizationApprovers').hide();
+                $('#secRegularizationPolicies').hide();
+            } else if (wfType === 'Regularization') {
+                $('#grpCreateLvTyp').hide();
+                $('#secLeaveApprovers').hide();
+                $('#secPolicyRules').hide();
+                $('#secPayrollApprovers').hide();
+                $('#secRegularizationApprovers').show();
+                $('#secRegularizationPolicies').show();
+                if (!$('#txtCreateWfCode').val()) {
+                    $('#txtCreateWfCode').val('ATN_REGULARIZATION');
+                }
             } else {
                 $('#grpCreateLvTyp').hide();
                 $('#secLeaveApprovers').hide();
                 $('#secPolicyRules').hide();
+                $('#secRegularizationApprovers').hide();
+                $('#secRegularizationPolicies').hide();
                 $('#secPayrollApprovers').show();
                 if (wfType === 'Salary Process' && !$('#txtCreateWfCode').val()) {
                     $('#txtCreateWfCode').val('SALARY_PROCESS');

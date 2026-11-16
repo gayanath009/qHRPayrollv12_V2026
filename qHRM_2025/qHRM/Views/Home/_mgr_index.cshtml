@@ -13,6 +13,11 @@
         usrImage = @HttpContextAccessor.HttpContext.Session.GetString("userPhoto");
     else
         usrImage = "user.png";
+
+    var initAttn = ViewBag.InitAttendanceCycleSummary as qHRM.Areas.Attendance.Data.AttnContext.EmpAttendanceSummaryDto;
+    string defCycleFrom = ViewBag.DefCycleStart as string ?? (DateTime.Today.Day >= 21 ? new DateTime(DateTime.Today.Year, DateTime.Today.Month, 21).ToString("yyyy-MM-dd") : new DateTime(DateTime.Today.Year, DateTime.Today.Month, 21).AddMonths(-1).ToString("yyyy-MM-dd"));
+    string defCycleTo = ViewBag.DefCycleEnd as string ?? DateTime.Parse(defCycleFrom).AddMonths(1).AddDays(-1).ToString("yyyy-MM-dd");
+    int selectedEmpSysId = ViewBag.SelectedEmpSysId as int? ?? empSysId ?? 0;
 }
 
 <style>
@@ -113,48 +118,126 @@
         text-decoration: none;
     }
 
-    /* Attendance History Table Styling (matching screenshot) */
-    #tbl7DaysAttendance thead th {
+    /* Cycle Control Buttons */
+    .btn-cycle-nav {
+        border: 1.5px solid #6b1442;
+        background: #ffffff;
+        color: #4b1130;
+        border-radius: 20px;
+        padding: 0.28rem 0.95rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-cycle-nav:hover {
+        background: #fdf2f8;
+        color: #540033;
+        border-color: #540033;
+    }
+    .btn-cycle-current {
+        border: 1.5px solid #540033;
+        background: #ffffff;
+        color: #540033;
+        border-radius: 20px;
+        padding: 0.28rem 1.1rem;
+        font-size: 0.8rem;
+        font-weight: 700;
+        transition: all 0.2s ease-in-out;
+    }
+    .btn-cycle-current:hover, .btn-cycle-current.active {
+        background: #540033;
+        color: #ffffff !important;
+    }
+
+    /* Filter Pills */
+    .attn-pills .nav-link {
+        font-size: 0.85rem;
+        font-weight: 700;
+        padding: 0.45rem 1.1rem;
+        border-radius: 8px;
+        color: #540033;
+        background-color: transparent;
+        border: 1px solid transparent;
+        margin-right: 0.5rem;
+        transition: all 0.2s ease-in-out;
+    }
+    .attn-pills .nav-link.active {
         background-color: #540033 !important;
         color: #ffffff !important;
-        font-weight: 700;
+        box-shadow: 0 2px 8px rgba(84, 0, 51, 0.3);
+    }
+    .attn-pills .nav-link:hover:not(.active) {
+        background-color: #fdf2f8;
+        color: #540033;
+    }
+
+    /* Scrollable Attendance Container & Table */
+    .scrollable-attn-body {
+        max-height: 440px;
+        overflow-y: auto;
+    }
+    .dashboard-table thead th {
+        background-color: #540033 !important;
+        color: #ffffff !important;
         font-size: 0.76rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
-        border-color: #540033 !important;
+        border: none;
+        padding: 0.75rem 0.85rem;
         vertical-align: middle;
-        padding: 8px 10px;
     }
-    #tbl7DaysAttendance tbody td {
+    .scrollable-attn-body table.dashboard-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+    }
+    .dashboard-table tbody td {
         vertical-align: middle;
-        padding: 7px 10px;
-        border-top: 1px solid #f1f5f9;
+        padding: 0.75rem 0.85rem;
+        border-top: 1px solid #edf0f5;
+        font-size: 0.87rem;
     }
-    #tbl7DaysAttendance .badge {
+    .dashboard-table tbody tr:hover {
+        background-color: #fbfcfe;
+    }
+
+    /* KPI Mini Cards */
+    .stat-kpi-card {
+        background: #ffffff;
+        border: 1px solid #edf2f7;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .stat-kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    }
+    .stat-kpi-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.15rem;
+        margin-right: 0.85rem;
+    }
+    .stat-kpi-value {
+        font-size: 1.25rem;
+        font-weight: 700;
+        line-height: 1.1;
+        color: #1e293b;
+    }
+    .stat-kpi-label {
         font-size: 0.74rem;
         font-weight: 600;
-        padding: 3px 10px;
-        border-radius: 12px;
-    }
-    #tbl7DaysAttendance .badge-danger {
-        background-color: #ef4444 !important;
-        color: #ffffff !important;
-    }
-    #tbl7DaysAttendance .badge-secondary {
-        background-color: #cbd5e1 !important;
-        color: #334155 !important;
-    }
-    #tbl7DaysAttendance .badge-success {
-        background-color: #22c55e !important;
-        color: #ffffff !important;
-    }
-    #tbl7DaysAttendance .badge-info {
-        background-color: #38bdf8 !important;
-        color: #ffffff !important;
-    }
-    #tbl7DaysAttendance .badge-warning {
-        background-color: #f59e0b !important;
-        color: #ffffff !important;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
     }
 
     /* Team Metric Mini Cards */
@@ -314,22 +397,33 @@
                             </div>
                         </div> *@
 
-                        <!-- Card 4: Last Week Staff Attendance -->
+                        <!-- Card 4: Regularization Pending Approvals -->
                         <div class="col-12 col-sm-6 col-md-4 col-lg mb-3">
-                            <div class="hr-compact-card hr-card-accent-purple">
-                                <div class="hr-card-header" title="Last Week Staff Attendance">
-                                    <i class="fas fa-calendar-week mr-1" style="color: #7c3aed;"></i> Week Attendance
+                            <div class="hr-compact-card hr-card-accent-purple" style="cursor: pointer;" onclick="window.location.href='/Attendance/HrEmpAttendExp?tab=approvals'">
+                                <div class="hr-card-header" title="Pending Regularization Approvals">
+                                    <i class="fas fa-business-time mr-1" style="color: #7c3aed;"></i> Regularization Approvals
                                 </div>
                                 <div class="hr-card-body">
                                     <div class="hr-icon-badge" style="background: #f5f3ff; color: #7c3aed;">
-                                        <i class="fas fa-chart-line"></i>
+                                        <i class="fas fa-user-check"></i>
                                     </div>
-                                    <span class="badge badge-light border text-muted small mt-1">Company Trends</span>
+                                    @if ((ViewBag.PendingRegCount ?? 0) > 0)
+                                    {
+                                        <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 badge-pulse" style="font-size: 0.78rem;">
+                                            <i class="fas fa-exclamation-circle mr-1"></i>@ViewBag.PendingRegCount Pending
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-light border text-muted px-2 py-1" style="font-size: 0.78rem;">
+                                            0 Pending
+                                        </span>
+                                    }
                                 </div>
                                 <div class="hr-card-footer d-flex justify-content-center">
-                                    <button class="btn-brand-maroon-sm px-3 py-1" data-toggle="modal" data-target="#modalChtDlyAtndSmry" style="font-size: 0.76rem;" onclick="hideDlyAttd()">
-                                        <i class="fas fa-chart-line mr-1"></i>View Stats
-                                    </button>
+                                    <a href="/Attendance/HrEmpAttendExp?tab=approvals" class="btn-brand-maroon-sm px-3 py-1" style="font-size: 0.76rem;" onclick="event.stopPropagation();">
+                                        <i class="fas fa-check-circle mr-1"></i>Review
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -443,113 +537,236 @@
                         </div>
                     </div>
 
-                    <!-- Section 3: Attendance History: Last 7 Days (Hierarchy Driven) -->
-                    <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;">
-                        <div class="card-header bg-white py-3 d-flex flex-wrap align-items-center justify-content-between" style="border-bottom: 1px solid #f1f5f9; border-top-left-radius: 12px; border-top-right-radius: 12px;">
-                            <div class="d-flex align-items-center mb-2 mb-md-0">
-                                <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #ede9fe; color: #7c3aed; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
-                                    <i class="fas fa-user-clock"></i>
+                    <!-- Section 3: Attendance & Cycle Review (Hierarchy Driven) -->
+                    <div class="card shadow-sm mb-4" style="border: 1px solid #e2e8f0; border-radius: 12px;" id="secAttendanceReview">
+                        <div class="card-header bg-white py-3">
+                            <div class="d-flex flex-wrap align-items-center justify-content-between">
+                                <!-- Left: Title & Selected Cycle -->
+                                <div class="d-flex align-items-center mb-2 mb-xl-0">
+                                    <div class="mr-2" style="width: 36px; height: 36px; border-radius: 8px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center; font-size: 1.05rem;">
+                                        <i class="fas fa-calendar-check"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
+                                            Attendance &amp; Cycle Review
+                                            <span class="badge badge-light border text-muted ml-1" style="font-size: 0.72rem; font-weight: 600;">Cycle: 21st – 20th</span>
+                                        </h6>
+                                        <small class="text-muted" id="cycleRangeLabel">
+                                            Current cycle: <strong>@DateTime.Parse(defCycleFrom).ToString("dd MMM yyyy") – @DateTime.Parse(defCycleTo).ToString("dd MMM yyyy")</strong>
+                                        </small>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h6 class="m-0 font-weight-bold" style="color: #1e293b; font-size: 0.95rem;">
-                                        Attendance History <span class="badge badge-light border text-muted ml-1" style="font-size: 0.75rem; font-weight: 500;">Last 7 Days</span>
-                                    </h6>
-                                    <small class="text-muted" id="lblAttnDateRange">
-                                        @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).DateRangeText : "Recent 7 Days")
-                                    </small>
+
+                                <!-- Right: Subordinate Employee Filter, Cycle Navigation, Date Range, & Regularization -->
+                                <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                                    <!-- Employee Selector (Hierarchy Subordinates) -->
+                                    <div class="d-inline-flex align-items-center bg-light p-1 rounded border">
+                                        <span class="small font-weight-bold text-muted px-1"><i class="fas fa-sitemap mr-1"></i>Employee:</span>
+                                        <select id="ddlAttnEmp" class="form-control form-control-sm border-0 bg-white" style="min-width: 240px; max-width: 340px; border-radius: 6px; font-weight: 600; color: #334155;" onchange="onAttnEmpChange();">
+                                            @if (ViewBag.lstHierarchyEmployees != null)
+                                            {
+                                                foreach (var emp in (IEnumerable<HrEmpGen>)ViewBag.lstHierarchyEmployees)
+                                                {
+                                                    <option value="@emp.ESysId" selected="@(emp.ESysId == selectedEmpSysId ? "selected" : null)">@emp.FulNme</option>
+                                                }
+                                            }
+                                        </select>
+                                    </div>
+
+                                    <!-- Quick Cycle Navigation Buttons -->
+                                    <div class="btn-group mr-2" role="group">
+                                        <button type="button" class="btn btn-sm btn-cycle-nav" onclick="changeCycleOffset(-1);">
+                                            <i class="fas fa-chevron-left mr-1"></i> Prev Cycle
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-cycle-current active" id="btnCurrentCycle" onclick="changeCycleOffset(0);">
+                                            Current Cycle
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-cycle-nav" onclick="changeCycleOffset(1);">
+                                            Next Cycle <i class="fas fa-chevron-right ml-1"></i>
+                                        </button>
+                                    </div>
+
+                                    <!-- Date Range Inputs -->
+                                    <div class="d-inline-flex align-items-center mr-2 bg-light p-1 rounded border">
+                                        <span class="small font-weight-bold text-muted px-1">From:</span>
+                                        <input type="date" id="attnFromDate" class="form-control form-control-sm border-0 bg-white" style="width: 135px; border-radius: 6px; font-weight: 600;" value="@defCycleFrom" />
+                                        <span class="small font-weight-bold text-muted px-1">To:</span>
+                                        <input type="date" id="attnToDate" class="form-control form-control-sm border-0 bg-white" style="width: 135px; border-radius: 6px; font-weight: 600;" value="@defCycleTo" />
+                                        <button class="btn btn-sm btn-primary ml-1" style="border-radius: 6px; padding: 2px 10px; font-size: 0.78rem;" onclick="applyCustomDateRange();" title="Apply Custom Dates">
+                                            <i class="fas fa-filter"></i> Apply
+                                        </button>
+                                    </div>
+
+                                    <!-- Direct Regularization Link -->
+                                    <a href="/Attendance/HrEmpAttendExp" class="btn-brand-maroon-sm" title="Apply for Attendance Regularization">
+                                        <i class="fas fa-business-time mr-1"></i> Apply Regularization
+                                    </a>
                                 </div>
-                            </div>
-                            <div class="d-flex align-items-center flex-wrap">
-                                <label class="mr-2 mb-0 small font-weight-bold text-muted"><i class="fas fa-sitemap mr-1"></i>Employee:</label>
-                                <select id="ddlHierarchyEmp" class="form-control form-control-sm mr-2" style="min-width: 260px; max-width: 340px; border-radius: 8px; font-weight: 600; color: #334155;" onchange="onHierarchyEmpChange()">
-                                    @if (ViewBag.lstHierarchyEmployees != null)
-                                    {
-                                        foreach (var emp in (IEnumerable<HrEmpGen>)ViewBag.lstHierarchyEmployees)
-                                        {
-                                            <option value="@emp.ESysId" selected="@(emp.ESysId == (int)(ViewBag.LoggedEmpSysId ?? 0) ? "selected" : null)">@emp.FulNme</option>
-                                        }
-                                    }
-                                </select>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="onHierarchyEmpChange()" title="Reload Attendance" style="border-radius: 8px;">
-                                    <i class="fas fa-sync-alt" id="attnRefreshIcon"></i>
-                                </button>
                             </div>
                         </div>
+
                         <div class="card-body p-3">
-                            <!-- 4 KPI Summary Pills -->
-                            <div class="row mb-3">
-                                <div class="col-6 col-md-3 mb-2 mb-md-0">
-                                    <div class="p-2 text-center rounded border" style="background: #f0fdf4;">
-                                        <span class="text-muted small d-block">Present Days</span>
-                                        <span id="kpiAttnPresent" class="font-weight-bold text-success h5 mb-0">
-                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).PresentDays : 0)
-                                        </span>
+                            <!-- KPI Statistics Row (4 Cards) -->
+                            <div class="row justify-content-center mb-3" id="attnKpiRow">
+                                <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2">
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: #ecfdf5; color: #10b981;">
+                                            <i class="fas fa-user-check"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-kpi-value text-success" id="kpiPresent">@(initAttn?.Last7PresentDays ?? 0)</div>
+                                            <div class="stat-kpi-label">Present Days</div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-6 col-md-3 mb-2 mb-md-0">
-                                    <div class="p-2 text-center rounded border" style="background: #fef2f2;">
-                                        <span class="text-muted small d-block">Absent Days</span>
-                                        <span id="kpiAttnAbsent" class="font-weight-bold text-danger h5 mb-0">
-                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).AbsentDays : 0)
-                                        </span>
+                                <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2">
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: #fef2f2; color: #ef4444;">
+                                            <i class="fas fa-user-times"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-kpi-value text-danger" id="kpiAbsent">@(initAttn?.Last7AbsentDays ?? 0)</div>
+                                            <div class="stat-kpi-label">Absent Days</div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-6 col-md-3 mb-2 mb-md-0">
-                                    <div class="p-2 text-center rounded border" style="background: #fffbeb;">
-                                        <span class="text-muted small d-block">Late Arrivals</span>
-                                        <span id="kpiAttnLate" class="font-weight-bold text-warning h5 mb-0">
-                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).LateCount : 0)
-                                        </span>
+                                <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2">
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: #fffbeb; color: #f59e0b;">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-kpi-value text-warning" id="kpiLate">@(initAttn?.Last7LateCount ?? 0)</div>
+                                            <div class="stat-kpi-label">Late Arrivals</div>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-6 col-md-3 mb-2 mb-md-0">
-                                    <div class="p-2 text-center rounded border" style="background: #eff6ff;">
-                                        <span class="text-muted small d-block">Total Work Hours</span>
-                                        <span id="kpiAttnHours" class="font-weight-bold text-primary h5 mb-0">
-                                            @(ViewBag.InitAttendanceSummary != null ? ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).TotalWorkHoursFormatted : "0h 00m")
-                                        </span>
+                                <div class="col-6 col-sm-6 col-md-3 col-lg-3 mb-2">
+                                    <div class="stat-kpi-card">
+                                        <div class="stat-kpi-icon" style="background: #eff6ff; color: #3b82f6;">
+                                            <i class="fas fa-file-signature"></i>
+                                        </div>
+                                        <div>
+                                            <div class="stat-kpi-value text-primary" id="kpiRegularized">@(initAttn?.Last7RegularizedCount ?? 0)</div>
+                                            <div class="stat-kpi-label">Regularized</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- 7-Day Attendance Table -->
-                            <div class="table-responsive">
-                                <table class="table table-sm table-hover table-striped mb-0 text-center" style="font-size: 0.85rem;" id="tbl7DaysAttendance">
+                            <!-- View Mode Filter Bar (Last 7 Days vs Full Cycle) -->
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <ul class="nav nav-pills attn-pills" id="attnViewModePills">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="btnModeLast7" href="javascript:void(0);" onclick="toggleAttnViewMode('last7');">
+                                            <i class="fas fa-calendar-week mr-1"></i> Last 7 Days
+                                        </a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="btnModeFull" href="javascript:void(0);" onclick="toggleAttnViewMode('full');">
+                                            <i class="fas fa-list-ul mr-1"></i> Full Cycle (Scrollable)
+                                        </a>
+                                    </li>
+                                </ul>
+                                <div class="small text-muted font-italic" id="attnScrollNotice">
+                                    <i class="fas fa-arrows-alt-v mr-1"></i> Showing last 7 days of cycle. Switch to "Full Cycle" or scroll to explore all cycle dates.
+                                </div>
+                            </div>
+
+                            <!-- Scrollable Attendance Table -->
+                            <div class="table-responsive rounded border bg-white scrollable-attn-body" id="attnTableContainer">
+                                <table class="table dashboard-table mb-0 text-center" id="tblAttendanceCycle">
                                     <thead>
                                         <tr>
-                                            <th class="text-left pl-3">Day & Date</th>
-                                            <th>Check-In</th>
-                                            <th>Check-Out</th>
-                                            <th>Working Hours</th>
-                                            <th>Late (Mins)</th>
-                                            <th>Early Leave (Mins)</th>
-                                            <th>OT (Mins)</th>
-                                            <th>Status</th>
+                                            <th class="text-left pl-3" style="width: 20%;">DATE &amp; DAY</th>
+                                            <th style="width: 12%;">CHECK IN</th>
+                                            <th style="width: 12%;">CHECK OUT</th>
+                                            <th style="width: 14%;">WORK DURATION</th>
+                                            <th style="width: 14%;">STATUS</th>
+                                            <th style="width: 14%;">NOTE</th>
+                                            <th style="width: 14%;">ACTION</th>
                                         </tr>
                                     </thead>
-                                    <tbody id="tbody7DaysAttendance">
-                                        @if (ViewBag.InitAttendanceSummary != null && ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days != null)
+                                    <tbody id="tblAttendanceCycleBody">
+                                        @if (initAttn != null && initAttn.Days != null && initAttn.Days.Any())
                                         {
-                                            foreach (var day in ((EmpAttendanceSummaryDto)ViewBag.InitAttendanceSummary).Days)
+                                            int dayIdx = 0;
+                                            foreach (var day in initAttn.Days)
                                             {
-                                                <tr>
+                                                dayIdx++;
+                                                string rowClass = dayIdx > 7 ? "cycle-past-row d-none" : "cycle-past-row";
+                                                <tr class="@rowClass">
                                                     <td class="text-left pl-3 font-weight-bold text-dark">
-                                                        <span class="text-muted mr-1">@day.DayName,</span> @day.DateFormatted
+                                                        @day.DateFormatted
+                                                        <span class="badge badge-light border text-muted ml-1" style="font-size: 0.72rem;">@day.DayName</span>
                                                     </td>
-                                                    <td>@(day.InTime != "--" ? day.InTime : "-")</td>
-                                                    <td>@(day.OutTime != "--" ? day.OutTime : "-")</td>
-                                                    <td><span class="badge badge-light border">@day.WorkHours</span></td>
-                                                    <td>@(day.LateMinutes > 0 ? Html.Raw("<span class='text-warning font-weight-bold'>" + day.LateMinutes + "</span>") : Html.Raw("<span class='text-danger' style='font-weight:600;'>-</span>"))</td>
-                                                    <td>@(day.EarlyLeaveMinutes > 0 ? Html.Raw("<span class='text-danger font-weight-bold'>" + day.EarlyLeaveMinutes + "</span>") : Html.Raw("<span class='text-danger' style='font-weight:600;'>-</span>"))</td>
-                                                    <td>@(day.OtMinutes > 0 ? Html.Raw("<span class='text-success font-weight-bold'>" + day.OtMinutes + "</span>") : Html.Raw("<span class='text-danger' style='font-weight:600;'>-</span>"))</td>
-                                                    <td><span class="badge @day.StatusClass px-2 py-1">@day.Status</span></td>
+                                                    <td>
+                                                        <span class="font-weight-bold @(day.InTime != "--" ? "text-dark" : "text-muted")">@day.InTime</span>
+                                                    </td>
+                                                    <td>
+                                                        <span class="font-weight-bold @(day.OutTime != "--" ? "text-dark" : "text-muted")">@day.OutTime</span>
+                                                    </td>
+                                                    <td class="font-weight-bold text-dark">
+                                                        @day.WorkHours
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge @day.StatusClass" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 700; border-radius: 12px;">
+                                                            @day.Status
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-muted small" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="@day.Note">
+                                                        @(string.IsNullOrEmpty(day.Note) ? "--" : day.Note)
+                                                    </td>
+                                                    <td>
+                                                        @if (day.HasRegularization)
+                                                        {
+                                                            if (string.Equals(day.RegularizationStatus, "Approved", StringComparison.OrdinalIgnoreCase))
+                                                            {
+                                                                <span class="badge badge-light text-success border" style="font-size: 0.74rem;">
+                                                                    <i class="fas fa-check-circle mr-1"></i>Approved
+                                                                </span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="badge badge-light text-warning border" style="font-size: 0.74rem;">
+                                                                    <i class="fas fa-hourglass-half mr-1"></i>Pending
+                                                                </span>
+                                                            }
+                                                        }
+                                                        else if (day.Date == DateTime.Today)
+                                                        {
+                                                            <button type="button" class="btn btn-xs btn-outline-secondary" disabled style="border-radius: 12px; font-size: 0.75rem; padding: 2px 10px; opacity: 0.5; cursor: not-allowed;" title="Regularization not allowed for today">
+                                                                <i class="fas fa-business-time mr-1"></i>Regularize
+                                                            </button>
+                                                        }
+                                                        else if (day.Date.DayOfWeek == DayOfWeek.Friday || day.Date.DayOfWeek == DayOfWeek.Saturday || string.Equals(day.Status, "Weekend", StringComparison.OrdinalIgnoreCase) || string.Equals(day.Status, "Off Day", StringComparison.OrdinalIgnoreCase) || day.IsWeekend)
+                                                        {
+                                                            <a href="/Attendance/HrEmpAttendExp" class="text-muted" style="font-size: 0.76rem;" title="View in Regularization Hub">
+                                                                <i class="fas fa-external-link-alt"></i>
+                                                            </a>
+                                                        }
+                                                        else if (day.Date < DateTime.Today && (day.Status == "Absent" || day.LateMinutes > 0 || day.InTime == "--" || day.OutTime == "--"))
+                                                        {
+                                                            <a href="/Attendance/HrEmpAttendExp" class="btn btn-xs btn-outline-primary" style="border-radius: 12px; font-size: 0.75rem; padding: 2px 10px; font-weight: 600;" title="Apply Regularization for this date">
+                                                                <i class="fas fa-business-time mr-1"></i>Regularize
+                                                            </a>
+                                                        }
+                                                        else
+                                                        {
+                                                            <a href="/Attendance/HrEmpAttendExp" class="text-muted" style="font-size: 0.76rem;" title="View in Regularization Hub">
+                                                                <i class="fas fa-external-link-alt"></i>
+                                                            </a>
+                                                        }
+                                                    </td>
                                                 </tr>
                                             }
                                         }
                                         else
                                         {
                                             <tr>
-                                                <td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td>
+                                                <td colspan="7" class="text-center py-4 text-muted">
+                                                    <i class="fas fa-spinner fa-spin mr-1"></i> Loading employee cycle attendance...
+                                                </td>
                                             </tr>
                                         }
                                     </tbody>
@@ -870,58 +1087,247 @@
 
 <!-- ==================== JAVASCRIPT ==================== -->
 <script>
-    // --- 7-Day Attendance Hierarchy Switcher ---
-    function onHierarchyEmpChange() {
-        var empSysId = $("#ddlHierarchyEmp").val();
-        load7DaysAttendance(empSysId);
+    // =========================================================================
+    // ATTENDANCE & CYCLE REVIEW MANAGEMENT (MANAGER & SUBORDINATES)
+    // =========================================================================
+    var currentCycleOffset = 0;
+    var currentViewMode = 'last7';
+    var cachedAttendanceDays = @Html.Raw(initAttn != null && initAttn.Days != null ? Newtonsoft.Json.JsonConvert.SerializeObject(initAttn.Days) : "[]");
+    var cachedAttendanceSummary = @Html.Raw(initAttn != null ? Newtonsoft.Json.JsonConvert.SerializeObject(initAttn) : "null");
+
+    $(document).ready(function () {
+        if ($("#tblAttendanceCycleBody tr").length <= 1 && $("#tblAttendanceCycleBody").text().indexOf("Loading") >= 0) {
+            loadAttendanceCycleData();
+        }
+    });
+
+    function onAttnEmpChange() {
+        loadAttendanceCycleData();
     }
 
-    function load7DaysAttendance(empSysId) {
-        $("#attnRefreshIcon").addClass("fa-spin");
+    function changeCycleOffset(offsetChange) {
+        if (offsetChange === 0) {
+            currentCycleOffset = 0;
+            $("#btnCurrentCycle").addClass("active");
+            $(".btn-cycle-nav").removeClass("active");
+        } else {
+            currentCycleOffset += offsetChange;
+            $("#btnCurrentCycle").removeClass("active");
+            $(".btn-cycle-nav").removeClass("active");
+        }
+        loadAttendanceCycleData();
+    }
+
+    function applyCustomDateRange() {
+        var fromDate = document.getElementById("attnFromDate").value;
+        var toDate = document.getElementById("attnToDate").value;
+        if (!fromDate || !toDate) {
+            alert("Please select both From and To dates.");
+            return;
+        }
+        $(".btn-cycle-nav, .btn-cycle-current").removeClass("active");
+        loadAttendanceCycleData(fromDate, toDate);
+    }
+
+    function toggleAttnViewMode(mode) {
+        currentViewMode = mode;
+        if (mode === 'last7') {
+            $("#btnModeLast7").addClass("active");
+            $("#btnModeFull").removeClass("active");
+            $("#attnScrollNotice").html('<i class="fas fa-calendar-week mr-1"></i> Showing last 7 days of cycle. Switch to "Full Cycle" to view all dates.');
+        } else {
+            $("#btnModeFull").addClass("active");
+            $("#btnModeLast7").removeClass("active");
+            $("#attnScrollNotice").html('<i class="fas fa-arrows-alt-v mr-1"></i> Showing full cycle dates. Scroll up/down to inspect past dates.');
+        }
+        updateAttendanceKpiCards(currentViewMode);
+        renderAttendanceRows(cachedAttendanceDays);
+    }
+
+    function updateAttendanceKpiCards(mode) {
+        var pres = 0, abs = 0, late = 0, reg = 0;
+
+        if (mode === 'last7') {
+            if (cachedAttendanceSummary && (cachedAttendanceSummary.Last7PresentDays !== undefined || cachedAttendanceSummary.last7PresentDays !== undefined)) {
+                pres = (cachedAttendanceSummary.Last7PresentDays !== undefined) ? cachedAttendanceSummary.Last7PresentDays : cachedAttendanceSummary.last7PresentDays;
+                abs = (cachedAttendanceSummary.Last7AbsentDays !== undefined) ? cachedAttendanceSummary.Last7AbsentDays : cachedAttendanceSummary.last7AbsentDays;
+                late = (cachedAttendanceSummary.Last7LateCount !== undefined) ? cachedAttendanceSummary.Last7LateCount : cachedAttendanceSummary.last7LateCount;
+                reg = (cachedAttendanceSummary.Last7RegularizedCount !== undefined) ? cachedAttendanceSummary.Last7RegularizedCount : cachedAttendanceSummary.last7RegularizedCount;
+            } else {
+                var days7 = (cachedAttendanceDays || []).slice(0, 7);
+                for (var i = 0; i < days7.length; i++) {
+                    var d = days7[i];
+                    var dStatus = (d.Status || d.status || '').toLowerCase();
+                    var dRegStatus = (d.RegularizationStatus || d.regularizationStatus || '').toLowerCase();
+                    var dLateMinutes = (d.LateMinutes !== undefined) ? d.LateMinutes : (d.lateMinutes || 0);
+
+                    if (dStatus === 'present' || dStatus === 'regularized' || dStatus === 'checked in') pres++;
+                    if (dStatus.indexOf('absent') >= 0) abs++;
+                    if (dLateMinutes > 0) late++;
+                    if (dStatus === 'regularized' || dRegStatus === 'approved') reg++;
+                }
+            }
+        } else {
+            // Full cycle
+            if (cachedAttendanceSummary && (cachedAttendanceSummary.PresentDays !== undefined || cachedAttendanceSummary.presentDays !== undefined)) {
+                pres = (cachedAttendanceSummary.PresentDays !== undefined) ? cachedAttendanceSummary.PresentDays : cachedAttendanceSummary.presentDays;
+                abs = (cachedAttendanceSummary.AbsentDays !== undefined) ? cachedAttendanceSummary.AbsentDays : cachedAttendanceSummary.absentDays;
+                late = (cachedAttendanceSummary.LateCount !== undefined) ? cachedAttendanceSummary.LateCount : cachedAttendanceSummary.lateCount;
+                reg = (cachedAttendanceSummary.RegularizedCount !== undefined) ? cachedAttendanceSummary.RegularizedCount : cachedAttendanceSummary.regularizedCount;
+            } else {
+                var days = cachedAttendanceDays || [];
+                for (var i = 0; i < days.length; i++) {
+                    var d = days[i];
+                    var dStatus = (d.Status || d.status || '').toLowerCase();
+                    var dRegStatus = (d.RegularizationStatus || d.regularizationStatus || '').toLowerCase();
+                    var dLateMinutes = (d.LateMinutes !== undefined) ? d.LateMinutes : (d.lateMinutes || 0);
+
+                    if (dStatus === 'present' || dStatus === 'regularized' || dStatus === 'checked in') pres++;
+                    if (dStatus.indexOf('absent') >= 0) abs++;
+                    if (dLateMinutes > 0) late++;
+                    if (dStatus === 'regularized' || dRegStatus === 'approved') reg++;
+                }
+            }
+        }
+
+        $("#kpiPresent").text(pres);
+        $("#kpiAbsent").text(abs);
+        $("#kpiLate").text(late);
+        $("#kpiRegularized").text(reg);
+    }
+
+    function loadAttendanceCycleData(customFrom, customTo) {
+        var empEl = document.getElementById("ddlAttnEmp");
+        var targetEmpId = (empEl ? parseInt(empEl.value) : 0) || @selectedEmpSysId;
+        var params = {
+            empSysId: targetEmpId,
+            cycleOffset: currentCycleOffset
+        };
+
+        if (customFrom && customTo) {
+            params.fromDate = customFrom;
+            params.toDate = customTo;
+            params.cycleOffset = null;
+        }
+
+        $("#tblAttendanceCycleBody").html('<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Loading cycle attendance records...</td></tr>');
+
         $.ajax({
             type: "GET",
-            url: '/Home/GetEmployee7DayAttendance',
-            data: { empSysId: empSysId },
+            url: "/Home/GetMyAttendanceCycle",
+            data: params,
             dataType: "json",
             success: function (res) {
-                $("#attnRefreshIcon").removeClass("fa-spin");
-                if (res && res.ok && res.data) {
-                    var d = res.data;
-                    $("#lblAttnDateRange").text(d.dateRangeText || "Recent 7 Days");
-                    $("#kpiAttnPresent").text(d.presentDays);
-                    $("#kpiAttnAbsent").text(d.absentDays);
-                    $("#kpiAttnLate").text(d.lateCount);
-                    $("#kpiAttnHours").text(d.totalWorkHoursFormatted || "0h 00m");
-
-                    var tbody = $("#tbody7DaysAttendance");
-                    tbody.empty();
-                    if (d.days && d.days.length > 0) {
-                        $.each(d.days, function (i, day) {
-                            var lateHtml = day.lateMinutes > 0 ? ('<span class="text-warning font-weight-bold">' + day.lateMinutes + '</span>') : '<span class="text-danger" style="font-weight:600;">-</span>';
-                            var earlyHtml = day.earlyLeaveMinutes > 0 ? ('<span class="text-danger font-weight-bold">' + day.earlyLeaveMinutes + '</span>') : '<span class="text-danger" style="font-weight:600;">-</span>';
-                            var otHtml = day.otMinutes > 0 ? ('<span class="text-success font-weight-bold">' + day.otMinutes + '</span>') : '<span class="text-danger" style="font-weight:600;">-</span>';
-
-                            var row = '<tr>' +
-                                '<td class="text-left pl-3 font-weight-bold text-dark"><span class="text-muted mr-1">' + day.dayName + ',</span> ' + day.dateFormatted + '</td>' +
-                                '<td>' + (day.inTime && day.inTime !== '--' ? day.inTime : '-') + '</td>' +
-                                '<td>' + (day.outTime && day.outTime !== '--' ? day.outTime : '-') + '</td>' +
-                                '<td><span class="badge badge-light border">' + (day.workHours || '--') + '</span></td>' +
-                                '<td>' + lateHtml + '</td>' +
-                                '<td>' + earlyHtml + '</td>' +
-                                '<td>' + otHtml + '</td>' +
-                                '<td><span class="badge ' + (day.statusClass || 'badge-secondary') + ' px-2 py-1">' + (day.status || 'Unknown') + '</span></td>' +
-                                '</tr>';
-                            tbody.append(row);
-                        });
-                    } else {
-                        tbody.append('<tr><td colspan="8" class="text-muted py-3">No attendance records found for this employee.</td></tr>');
+                if (res && (res.ok || res.success) && res.data) {
+                    var summary = res.data;
+                    var fromD = res.fromDate || res.FromDate;
+                    var toD = res.toDate || res.ToDate;
+                    if (fromD && toD) {
+                        document.getElementById("attnFromDate").value = fromD;
+                        document.getElementById("attnToDate").value = toD;
+                        $("#cycleRangeLabel").html('Current cycle: <strong>' + formatDatePretty(fromD) + ' – ' + formatDatePretty(toD) + '</strong>');
                     }
+
+                    cachedAttendanceSummary = summary;
+                    cachedAttendanceDays = summary.Days || summary.days || [];
+                    updateAttendanceKpiCards(currentViewMode);
+                    renderAttendanceRows(cachedAttendanceDays);
+                } else {
+                    $("#tblAttendanceCycleBody").html('<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load attendance records.</td></tr>');
                 }
             },
-            error: function () {
-                $("#attnRefreshIcon").removeClass("fa-spin");
+            error: function (xhr, status, error) {
+                console.warn("Error fetching cycle attendance: " + error);
+                $("#tblAttendanceCycleBody").html('<tr><td colspan="7" class="text-center py-4 text-danger">Error retrieving attendance data.</td></tr>');
             }
         });
+    }
+
+    function renderAttendanceRows(days) {
+        if (!days || days.length === 0) {
+            $("#tblAttendanceCycleBody").html('<tr><td colspan="7" class="text-center py-4 text-muted">No attendance records found for this employee.</td></tr>');
+            return;
+        }
+
+        var html = '';
+        var limit = (currentViewMode === 'last7') ? Math.min(7, days.length) : days.length;
+        var today = new Date();
+        today.setHours(0,0,0,0);
+
+        for (var i = 0; i < limit; i++) {
+            var d = days[i];
+            var dDateStr = d.DateFormatted || d.dateFormatted || '';
+            var dDayName = d.DayName || d.dayName || '';
+            var dIn = d.InTime || d.inTime || '--';
+            var dOut = d.OutTime || d.outTime || '--';
+            var dHours = d.WorkHours || d.workHours || '0h 00m';
+            var dStatus = d.Status || d.status || '--';
+            var dStatusClass = d.StatusClass || d.statusClass || 'badge-light text-muted border';
+            var dNote = d.Note || d.note || '';
+            var dLate = d.LateMinutes || d.lateMinutes || 0;
+            var hasReg = d.HasRegularization || d.hasRegularization || false;
+            var regStat = d.RegularizationStatus || d.regularizationStatus || '';
+
+            var rowDate = d.Date ? new Date(d.Date) : (d.date ? new Date(d.date) : null);
+            var isToday = (d.IsToday !== undefined) ? d.IsToday : ((d.isToday !== undefined) ? d.isToday : false);
+            if (!isToday && rowDate) {
+                var now = new Date();
+                isToday = (rowDate.getFullYear() === now.getFullYear() && rowDate.getMonth() === now.getMonth() && rowDate.getDate() === now.getDate());
+            }
+            var isWeekend = (d.IsWeekend !== undefined) ? d.IsWeekend : ((d.isWeekend !== undefined) ? d.isWeekend : false);
+            if (!isWeekend && rowDate) {
+                var dayOfWeek = rowDate.getDay();
+                isWeekend = (dayOfWeek === 5 || dayOfWeek === 6); // 5 = Friday, 6 = Saturday
+            }
+            if (!isWeekend && (dDayName === 'Fri' || dDayName === 'Sat' || dStatus.toLowerCase() === 'weekend' || dStatus.toLowerCase() === 'off day')) {
+                isWeekend = true;
+            }
+            var isPast = !isToday && rowDate && (rowDate < today);
+
+            var actionHtml = '';
+            if (hasReg) {
+                if ((regStat || '').toLowerCase() === 'approved') {
+                    actionHtml = '<span class="badge badge-light text-success border" style="font-size: 0.74rem;"><i class="fas fa-check-circle mr-1"></i>Approved</span>';
+                } else {
+                    actionHtml = '<span class="badge badge-light text-warning border" style="font-size: 0.74rem;"><i class="fas fa-hourglass-half mr-1"></i>Pending</span>';
+                }
+            } else if (isToday) {
+                actionHtml = '<button type="button" class="btn btn-xs btn-outline-secondary" disabled style="border-radius: 12px; font-size: 0.75rem; padding: 2px 10px; opacity: 0.5; cursor: not-allowed;" title="Regularization not allowed for today"><i class="fas fa-business-time mr-1"></i>Regularize</button>';
+            } else if (isWeekend) {
+                actionHtml = '<a href="/Attendance/HrEmpAttendExp" class="text-muted" style="font-size: 0.76rem;" title="View in Regularization Hub"><i class="fas fa-external-link-alt"></i></a>';
+            } else if (isPast && (dStatus === 'Absent' || dLate > 0 || dIn === '--' || dOut === '--')) {
+                actionHtml = '<a href="/Attendance/HrEmpAttendExp" class="btn btn-xs btn-outline-primary" style="border-radius: 12px; font-size: 0.75rem; padding: 2px 10px; font-weight: 600;" title="Apply Regularization"><i class="fas fa-business-time mr-1"></i>Regularize</a>';
+            } else {
+                actionHtml = '<a href="/Attendance/HrEmpAttendExp" class="text-muted" style="font-size: 0.76rem;" title="View in Regularization Hub"><i class="fas fa-external-link-alt"></i></a>';
+            }
+
+            var noteDisplay = dNote ? escapeHtml(dNote) : '--';
+
+            html += '<tr>' +
+                '<td class="text-left pl-3 font-weight-bold text-dark">' + escapeHtml(dDateStr) + ' <span class="badge badge-light border text-muted ml-1" style="font-size: 0.72rem;">' + escapeHtml(dDayName) + '</span></td>' +
+                '<td><span class="font-weight-bold ' + (dIn !== '--' ? 'text-dark' : 'text-muted') + '">' + escapeHtml(dIn) + '</span></td>' +
+                '<td><span class="font-weight-bold ' + (dOut !== '--' ? 'text-dark' : 'text-muted') + '">' + escapeHtml(dOut) + '</span></td>' +
+                '<td class="font-weight-bold text-dark">' + escapeHtml(dHours) + '</td>' +
+                '<td><span class="badge ' + escapeHtml(dStatusClass) + '" style="padding: 0.35rem 0.75rem; font-size: 0.82rem; font-weight: 700; border-radius: 12px;">' + escapeHtml(dStatus) + '</span></td>' +
+                '<td class="text-muted small" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="' + noteDisplay + '">' + noteDisplay + '</td>' +
+                '<td>' + actionHtml + '</td>' +
+                '</tr>';
+        }
+
+        $("#tblAttendanceCycleBody").html(html);
+    }
+
+    function formatDatePretty(dateStr) {
+        if (!dateStr) return '';
+        var d = new Date(dateStr);
+        if (isNaN(d.getTime())) return dateStr;
+        return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        var map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return text.toString().replace(/[&<>"']/g, function(m) { return map[m]; });
     }
 
     // --- Team Attendance Log Grid & Chart ---

@@ -306,7 +306,7 @@ namespace qHRM.Areas.Payroll.Reports
                     row.Cells[0].Value = sNo.ToString(); row.Cells[0].StringFormat = fmtCenterCell;
                     row.Cells[1].Value = emp.EmpId ?? ""; row.Cells[1].StringFormat = fmtCenterCell;
                     row.Cells[2].Value = (emp.FullName ?? "") + (!string.IsNullOrWhiteSpace(emp.DesigName) ? "\n" + emp.DesigName : ""); row.Cells[2].StringFormat = fmtLeft;
-                    row.Cells[3].Value = emp.AbFct > 0 ? emp.AbFct.ToString("0") : "0"; row.Cells[3].StringFormat = fmtCenterCell;
+                    row.Cells[3].Value = emp.AbFct > 0 ? (emp.AbFct % 1 == 0 ? emp.AbFct.ToString("0") : emp.AbFct.ToString("0.##")) : "0"; row.Cells[3].StringFormat = fmtCenterCell;
                     row.Cells[4].Value = FormatNumber(basic); row.Cells[4].StringFormat = fmtRight;
                     row.Cells[5].Value = FormatNumber(housing); row.Cells[5].StringFormat = fmtRight;
                     row.Cells[6].Value = FormatNumber(trans); row.Cells[6].StringFormat = fmtRight;
