@@ -477,12 +477,17 @@ namespace qHRM.Areas.Payroll.Controllers
 
                 string filename = $"WPS_LeaveEncash_{year}_{month.ToString().PadLeft(2, '0')}_{DateTime.Now:yyyyMMddHHmmss}.xlsx";
 
-                string folder = Path.Combine(_host.WebRootPath, "attach", "wps");
-                if (!Directory.Exists(folder))
+                try
                 {
-                    Directory.CreateDirectory(folder);
+                    string webRoot = _host.WebRootPath ?? AppContext.BaseDirectory;
+                    string folder = Path.Combine(webRoot, "attach", "wps");
+                    if (!Directory.Exists(folder))
+                    {
+                        Directory.CreateDirectory(folder);
+                    }
+                    System.IO.File.WriteAllBytes(Path.Combine(folder, filename), bytes);
                 }
-                System.IO.File.WriteAllBytes(Path.Combine(folder, filename), bytes);
+                catch { }
 
                 return File(bytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", filename);
             }
