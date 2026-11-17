@@ -1034,6 +1034,12 @@
                         .text('Status: Verified');
 
                     showAppNotification("Leave Encashment", res.message, "success");
+                    var y = $('#selYear').val() || '@selectedYear';
+                    var m = $('#selMonth').val() || '@selectedMonth';
+                    var cat = $('#selCategory').val() || '@selectedCat';
+                    setTimeout(function () {
+                        window.location.href = '/Payroll/HrPrStaffLvTktEncash/Index?year=' + y + '&month=' + m + '&staffCat=' + cat;
+                    }, 1200);
                 } else {
                     showAppNotification("Leave Encashment", "Error: " + res.message, "danger");
                 }
@@ -1100,8 +1106,15 @@
         });
     }
 
+    $('#selYear, #selMonth, #selCategory').on('change', function () {
+        var y = $('#selYear').val();
+        var m = $('#selMonth').val();
+        var cat = $('#selCategory').val();
+        window.location.href = '/Payroll/HrPrStaffLvTktEncash/Index?year=' + y + '&month=' + m + '&staffCat=' + cat;
+    });
+
     $('#btnGenerateWps').on('click', function (e) {
-        if ($(this).attr('disabled')) {
+        if ($(this).attr('disabled') || !@canGenerateWps.ToString().ToLower()) {
             e.preventDefault();
             return false;
         }

@@ -3571,6 +3571,11 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
             DateTime cutoffStart = new DateTime(prevYear, prevMonth, 21);
             DateTime cutoffEnd = new DateTime(year, month, 20);
 
+            var savedEmpIds = _hrmContext.HrPrStaffLvTktEncash
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
+                .Select(x => x.EmpSysId)
+                .ToList();
+
             var empQuery = (from e in _hrmContext.HrEmpGenInfo
                             join j in _hrmContext.HrEmpJobAssign on e.EmpSysId equals j.EmpSysId into jGroup
                             from j in jGroup.Where(x => x.WkStat == 1 && x.StDate <= cutoffEnd && (x.EndDate == null || x.EndDate >= cutoffStart)).DefaultIfEmpty()
@@ -3580,9 +3585,10 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
                             from ds in dsGroup.DefaultIfEmpty()
                             join c in _hrmContext.OrgCountry on e.CntryId equals c.CntryId into cGroup
                             from c in cGroup.DefaultIfEmpty()
-                            where e.CurrStat == 0
+                            where (e.CurrStat == 0
                               && e.JoinedDate <= cutoffEnd.AddYears(-1)
-                              && ((e.JoinedDate.Month == prevMonth && e.JoinedDate.Day >= 21) || (e.JoinedDate.Month == month && e.JoinedDate.Day <= 20))
+                              && ((e.JoinedDate.Month == prevMonth && e.JoinedDate.Day >= 21) || (e.JoinedDate.Month == month && e.JoinedDate.Day <= 20)))
+                              || savedEmpIds.Contains(e.EmpSysId)
                             select new
                             {
                                 e.EmpSysId,

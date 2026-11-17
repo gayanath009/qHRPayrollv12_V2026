@@ -79,10 +79,14 @@ namespace qHRM.Areas.Payroll.Controllers
             ViewBag.Year = pYear;
             ViewBag.Month = pMonth;
             ViewBag.StaffCat = category;
-            ViewBag.IsLoaded = load;
+            bool hasSavedRecords = await _hrmContext.HrPrStaffLvTktEncash
+                .AnyAsync(x => x.PrcYear == pYear && x.PrcMonth == pMonth && x.RecStat == 1);
+
+            bool isLoaded = load || hasSavedRecords;
+            ViewBag.IsLoaded = isLoaded;
 
             List<HrPrStaffLvTktEncashVw> records;
-            if (!load)
+            if (!isLoaded)
             {
                 records = new List<HrPrStaffLvTktEncashVw>();
                 ViewBag.InternalLeaveTotal = 0m;
@@ -110,7 +114,7 @@ namespace qHRM.Areas.Payroll.Controllers
 
             var encashHdr = await _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefaultAsync(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
             string wfStat = encashHdr?.WfStat ?? "Draft";
-            int prcStat = encashHdr?.PrcStat ?? 1;
+            int prcStat = encashHdr?.PrcStat ?? (hasSavedRecords ? 2 : 1);
 
             int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
             int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
@@ -119,11 +123,12 @@ namespace qHRM.Areas.Payroll.Controllers
 
             bool isApproved = (wfStat == "Approved");
             bool isCompleted = (prcStat == 3);
-            bool isSaved = (prcStat == 2);
+            bool isSaved = (prcStat == 2 || hasSavedRecords);
+            bool isPendingApproval = (wfStat == "PendingLevel1" || wfStat == "PendingFinal");
 
-            bool canSubmit = isSaved && (wfStat == "Draft" || wfStat == "Verified" || wfStat == "Rejected");
+            bool canSubmit = isSaved && !isPendingApproval && !isApproved && !isCompleted && (wfStat == "Draft" || wfStat == "Verified" || wfStat == "Rejected");
             bool canCompleteAndWps = (isInitiator || userGrpId == 1) && isApproved && prcStat == 2;
-            bool canGenerateWps = isApproved || isCompleted || userGrpId == 1;
+            bool canGenerateWps = (isApproved || isCompleted); // Strictly disabled during approval!
 
             ViewBag.WfStat = wfStat;
             ViewBag.PrcStat = prcStat;
@@ -309,23 +314,17 @@ namespace qHRM.Areas.Payroll.Controllers
 
         public IActionResult PrintReport(int year, int month, string staffCat = "ALL")
         {
-            var records = _payrollContext.CalculateStaffLvTktEncash(year, month, staffCat);
-            ViewBag.Year = year;
-            ViewBag.Month = month;
-            ViewBag.MonthName = new DateTime(year, month, 1).ToString("MMMM");
-            ViewBag.StaffCat = staffCat;
+            string category = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
+            var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category);
 
-            ViewBag.InternalLeaveTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
-            ViewBag.InternalTicketTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
-            ViewBag.InternalSettlementTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalSettlement);
+            string companyName = "Qatar Computer Services WLL";
+            byte[] pdfBytes = StaffLeaveTicketEncashPdfReport.GenerateReport(companyName, year, month, records, _host.WebRootPath);
 
-            ViewBag.OutsourceLeaveTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
-            ViewBag.OutsourceTicketTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.AirTicketValue);
-            ViewBag.OutsourceSettlementTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalSettlement);
+            string monthName = new DateTime(year, month, 1).ToString("MMMM");
+            string filename = $"Staff_Leave_AirTicket_Encashment_{monthName}_{year}.pdf";
 
-            ViewBag.GrandTotal = records.Sum(x => x.TotalSettlement);
-
-            return View(records);
+            Response.Headers.Add("Content-Disposition", $"inline; filename=\"{filename}\"");
+            return File(pdfBytes, "application/pdf");
         }
 
         [HttpPost]
@@ -381,6 +380,13 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
+                var hdr = await _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefaultAsync(h => h.PrcYear == year && h.PrcMonth == month);
+                int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                if (hdr != null && hdr.WfStat != "Approved" && hdr.PrcStat != 3)
+                {
+                    return Content("Leave salary & air ticket encashment must be approved through the workflow before WPS can be generated.");
+                }
+
                 string category = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
                 var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category);
                 if (!records.Any())
@@ -393,29 +399,53 @@ namespace qHRM.Areas.Payroll.Controllers
                     .Where(g => empSysIds.Contains(g.EmpSysId))
                     .ToDictionaryAsync(g => g.EmpSysId, g => g);
                 var bnkDict = await _hrmContext.HrEmpBankAcct
-                    .Where(b => empSysIds.Contains(b.EmpSysId))
-                    .OrderByDescending(b => b.RecStat)
+                    .Where(b => empSysIds.Contains(b.EmpSysId) && b.RecStat == 1)
+                    .OrderByDescending(b => b.SlryAcct)
+                    .ThenByDescending(b => b.AcctId)
                     .GroupBy(b => b.EmpSysId)
                     .ToDictionaryAsync(g => g.Key, g => g.First());
 
                 var wpsRecords = new List<WpsEmployeeRecordDto>();
                 int seq = 1;
+                int wrknDays = DateTime.DaysInMonth(year, month);
+
                 foreach (var obj in records)
                 {
+                    // Filter: Only employees with positive settlement amount
+                    if (obj.TotalSettlement <= 0)
+                        continue;
+
                     genInfoDict.TryGetValue(obj.EmpSysId, out var genInfo);
                     bnkDict.TryGetValue(obj.EmpSysId, out var bnk);
 
-                    string qid = genInfo?.PmtId ?? "";
-                    string visa = "";
-                    string bankShort = !string.IsNullOrWhiteSpace(bnk?.ShtBankName) ? bnk.ShtBankName : "CBQ";
-                    string bankAcct = bnk?.AcctNo ?? "";
-                    string empName = !string.IsNullOrWhiteSpace(bnk?.AcctName) ? bnk.AcctName : obj.FullName;
+                    string bankAcct = (bnk?.AcctNo ?? "").Replace(" ", "").Replace("-", "").Trim();
+                    if (string.IsNullOrWhiteSpace(bankAcct))
+                        continue; // Cannot send through bank WPS without an account
 
-                    string notes = !string.IsNullOrWhiteSpace(obj.Remarks) && obj.Remarks != "-"
+                    string qid = (genInfo?.PmtId ?? "").Trim();
+                    string visa = "";
+
+                    string bankShort = ResolveBankShortName(bnk?.ShtBankName, bnk?.BankName, bankAcct);
+                    string empName = !string.IsNullOrWhiteSpace(bnk?.AcctName) ? bnk.AcctName.Trim() : (obj.FullName ?? "").Trim();
+
+                    string rawNotes = !string.IsNullOrWhiteSpace(obj.Remarks) && obj.Remarks != "-"
                         ? obj.Remarks
                         : (obj.NetLeaveDays > 0 && obj.AirTicketValue > 0
-                            ? $"{(obj.NetLeaveDays < 10 ? "0" + obj.NetLeaveDays : obj.NetLeaveDays.ToString())} {(obj.NetLeaveDays > 1 ? "Days" : "Day")} Leave Salary & Air Fare Encashment"
-                            : (obj.NetLeaveDays > 0 ? $"{(obj.NetLeaveDays < 10 ? "0" + obj.NetLeaveDays : obj.NetLeaveDays.ToString())} {(obj.NetLeaveDays > 1 ? "Days" : "Day")} Leave Salary Encashment" : "Air Fare Encashment"));
+                            ? $"{obj.NetLeaveDays:D2} Days Leave Salary and Air Fare Encashment"
+                            : (obj.NetLeaveDays > 0 ? $"{obj.NetLeaveDays:D2} Days Leave Salary Encashment" : "Air Fare Encashment"));
+
+                    string notes = CleanWpsNotes(rawNotes);
+
+                    decimal netSal = Math.Round(obj.TotalSettlement, 2);
+                    decimal bscSal = obj.TotalLeaveSalary > 0 ? Math.Round(obj.TotalLeaveSalary, 2) : netSal;
+                    decimal extraIncome = obj.TotalLeaveSalary > 0 ? Math.Round(obj.AirTicketValue, 2) : 0m;
+                    decimal deduct = 0m;
+
+                    // Ensure cross-component mathematical balance: Basic + Extra - Deduct == Net
+                    if (bscSal + extraIncome - deduct != netSal)
+                    {
+                        bscSal = netSal - extraIncome;
+                    }
 
                     wpsRecords.Add(new WpsEmployeeRecordDto
                     {
@@ -426,15 +456,20 @@ namespace qHRM.Areas.Payroll.Controllers
                         EmployeeBankShortName = bankShort,
                         EmployeeAccount = bankAcct,
                         SalaryFrequency = "M",
-                        NumberOfWorkingDays = 1,
-                        NetSalary = obj.TotalSettlement,
-                        BasicSalary = obj.TotalLeaveSalary,
+                        NumberOfWorkingDays = wrknDays,
+                        NetSalary = netSal,
+                        BasicSalary = bscSal,
                         ExtraHours = 0,
-                        ExtraIncome = obj.AirTicketValue,
-                        Deductions = 0,
-                        PaymentType = "",
+                        ExtraIncome = extraIncome,
+                        Deductions = deduct,
+                        PaymentType = "1",
                         NotesComments = notes
                     });
+                }
+
+                if (!wpsRecords.Any())
+                {
+                    return Content("No eligible staff with positive settlement amounts and valid bank accounts found for WPS generation.");
                 }
 
                 string templatePath = Path.Combine(_host.WebRootPath, "wps", "WPS Sample.xlsx");
@@ -456,6 +491,66 @@ namespace qHRM.Areas.Payroll.Controllers
                 return Content("Error generating WPS file: " + ex.Message);
             }
         }
-}
+
+        private static string ResolveBankShortName(string shtBankName, string bankName, string acctNo)
+        {
+            if (!string.IsNullOrWhiteSpace(shtBankName))
+            {
+                string s = shtBankName.Trim().ToUpper();
+                if (s == "CBQ" || s == "QNB" || s == "ABQ" || s == "QIB" || s == "DBQ" || s == "MAR" || s == "BRWA" || s == "QIIB" || s == "IBQ" || s == "MSQ" || s == "HSBC" || s == "ARB")
+                    return s;
+            }
+
+            string acct = (acctNo ?? "").Trim().ToUpper();
+            if (acct.Length >= 8 && acct.StartsWith("QA"))
+            {
+                string bCode = acct.Substring(4, 4);
+                switch (bCode)
+                {
+                    case "CBQA": return "CBQ";
+                    case "QNBA": return "QNB";
+                    case "ABQQ": return "ABQ";
+                    case "QISB": return "QIB";
+                    case "DOHB": return "DBQ";
+                    case "MAFR": return "MAR";
+                    case "BRWA": return "BRWA";
+                    case "QIIB": return "QIIB";
+                    case "IBQK": return "IBQ";
+                    case "ARBK": return "ARB";
+                    case "HSBC": return "HSBC";
+                    case "MSHQ": return "MSQ";
+                }
+            }
+
+            string bName = (bankName ?? "").ToUpper();
+            if (bName.Contains("COMMERCIAL") || bName.Contains("CBQ")) return "CBQ";
+            if (bName.Contains("NATIONAL") || bName.Contains("QNB")) return "QNB";
+            if (bName.Contains("AHLI") || bName.Contains("ABQ")) return "ABQ";
+            if (bName.Contains("ISLAMIC") || bName.Contains("QIB")) return "QIB";
+            if (bName.Contains("DOHA") || bName.Contains("DBQ")) return "DBQ";
+            if (bName.Contains("RAYAN") || bName.Contains("RAYYAN") || bName.Contains("MAR")) return "MAR";
+            if (bName.Contains("DUKHAN") || bName.Contains("BARWA") || bName.Contains("BRWA")) return "BRWA";
+            if (bName.Contains("QIIB")) return "QIIB";
+            if (bName.Contains("MASHREQ") || bName.Contains("MSQ")) return "MSQ";
+
+            return "CBQ";
+        }
+
+        private static string CleanWpsNotes(string notes)
+        {
+            if (string.IsNullOrWhiteSpace(notes)) return "";
+            string clean = notes
+                .Replace("&", "and")
+                .Replace("(", "")
+                .Replace(")", "")
+                .Replace("'", "")
+                .Replace("\"", "")
+                .Replace("<", "")
+                .Replace(">", "")
+                .Trim();
+            if (clean.Length > 70) clean = clean.Substring(0, 70);
+            return clean;
+        }
+    }
 
 }
