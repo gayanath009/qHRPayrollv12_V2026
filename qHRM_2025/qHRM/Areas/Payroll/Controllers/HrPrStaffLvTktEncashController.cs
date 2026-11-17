@@ -257,7 +257,7 @@ namespace qHRM.Areas.Payroll.Controllers
                     hdr.TotalOutsourceTicket = outTkt;
                     hdr.TotalOutsourceSettlement = outLv + outTkt;
                     hdr.GrandTotalSettlement = inLv + inTkt + outLv + outTkt;
-                    if (string.IsNullOrEmpty(hdr.WfStat) || hdr.WfStat == "Draft")
+                    if (hdr.WfStat != "Approved" && hdr.PrcStat != 3)
                     {
                         hdr.WfStat = "Verified";
                     }
