@@ -263,24 +263,24 @@ namespace qHRM.Areas.Payroll.Reports
 
                 foreach (var emp in list)
                 {
-                    decimal basic = emp.Basic;
-                    decimal housing = emp.HrAlwnc;
-                    decimal trans = emp.TrnsAlwnc;
-                    decimal posit = emp.PstnAlwnc;
-                    decimal mobile = emp.MobAlwnc;
-                    decimal proj = emp.ProjAlwnc;
-                    decimal otherAlwnc = emp.OthrAlwnc + emp.MedAlwnc + emp.SpcAlwnc;
+                    decimal basic = Math.Round(emp.Basic, 0, MidpointRounding.AwayFromZero);
+                    decimal housing = Math.Round(emp.HrAlwnc, 0, MidpointRounding.AwayFromZero);
+                    decimal trans = Math.Round(emp.TrnsAlwnc, 0, MidpointRounding.AwayFromZero);
+                    decimal posit = Math.Round(emp.PstnAlwnc, 0, MidpointRounding.AwayFromZero);
+                    decimal mobile = Math.Round(emp.MobAlwnc, 0, MidpointRounding.AwayFromZero);
+                    decimal proj = Math.Round(emp.ProjAlwnc, 0, MidpointRounding.AwayFromZero);
+                    decimal otherAlwnc = Math.Round(emp.OthrAlwnc + emp.MedAlwnc + emp.SpcAlwnc, 0, MidpointRounding.AwayFromZero);
                     decimal totalFixed = basic + housing + trans + posit + mobile + proj + otherAlwnc;
-                    decimal incent = emp.IncntvAmt;
-                    decimal ot = emp.OtAmt;
-                    decimal otherPmt = emp.OthrPmt + emp.BonusAmt;
-                    decimal gross = emp.GrsSlry > 0 ? emp.GrsSlry : (totalFixed + incent + ot + otherPmt);
-                    decimal slAdvLoan = emp.SlryAdv + emp.StfLnPmt;
-                    decimal noPay = emp.NoPayAmt;
-                    decimal otherDeduct = emp.OthrRcvryAmt;
-                    decimal totalDeduct = emp.TotDctAmt > 0 ? emp.TotDctAmt : (slAdvLoan + noPay + otherDeduct);
-                    decimal bank = emp.PmtMod == 1 ? emp.NtSlry : (emp.BnkAmt > 0 ? emp.BnkAmt : 0);
-                    decimal cash = emp.PmtMod == 0 ? emp.NtSlry : (emp.CshAmt > 0 ? emp.CshAmt : 0);
+                    decimal incent = Math.Round(emp.IncntvAmt, 0, MidpointRounding.AwayFromZero);
+                    decimal ot = Math.Round(emp.OtAmt, 0, MidpointRounding.AwayFromZero);
+                    decimal otherPmt = Math.Round(emp.OthrPmt + emp.BonusAmt, 0, MidpointRounding.AwayFromZero);
+                    decimal gross = emp.GrsSlry > 0 ? Math.Round(emp.GrsSlry, 0, MidpointRounding.AwayFromZero) : (totalFixed + incent + ot + otherPmt);
+                    decimal slAdvLoan = Math.Round(emp.SlryAdv + emp.StfLnPmt, 0, MidpointRounding.AwayFromZero);
+                    decimal noPay = Math.Round(emp.NoPayAmt, 0, MidpointRounding.AwayFromZero);
+                    decimal otherDeduct = Math.Round(emp.OthrRcvryAmt, 0, MidpointRounding.AwayFromZero);
+                    decimal totalDeduct = slAdvLoan + noPay + otherDeduct;
+                    decimal bank = emp.PmtMod == 1 ? (gross - totalDeduct) : (emp.BnkAmt > 0 ? Math.Round(emp.BnkAmt, 0, MidpointRounding.AwayFromZero) : 0);
+                    decimal cash = emp.PmtMod == 0 ? (gross - totalDeduct) : (emp.CshAmt > 0 ? Math.Round(emp.CshAmt, 0, MidpointRounding.AwayFromZero) : 0);
 
                     // Accumulate totals
                     totBasic += basic;
@@ -445,8 +445,9 @@ namespace qHRM.Areas.Payroll.Reports
 
         private static string FormatNumber(decimal value)
         {
-            if (value == 0) return "0";
-            return (value % 1 == 0) ? value.ToString("#,##0") : value.ToString("#,##0.00");
+            decimal rounded = Math.Round(value, 0, MidpointRounding.AwayFromZero);
+            if (rounded == 0) return "0";
+            return rounded.ToString("#,##0");
         }
     }
 }

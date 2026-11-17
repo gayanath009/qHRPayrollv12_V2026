@@ -179,7 +179,7 @@ namespace qHRM.Areas.Payroll.Reports
 
         private static string FormatAmount(decimal amt)
         {
-            return amt % 1 == 0 ? amt.ToString("#,##0") : amt.ToString("#,##0.00");
+            return Math.Round(amt, 0, MidpointRounding.AwayFromZero).ToString("#,##0");
         }
 
         private static void DrawTableRow(PdfGraphics g, float x, float y, float w1, float w2, float h,

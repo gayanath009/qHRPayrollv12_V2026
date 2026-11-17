@@ -253,7 +253,7 @@ namespace qHRM.Areas.Payroll.Reports
 
         private static string FormatAmount(decimal amt)
         {
-            return amt % 1 == 0 ? amt.ToString("#,##0") : amt.ToString("#,##0.00");
+            return Math.Round(amt, 0, MidpointRounding.AwayFromZero).ToString("#,##0");
         }
 
         private static void DrawInfoLine(PdfGraphics g, string label, string value, float x, float y, float labelW, float colonW, float valW, float h,
