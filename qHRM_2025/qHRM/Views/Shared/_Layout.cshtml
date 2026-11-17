@@ -92,6 +92,7 @@
                 string ADM_EM_GRD = @HttpContextAccessor.HttpContext.Session.GetString("ADM_EM_GRD");
                 string ADM_DESG = @HttpContextAccessor.HttpContext.Session.GetString("ADM_DESG");
                 string ADM_EM_GRP = @HttpContextAccessor.HttpContext.Session.GetString("ADM_EM_GRP");
+                string EM_SRT_ORD = @HttpContextAccessor.HttpContext.Session.GetString("EM_SRT_ORD");
                 string ORG_CHT = @HttpContextAccessor.HttpContext.Session.GetString("ORG_CHT");
                 string EM_GEN_INF = @HttpContextAccessor.HttpContext.Session.GetString("EM_GEN_INF");
 
@@ -161,6 +162,7 @@
 
                 int userGrpId = @HttpContextAccessor.HttpContext.Session.GetInt32("userGrpId") ?? 0;
                 bool isAllowedAdminGrp = (userGrpId == 1 || userGrpId == 2 || userGrpId == 7);
+                bool canAccessEmpSort = (userGrpId == 1 || userGrpId == 2 || EM_SRT_ORD != null);
 
                 // Module Privilege Section Aggregations
                 bool hasHRPrivs = (ORG_CHT != null || EM_GEN_INF != null);
@@ -172,7 +174,7 @@
 
                 // Settings Privileges
                 bool hasSettingsGeneralPrivs = (ADM_ORG != null || ADM_Entity != null || ADM_DEPT != null || ADM_LOC != null || ADM_CNTRY != null || ADM_NLTY != null || ADM_HLDY != null);
-                bool hasSettingsHRPrivs = (EM_CNF != null || ADM_EM_GRD != null || ADM_DESG != null || ADM_EM_GRP != null);
+                bool hasSettingsHRPrivs = (EM_CNF != null || ADM_EM_GRD != null || ADM_DESG != null || ADM_EM_GRP != null || canAccessEmpSort);
                 bool hasSettingsShiftPrivs = (WK_SFT != null || WK_RST != null);
                 bool hasSettingsPayrollPrivs = (LV_TYP != null || PR_CONF != null || OT_RT != null || STF_LN_TYP != null);
                 bool hasSettingsPrivs = (hasSettingsGeneralPrivs || hasSettingsHRPrivs || hasSettingsShiftPrivs || hasSettingsPayrollPrivs);
@@ -472,6 +474,10 @@
                                 {
                                     <a class="collapse-item" asp-area="Employee" asp-controller="HrEmpGroup" asp-action="Index">Employee Groups</a>
                                 }
+                                @if (canAccessEmpSort)
+                                {
+                                    <a class="collapse-item" asp-area="Employee" asp-controller="EmpSrtOrdVw" asp-action="Index">Employee Sort Order</a>
+                                }
 
                                 @if (hasSettingsHRPrivs && (hasSettingsShiftPrivs || hasSettingsPayrollPrivs))
                                 {
@@ -495,6 +501,10 @@
                                 @if (LV_TYP != null)
                                 {
                                     <a class="collapse-item" asp-area="Leave" asp-controller="HrLvType" asp-action="Index">Leave Types</a>
+                                }
+                                @if (LV_TYP != null && (PR_CONF != null || OT_RT != null || STF_LN_TYP != null))
+                                {
+                                    <hr style="margin:4px 16px;border:0;border-top:1px solid #eaecf4;" />
                                 }
                                 @if (PR_CONF != null)
                                 {

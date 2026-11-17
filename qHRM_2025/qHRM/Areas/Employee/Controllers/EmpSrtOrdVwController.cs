@@ -26,8 +26,15 @@ namespace qHRM.Areas.Employee.Controllers
         {
             try
             {
-                //if (HttpContext.Session.GetString("EMP_SRTORD") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
-                ViewBag.EmpSrtOrdLst = _employeeContext.GetEmpSrtOdrVws((int)HttpContext.Session.GetInt32("userEntId"), 0).ToList();
+                int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                var prv = HttpContext.Session.GetString("EM_SRT_ORD");
+                if (userGrpId != 1 && userGrpId != 2 && prv == null)
+                {
+                    return RedirectToPage("/Account/AccessDenied", new { area = "Identity" });
+                }
+
+                int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+                ViewBag.EmpSrtOrdLst = _employeeContext.GetEmpSrtOdrVws(entId, 0).ToList();
                 return View();
             }
             catch { throw; }
@@ -36,11 +43,19 @@ namespace qHRM.Areas.Employee.Controllers
         // GET: EmpSrtOrdVw/UpdateGet
         public ActionResult UpdateGet(int empSysId)
         {
-            var empSrtOrdVw = _employeeContext.GetEmpSrtOdrVws((int)HttpContext.Session.GetInt32("userEntId"), empSysId).First();
+            int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+            var prv = HttpContext.Session.GetString("EM_SRT_ORD");
+            if (userGrpId != 1 && userGrpId != 2 && prv == null)
+            {
+                return Unauthorized();
+            }
+
+            int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+            var empSrtOrdVw = _employeeContext.GetEmpSrtOdrVws(entId, empSysId).FirstOrDefault();
+            if (empSrtOrdVw == null) return NotFound();
             return PartialView("_EmpSrtOrdVw_Updt", empSrtOrdVw);
         }
 
-        //UpdateGet
         // POST: EmpSrtOrdVw/Update
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -48,13 +63,20 @@ namespace qHRM.Areas.Employee.Controllers
         {
             try
             {
+                int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                var prv = HttpContext.Session.GetString("EM_SRT_ORD");
+                if (userGrpId != 1 && userGrpId != 2 && prv == null)
+                {
+                    return Unauthorized();
+                }
+
                 var nwSrtOrd = empSrtOrdVw.DeptSrtOrd * 1000000 + empSrtOrdVw.ex_EmpSrtOrd;
                 if (empSrtOrdVw.EmpSrtOrd != nwSrtOrd)
                 {
-
                     var empGenInfo = _employeeContext.GetEmpGenInfoByEmpSysId(empSrtOrdVw.EmpSysId);
                     empGenInfo.SrtOrd = nwSrtOrd;
-                    _dbCommitContext.commitChanges(LogEventTypes.UPD, empGenInfo, (int)HttpContext.Session.GetInt32("userEmpSysId"));
+                    int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                    _dbCommitContext.commitChanges(LogEventTypes.UPD, empGenInfo, userEmpSysId);
                     _employeeContext.UpdateEmpSrtOrd(empSrtOrdVw.DeptId, nwSrtOrd, empSrtOrdVw.EmpSysId);
                     return RedirectToAction(nameof(Index)).WithSuccess("Employee Sort Order", "Record updated Successfully");
                 }
