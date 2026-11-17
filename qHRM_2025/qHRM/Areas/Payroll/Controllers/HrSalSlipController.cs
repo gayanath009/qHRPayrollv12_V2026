@@ -650,7 +650,7 @@ namespace qHRM.Areas.Payroll.Controllers
 
         [HttpPost]
         [AcceptVerbs("GET", "POST")]
-        public IActionResult PrintStaffSalarySheet(PrSalarySheetView obj, int sctn = 0)
+        public IActionResult PrintStaffSalarySheet(PrSalarySheetView obj, int sctn = 2)
         {
             try
             {
@@ -704,7 +704,7 @@ namespace qHRM.Areas.Payroll.Controllers
 
         [HttpPost]
         [AcceptVerbs("GET", "POST")]
-        public IActionResult PrintDeptSalarySheet(PrSalarySheetView obj, int sctn = 0)
+        public IActionResult PrintDeptSalarySheet(PrSalarySheetView obj, int sctn = 2)
         {
             try
             {
@@ -762,7 +762,7 @@ namespace qHRM.Areas.Payroll.Controllers
         }
 
         [HttpPost]
-        public IActionResult GetSlryShtExcel(PrSalarySheetView obj, int sctn = 0)
+        public IActionResult GetSlryShtExcel(PrSalarySheetView obj, int sctn = 2)
         {
             try
             {

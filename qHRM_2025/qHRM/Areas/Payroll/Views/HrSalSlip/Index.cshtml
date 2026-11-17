@@ -284,16 +284,16 @@
                 </div>
                 <div style="margin-bottom: 0.6rem;">
                     <select id="drpStaffCategory" class="ctrl-select" onchange="syncStaffCategory()">
-                        <option value="1">Outsourced Staff</option>
+                        <option value="2" selected>All Staff</option>
                         <option value="0">In-House Staff</option>
-                        <option value="2">All Staff</option>
+                        <option value="1">Outsourced Staff</option>
                     </select>
                 </div>
                 @using (Html.BeginForm("PrintStaffSalarySheet", "HrSalSlip", FormMethod.Post, new { target = "_blank", onsubmit = "syncStaffCategory()" }))
                 {
                     <input id="txtEftYrStaff" asp-for="EftYr" hidden />
                     <input id="txtEftMntStaff" asp-for="EftMnt" hidden />
-                    <input id="txtStaffCategory" name="sctn" value="0" hidden />
+                    <input id="txtStaffCategory" name="sctn" value="2" hidden />
                     <button type="submit" class="action-btn btn-complete" id="btnStaffSalarySheet" style="margin-bottom:0.45rem;">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M14.763.075A.5.5 0 0 1 15 .5v15a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5V14h-1v1.5a.5.5 0 0 1-.5.5h-9a.5.5 0 0 1-.5-.5V10a.5.5 0 0 1 .342-.474L6 7.64V4.5a.5.5 0 0 1 .276-.447l8-4a.5.5 0 0 1 .487.022zM6 8.694 1 10.36V15h5V8.694zM7 15h2v-1.5a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 .5.5V15h2V1.709L7 5.209V15z"/>
@@ -305,7 +305,7 @@
                 {
                     <input id="txtEftYrDept" asp-for="EftYr" hidden />
                     <input id="txtEftMntDept" asp-for="EftMnt" hidden />
-                    <input id="txtDeptCategory" name="sctn" value="0" hidden />
+                    <input id="txtDeptCategory" name="sctn" value="2" hidden />
                     <button type="submit" class="action-btn btn-process" id="btnDeptSalarySheet" style="margin-bottom:0; background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1H7Zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-5.784 6A2.238 2.238 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.325 6.325 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1h4.216ZM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z"/>
@@ -321,7 +321,7 @@
                 {
                     <input id="txtEftYr3" asp-for="EftYr" hidden />
                     <input id="txtEftMnt3" asp-for="EftMnt" hidden />
-                    <input id="txtStaffCategoryExcel" name="sctn" value="0" hidden />
+                    <input id="txtStaffCategoryExcel" name="sctn" value="2" hidden />
                     <button type="submit" class="action-btn btn-repro">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.884 6.68a.5.5 0 1 0-.768.64L7.349 10l-2.233 2.68a.5.5 0 0 0 .768.64L8 10.748l2.116 2.572a.5.5 0 0 0 .768-.64L8.651 10l2.233-2.68a.5.5 0 0 0-.768-.64L8 9.252 5.884 6.68z"/>
@@ -486,7 +486,7 @@
     });
 
     function syncStaffCategory() {
-        var cat = $("#drpStaffCategory").val() || '0';
+        var cat = $("#drpStaffCategory").val() || '2';
         $("#txtStaffCategory").val(cat);
         $("#txtDeptCategory").val(cat);
         $("#txtStaffCategoryExcel").val(cat);
@@ -517,7 +517,7 @@
         $("#txtEftYrStaff").val(efYr);
         $("#txtEftMntDept").val(efMnt);
         $("#txtEftYrDept").val(efYr);
-        var cat = $("#drpStaffCategory").val() || '0';
+        var cat = $("#drpStaffCategory").val() || '2';
         $("#txtStaffCategory").val(cat);
         $("#txtDeptCategory").val(cat);
         $("#txtStaffCategoryExcel").val(cat);
