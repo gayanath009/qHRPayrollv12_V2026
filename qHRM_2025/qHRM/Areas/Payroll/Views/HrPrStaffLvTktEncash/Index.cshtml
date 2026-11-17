@@ -613,16 +613,16 @@
                 </button>
             }
 
-            <!-- 4. Complete Button (Green) - Disabled during approval, enabled when Approved -->
-            <button type="button" class="action-btn btn-complete" id="btnCompleteEncash" onclick="openCompleteModal();" @(canCompleteAndWps ? "" : "disabled")>
-                <i class="fas fa-check-circle"></i> Complete
-            </button>
-
-            <!-- 5. Generate WPS Button (Blue) - Disabled during approval, enabled when Approved -->
+            <!-- 4. Generate WPS Button (Blue) - Disabled during approval, enabled when Approved -->
             <a href="/Payroll/HrPrStaffLvTktEncash/GenerateWps?year=@selectedYear&month=@selectedMonth&staffCat=@selectedCat" 
                class="action-btn btn-wps" id="btnGenerateWps" @(canGenerateWps ? "" : "disabled")>
                 <i class="fas fa-download"></i> Generate WPS
             </a>
+
+            <!-- 5. Complete Button (Green) - Disabled during approval, enabled when Approved -->
+            <button type="button" class="action-btn btn-complete" id="btnCompleteEncash" onclick="openCompleteModal();" @(canCompleteAndWps ? "" : "disabled")>
+                <i class="fas fa-check-circle"></i> Complete
+            </button>
 
             <!-- Excel Export & Print Report in Control Panel (Only visible when loaded) -->
             @if (isLoaded)
