@@ -633,14 +633,21 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
+                    $('#modalEncashApprove').modal('hide');
                     showFlashToastAndReload("Encashment Approval", res.message, "success");
                 } else {
                     showAppNotification("Encashment Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmEncashApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
                 }
             },
-            error: function () {
-                showAppNotification("Encashment Approval", "An error occurred during approval.", "danger");
+            error: function (xhr) {
+                var msg = "An error occurred during approval.";
+                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                } else if (xhr && xhr.status === 400) {
+                    msg = "Security token or session expired. Please refresh the page.";
+                }
+                showAppNotification("Encashment Approval", msg, "danger");
                 $('#btnConfirmEncashApprove').removeAttr('disabled').html('<i class="fas fa-check mr-1"></i> Confirm Approval');
             }
         });
@@ -662,14 +669,21 @@
             headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
             success: function (res) {
                 if (res.ok) {
+                    $('#modalEncashReject').modal('hide');
                     showFlashToastAndReload("Encashment Approval", res.message, "success");
                 } else {
                     showAppNotification("Encashment Approval", "Error: " + res.message, "danger");
                     $('#btnConfirmEncashReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
                 }
             },
-            error: function () {
-                showAppNotification("Encashment Approval", "An error occurred during rejection.", "danger");
+            error: function (xhr) {
+                var msg = "An error occurred during rejection.";
+                if (xhr && xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                } else if (xhr && xhr.status === 400) {
+                    msg = "Security token or session expired. Please refresh the page.";
+                }
+                showAppNotification("Encashment Approval", msg, "danger");
                 $('#btnConfirmEncashReject').removeAttr('disabled').html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
             }
         });

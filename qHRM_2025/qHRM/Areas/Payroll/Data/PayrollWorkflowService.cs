@@ -5,6 +5,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using qHRM.Area.Config;
 using qHRM.Areas.Notify.Models;
@@ -21,6 +22,7 @@ namespace qHRM.Areas.Payroll.Data
         private readonly NotificationContext _notifyContext;
         private readonly IConfiguration _configuration;
         private readonly ILogger<PayrollWorkflowService> _logger;
+        private readonly IServiceScopeFactory _scopeFactory;
 
         public PayrollWorkflowService(
             qHRMasterContext hrmContext,
@@ -28,7 +30,8 @@ namespace qHRM.Areas.Payroll.Data
             SysConfigContext sysConfigContext,
             NotificationContext notifyContext,
             IConfiguration configuration,
-            ILogger<PayrollWorkflowService> logger)
+            ILogger<PayrollWorkflowService> logger,
+            IServiceScopeFactory scopeFactory)
         {
             _hrmContext = hrmContext;
             _payrollContext = payrollContext;
@@ -36,6 +39,7 @@ namespace qHRM.Areas.Payroll.Data
             _notifyContext = notifyContext;
             _configuration = configuration;
             _logger = logger;
+            _scopeFactory = scopeFactory;
         }
 
         public string GetAppBaseUrl()
@@ -298,19 +302,24 @@ namespace qHRM.Areas.Payroll.Data
 
                     await _hrmContext.SaveChangesAsync();
 
-                    // Auto-generate payslips for the approved payroll
-                    try
+                    // Auto-generate payslips for the approved payroll in background so approval response is instant
+                    _ = Task.Run(() =>
                     {
-                        var lstSalDtl = _payrollContext.GetSalaryDtl(hdr.EntId, "_paysheet", 0, hdr.EftMonth, hdr.EftYear);
-                        foreach (var itm in lstSalDtl)
+                        try
                         {
-                            _payrollContext.GetPaySlip(itm.Emp_Id, hdr.EftYear, hdr.EftMonth, hdr.EntId);
+                            using var scope = _scopeFactory.CreateScope();
+                            var pContext = scope.ServiceProvider.GetRequiredService<PayrollContext>();
+                            var lstSalDtl = pContext.GetSalaryDtl(hdr.EntId, "_paysheet", 0, hdr.EftMonth, hdr.EftYear);
+                            foreach (var itm in lstSalDtl)
+                            {
+                                pContext.GetPaySlip(itm.Emp_Id, hdr.EftYear, hdr.EftMonth, hdr.EntId);
+                            }
                         }
-                    }
-                    catch (Exception genEx)
-                    {
-                        _logger?.LogWarning(genEx, "Payslip generation warning for PrcId {PrcId}", prcId);
-                    }
+                        catch (Exception genEx)
+                        {
+                            _logger?.LogWarning(genEx, "Payslip generation warning for PrcId {PrcId}", prcId);
+                        }
+                    });
 
                     // Notify Initiator (Kaushalya) and Level 1 (Ashhar)
                     var (_, initEmail) = await GetEmployeeDetailsAsync(approvers.InitiatorId);
@@ -713,50 +722,70 @@ namespace qHRM.Areas.Payroll.Data
         // NOTIFICATION HELPERS
         // =====================================================================
 
-        private async Task SendEmailSafelyAsync(string toEmail, string subject, string htmlBody)
+        private Task SendEmailSafelyAsync(string toEmail, string subject, string htmlBody)
         {
             if (string.IsNullOrWhiteSpace(toEmail))
             {
                 _logger?.LogWarning("[PayrollWorkflowService] Skipping email: recipient has no valid email address.");
-                return;
+                return Task.CompletedTask;
             }
 
-            try
+            // Run email dispatch in background so HTTP response is instant and approvers do not wait
+            _ = Task.Run(async () =>
             {
-                await _sysConfigContext.SendEmailNotificationAsync(toEmail, "", subject, htmlBody, null);
-                _logger?.LogInformation("[PayrollWorkflowService] Email sent successfully to {ToEmail} with subject '{Subject}'", toEmail, subject);
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogError(ex, "[PayrollWorkflowService] Failed to send email to {ToEmail}", toEmail);
-            }
+                try
+                {
+                    using var scope = _scopeFactory.CreateScope();
+                    var sysConfigContext = scope.ServiceProvider.GetRequiredService<SysConfigContext>();
+                    await sysConfigContext.SendEmailNotificationAsync(toEmail, "", subject, htmlBody, null);
+                    _logger?.LogInformation("[PayrollWorkflowService] Background email sent successfully to {ToEmail} with subject '{Subject}'", toEmail, subject);
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "[PayrollWorkflowService] Failed to send background email to {ToEmail}", toEmail);
+                }
+            });
+
+            return Task.CompletedTask;
         }
 
-        private async Task PushInAppNotificationSafelyAsync(int empSysId, string subject, string message, int? reqId, string actionUrl)
+        private Task PushInAppNotificationSafelyAsync(int empSysId, string subject, string message, int? reqId, string actionUrl)
         {
-            if (empSysId <= 0 || _notifyContext == null || _notifyContext.NtfNotification == null)
-                return;
+            if (empSysId <= 0)
+                return Task.CompletedTask;
 
-            try
+            // Run in-app notification in background using isolated DI scope
+            _ = Task.Run(async () =>
             {
-                var ntf = new NtfNotification
+                try
                 {
-                    EmpSysId = empSysId,
-                    Subject = subject,
-                    Message = message,
-                    ReqId = reqId,
-                    NtfTypRefId = 2, // Payroll
-                    PushReadStat = false,
-                    IsDelivered = 1,
-                    CrtDateTime = DateTime.Now
-                };
-                _notifyContext.NtfNotification.Add(ntf);
-                await _notifyContext.SaveChangesAsync();
-            }
-            catch (Exception ex)
-            {
-                _logger?.LogWarning(ex, "Failed to push in-app notification for EmpSysId: {EmpSysId}", empSysId);
-            }
+                    using var scope = _scopeFactory.CreateScope();
+                    var notifyContext = scope.ServiceProvider.GetService<NotificationContext>();
+                    if (notifyContext?.NtfNotification != null)
+                    {
+                        var ntf = new NtfNotification
+                        {
+                            EmpSysId = empSysId,
+                            Subject = subject,
+                            Message = message,
+                            ReqId = reqId,
+                            NtfTypRefId = 2, // Payroll
+                            PushReadStat = false,
+                            IsDelivered = 1,
+                            CrtDateTime = DateTime.Now
+                        };
+                        notifyContext.NtfNotification.Add(ntf);
+                        await notifyContext.SaveChangesAsync();
+                        _logger?.LogInformation("[PayrollWorkflowService] In-app notification pushed for EmpSysId: {EmpSysId}", empSysId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogWarning(ex, "Failed to push in-app notification for EmpSysId: {EmpSysId}", empSysId);
+                }
+            });
+
+            return Task.CompletedTask;
         }
 
         private static string BuildWorkflowEmailHtml(
