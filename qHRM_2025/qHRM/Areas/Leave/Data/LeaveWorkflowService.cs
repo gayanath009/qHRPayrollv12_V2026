@@ -489,11 +489,34 @@ namespace qHRM.Areas.Leave.Data
             HrLvRegister leaveApp,
             int          submitterEmpSysId)
         {
-            // 1 & 2. Fetch leave type and workflow config sequentially (DbContext is not thread-safe).
+            // 1. Fetch leave type and employee sequentially (DbContext is not thread-safe).
             var lvType = await _hrmContext.HrLvType
                 .FirstOrDefaultAsync(t => t.LvTypId == leaveApp.LvTypId);
+
+            var empGen = await _hrmContext.HrEmpGenInfo
+                .FirstOrDefaultAsync(e => e.EmpSysId == leaveApp.EmpSysId);
+            var jobAssign = await _hrmContext.HrEmpJobAssign
+                .Where(j => j.EmpSysId == leaveApp.EmpSysId && j.WkStat == 1)
+                .OrderByDescending(j => j.StDate)
+                .FirstOrDefaultAsync();
+
+            int wrktypId = (empGen != null && (empGen.WrktypId == 2 || empGen.GrpId == 7)) ? 2 : (empGen?.WrktypId ?? 1);
+            string workTypeName = wrktypId == 2 ? "Outsourced" : "In-House";
+            bool isOutsource = (wrktypId == 2);
+            string targetWfType = isOutsource ? "Leave Approval (Outsource)" : "Leave Approval (In-House)";
+
+            // 2. Fetch workflow config for this leave type and work type
             var wfConfig = await _hrmContext.HrLvWfConfig
-                .FirstOrDefaultAsync(c => c.LvTypId == leaveApp.LvTypId && c.IsEnabled == true);
+                .FirstOrDefaultAsync(c => c.LvTypId == leaveApp.LvTypId && c.IsEnabled == true && c.WfType == targetWfType);
+
+            if (wfConfig == null)
+            {
+                // Fallback: look for matching pattern or legacy generic Leave Approval
+                wfConfig = await _hrmContext.HrLvWfConfig
+                    .FirstOrDefaultAsync(c => c.LvTypId == leaveApp.LvTypId && c.IsEnabled == true &&
+                        (isOutsource ? (c.WfType == null || c.WfType == "Leave Approval" || c.WfType.Contains("Outsource"))
+                                     : (c.WfType == null || c.WfType == "Leave Approval" || c.WfType.Contains("In-House"))));
+            }
 
             if (wfConfig == null || string.IsNullOrWhiteSpace(wfConfig.WfCode))
             {
@@ -502,6 +525,7 @@ namespace qHRM.Areas.Leave.Data
                 {
                     LvTypId        = leaveApp.LvTypId ?? 0,
                     WfCode         = targetWfCode,
+                    WfType         = targetWfType,
                     IsEnabled      = true,
                     ApproverConfig = "{}",
                     PolicyRules    = "{}"
@@ -514,14 +538,6 @@ namespace qHRM.Areas.Leave.Data
 
             // 4. Authenticate with WF Engine
             var token = await GetWfTokenAsync();
-
-            // DbContext is not thread-safe; queries must be awaited sequentially
-            var empGen = await _hrmContext.HrEmpGenInfo
-                .FirstOrDefaultAsync(e => e.EmpSysId == leaveApp.EmpSysId);
-            var jobAssign = await _hrmContext.HrEmpJobAssign
-                .Where(j => j.EmpSysId == leaveApp.EmpSysId && j.WkStat == 1)
-                .OrderByDescending(j => j.StDate)
-                .FirstOrDefaultAsync();
 
             // Ensure the submitter has a WF Engine user account.
             var wfUserId = await GetOrCreateWfUserAsync(submitterEmpSysId, token);
@@ -548,9 +564,6 @@ namespace qHRM.Areas.Leave.Data
                     .FirstOrDefaultAsync(d => d.DeptId == jobAssign.DeptId);
                 if (dept != null) deptName = dept.NameEng;
             }
-
-            int wrktypId = (empGen != null && (empGen.WrktypId == 2 || empGen.GrpId == 7)) ? 2 : (empGen?.WrktypId ?? 1);
-            string workTypeName = wrktypId == 2 ? "Outsourced" : "In-House";
 
             var inputData = new Dictionary<string, string>
             {

@@ -318,9 +318,28 @@ namespace qHRM.Areas.Leave.Controllers
                             }
                         }
 
-                        // 2. CASUAL LEAVE VALIDATION: Max 3 paid days per year
+                        // 2. CASUAL LEAVE VALIDATION: Max 3 paid days per year & Max 2 consecutive days per request
                         if (lvCode == "LV_CSL" || lvName.Contains("Casual", StringComparison.OrdinalIgnoreCase))
                         {
+                            if (hrLvRstr.Days > 2)
+                            {
+                                return RedirectToAction(nameof(Index)).WithWarning("Leave Register", "Casual Leave applications are restricted to a maximum of 2 consecutive days per request.");
+                            }
+
+                            // Check adjacent consecutive casual leave records
+                            var adjacentCasualDays = await _hrmContext.HrLvRegister
+                                .Where(l => l.EmpSysId == hrLvRstr.EmpSysId
+                                         && l.LvId != hrLvRstr.LvId
+                                         && l.RecStat != 0 && l.RecStat != 3 && l.WfStat != "Rejected" && l.WfStat != "Cancelled"
+                                         && (l.LvTyp.LvTypCode == "LV_CSL" || l.LvTyp.NameEng.Contains("Casual"))
+                                         && (l.EndDate.Date == hrLvRstr.StDate.Date.AddDays(-1) || l.StDate.Date == hrLvRstr.EndDate.Date.AddDays(1)))
+                                .SumAsync(l => (int?)l.Days) ?? 0;
+
+                            if (adjacentCasualDays + hrLvRstr.Days > 2)
+                            {
+                                return RedirectToAction(nameof(Index)).WithWarning("Leave Register", $"Casual Leave cannot exceed 2 consecutive days. You already have an adjacent Casual Leave application of {adjacentCasualDays} day(s).");
+                            }
+
                             int maxCasualDays = lvType?.ElgDays > 0 ? lvType.ElgDays : 3;
                             int lvYear = hrLvRstr.LvYear > 0 ? hrLvRstr.LvYear : DateTime.Now.Year;
                             var usedDays = await _hrmContext.HrLvRegister
@@ -752,6 +771,28 @@ namespace qHRM.Areas.Leave.Controllers
                             return RedirectToAction(nameof(Index)).WithWarning("Leave Register", $"You already have a leave ({existingTypeName}: {overlappingLeave.StDate:dd/MM/yyyy} to {overlappingLeave.EndDate:dd/MM/yyyy}) within the selected date range.");
                         }
 
+                        // Casual Leave Validation for Edit: Max 2 consecutive days per request
+                        if (lvCode == "LV_CSL" || lvName.Contains("Casual", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (hrLvRstr.Days > 2)
+                            {
+                                return RedirectToAction(nameof(Index)).WithWarning("Leave Register", "Casual Leave applications are restricted to a maximum of 2 consecutive days per request.");
+                            }
+
+                            var adjacentCasualDays = await _hrmContext.HrLvRegister
+                                .Where(l => l.EmpSysId == hrLvRstr.EmpSysId
+                                         && l.LvId != hrLvRstr.LvId
+                                         && l.RecStat != 0 && l.RecStat != 3 && l.WfStat != "Rejected" && l.WfStat != "Cancelled"
+                                         && (l.LvTyp.LvTypCode == "LV_CSL" || l.LvTyp.NameEng.Contains("Casual"))
+                                         && (l.EndDate.Date == hrLvRstr.StDate.Date.AddDays(-1) || l.StDate.Date == hrLvRstr.EndDate.Date.AddDays(1)))
+                                .SumAsync(l => (int?)l.Days) ?? 0;
+
+                            if (adjacentCasualDays + hrLvRstr.Days > 2)
+                            {
+                                return RedirectToAction(nameof(Index)).WithWarning("Leave Register", $"Casual Leave cannot exceed 2 consecutive days. You already have an adjacent Casual Leave application of {adjacentCasualDays} day(s).");
+                            }
+                        }
+
                         // Sandwich Leave Policy Validation for Edit
                         if (hrLvRstr.EmpSysId.HasValue && hrLvRstr.LvTypId.HasValue)
                         {
@@ -1064,6 +1105,41 @@ namespace qHRM.Areas.Leave.Controllers
                             isSandwich = true,
                             message = sandwichCheck.message
                         });
+                    }
+
+                    // Casual Leave 2-Day Restriction Check
+                    var reqLvType = await _hrmContext.HrLvType.FirstOrDefaultAsync(t => t.LvTypId == lvTypId.Value);
+                    if (reqLvType != null && (reqLvType.LvTypCode == "LV_CSL" || (reqLvType.NameEng != null && reqLvType.NameEng.Contains("Casual", StringComparison.OrdinalIgnoreCase))))
+                    {
+                        int reqDays = (endDate.Date - stDate.Date).Days + 1;
+                        if (reqDays > 2)
+                        {
+                            return Json(new
+                            {
+                                hasOverlap = true,
+                                isCasualLimit = true,
+                                message = "Casual Leave applications are restricted to a maximum of 2 consecutive days per request."
+                            });
+                        }
+
+                        // Check adjacent casual leaves
+                        var adjacentCasual = await _hrmContext.HrLvRegister
+                            .Where(l => l.EmpSysId == empSysId
+                                     && l.LvId != currentLvId
+                                     && l.RecStat != 0 && l.RecStat != 3 && l.WfStat != "Rejected" && l.WfStat != "Cancelled"
+                                     && (l.LvTyp.LvTypCode == "LV_CSL" || l.LvTyp.NameEng.Contains("Casual"))
+                                     && (l.EndDate.Date == stDate.Date.AddDays(-1) || l.StDate.Date == endDate.Date.AddDays(1)))
+                            .SumAsync(l => (int?)l.Days) ?? 0;
+
+                        if (adjacentCasual + reqDays > 2)
+                        {
+                            return Json(new
+                            {
+                                hasOverlap = true,
+                                isCasualLimit = true,
+                                message = $"Casual Leave cannot exceed 2 consecutive days. You already have an adjacent Casual Leave application of {adjacentCasual} day(s)."
+                            });
+                        }
                     }
                 }
 

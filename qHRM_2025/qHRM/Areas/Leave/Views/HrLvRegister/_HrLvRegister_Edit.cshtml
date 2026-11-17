@@ -204,6 +204,16 @@ else
             else {
                 $('#lvDaysEdit').val(0);
             }
+
+            var selectedText = $('#drpLvTypEdit option:selected').text() || '';
+            var isCasual = selectedText.toLowerCase().indexOf('casual') >= 0;
+            if (isCasual && calDays > 2) {
+                $('#overlapWarningMsgEdit').text("Casual Leave applications are restricted to a maximum of 2 consecutive days per request.");
+                $('#overlapWarningPanelEdit').slideDown();
+                $('#btnSubmitEdit').prop('disabled', true);
+                return;
+            }
+
             checkLeaveOverlapEdit();
         }
 
@@ -216,10 +226,20 @@ else
 
             $('#modalEdit').find('.select2-dropdown').on('change', function () {
                 try { $(this).valid(); } catch (e) { }
-                checkLeaveOverlapEdit();
+                caculateDaysEdit();
             });
 
             $('#formEditLeave').on('submit', function (e) {
+                var selectedText = $('#drpLvTypEdit option:selected').text() || '';
+                var isCasual = selectedText.toLowerCase().indexOf('casual') >= 0;
+                var days = parseInt($('#lvDaysEdit').val()) || 0;
+                if (isCasual && days > 2) {
+                    $('#overlapWarningMsgEdit').text("Casual Leave applications are restricted to a maximum of 2 consecutive days per request.");
+                    $('#overlapWarningPanelEdit').slideDown();
+                    e.preventDefault();
+                    return false;
+                }
+
                 if (hasLeaveOverlapEdit) {
                     $('#overlapWarningPanelEdit').slideDown();
                     $('#overlapDateErrorEdit').show();

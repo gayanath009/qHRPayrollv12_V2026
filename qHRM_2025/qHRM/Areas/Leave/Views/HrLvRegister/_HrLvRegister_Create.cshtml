@@ -93,6 +93,12 @@
             </div>
         </div>
 
+        <!-- Casual Leave Notice Banner -->
+        <div id="casualLeaveNotice" class="alert alert-warning py-2 px-3 mb-3" style="display:none; font-size: 0.86rem; border-left: 4px solid #ffc107;">
+            <i class="fas fa-info-circle mr-1 text-warning"></i>
+            <strong>Casual Leave Policy: </strong> Maximum 2 consecutive days per request (up to 3 days per calendar year).
+        </div>
+
         <!-- Sick Leave Notice Banner -->
         <div id="sickLeaveNotice" class="alert alert-warning py-2 px-3 mb-3" style="display:none; font-size: 0.86rem; border-left: 4px solid #ffc107;">
             <i class="fas fa-info-circle mr-1 text-warning"></i>
@@ -324,6 +330,7 @@
 
         if (!empSysId || !lvTypId) {
             $('#balanceInfoPanel').hide();
+            $('#casualLeaveNotice').hide();
             $('#sickLeaveNotice').hide();
             $('#secMedCert').hide();
             $('#secOutsourceApproval').hide();
@@ -346,6 +353,7 @@
                     var inProg = res.inProgress !== undefined ? res.inProgress : (res.InProgress !== undefined ? res.InProgress : 0);
                     var used = res.used !== undefined ? res.used : (res.Used !== undefined ? res.Used : 0);
                     var isSick = res.isSick !== undefined ? res.isSick : res.IsSick;
+                    var isCasual = res.isCasual !== undefined ? res.isCasual : (res.IsCasual || false);
                     var isEmg = res.isEmergency !== undefined ? res.isEmergency : res.IsEmergency;
                     var isHaj = res.isHajj !== undefined ? res.isHajj : res.IsHajj;
                     var isAnnual = res.isAnnual !== undefined ? res.isAnnual : res.IsAnnual;
@@ -362,6 +370,7 @@
                         inProgress: inProg,
                         used: used,
                         isSick: isSick,
+                        isCasual: isCasual,
                         isEmergency: isEmg,
                         isHajj: isHaj,
                         isAnnual: isAnnual,
@@ -389,6 +398,12 @@
                     $('#txtInProgressDays').text(inProg);
                     $('#txtUsedDays').text(used);
                     $('#balanceInfoPanel').slideDown();
+
+                    if (isCasual) {
+                        $('#casualLeaveNotice').slideDown();
+                    } else {
+                        $('#casualLeaveNotice').slideUp();
+                    }
 
                     if (isAnnual || isAccrualBased) {
                         $('#annualAccrualPanel').slideDown();
@@ -547,6 +562,9 @@
         if (valid && !currentLeaveRuleInfo.isAnnual && reqDays > currentLeaveRuleInfo.availableBalance) {
             valid = false;
             errMsg = "Requested leave (" + reqDays + " day(s)) exceeds available balance (" + currentLeaveRuleInfo.availableBalance + " day(s) remaining after active/in-progress applications).";
+        } else if (valid && currentLeaveRuleInfo.isCasual && reqDays > 2) {
+            valid = false;
+            errMsg = "Casual Leave is restricted to a maximum of 2 consecutive days per request.";
         } else if (valid && currentLeaveRuleInfo.isEmergency && reqDays > 30) {
             valid = false;
             errMsg = "Emergency Leave is restricted to a maximum of 30 days per application.";
@@ -601,6 +619,16 @@
                 $('#annualDateError').text(restMsg).show();
                 $('#annualRestrictionPanel').slideDown();
                 $('#daysValidationError').text(restMsg).show();
+                e.preventDefault();
+                return false;
+            }
+
+            if (currentLeaveRuleInfo.isCasual && parseInt($('#lvDays').val()) > 2) {
+                var cslMsg = "Casual Leave is restricted to a maximum of 2 consecutive days per request.";
+                $('#daysValidationError').text(cslMsg).show();
+                $('#balanceWarningText').text(cslMsg);
+                $('#balanceWarning').show();
+                $('#btnSubmitLeave').prop('disabled', true);
                 e.preventDefault();
                 return false;
             }

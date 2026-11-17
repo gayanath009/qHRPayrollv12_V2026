@@ -94,5 +94,11 @@ namespace qHRM.Areas.Leave.Models
         // Display helpers
         [NotMapped] public string LvTypName { get; set; }
         [NotMapped] public string StatusText => IsEnabled ? "Active" : "Inactive";
+        [NotMapped] public bool IsInHouse => WfType != null && WfType.Contains("In-House");
+        [NotMapped] public bool IsOutsource => WfType != null && (WfType.Contains("Outsource") || WfType == "Leave Approval");
+        [NotMapped] public bool IsLeaveApproval => WfType == null || WfType.Contains("Leave");
+        [NotMapped] public bool IsSalaryProcess => WfType != null && WfType.Contains("Salary");
+        [NotMapped] public bool IsEncashment => WfType != null && WfType.Contains("Encashment");
+        [NotMapped] public bool IsRegularization => WfType != null && WfType.Contains("Regularization");
     }
 }

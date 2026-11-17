@@ -300,6 +300,45 @@ namespace qHRM.Areas.Attendance.Data
                 .GroupBy(r => r.StDate.Date)
                 .ToDictionary(g => g.Key, g => g.First());
 
+            // Resolve today's shift (or most recent working shift) for shift start & grace period
+            HrWkShift todayShift = null;
+            if (shiftRecords.TryGetValue(today, out var sftToday) && sftToday?.Sft != null)
+            {
+                todayShift = sftToday.Sft;
+            }
+            else
+            {
+                // 1. Try from employee's assigned roster for today
+                string dayCode = today.ToString("ddd").ToUpper();
+                todayShift = await (from er in _hrmContext.HrEmpWkRoster
+                                    where er.EmpSysId == empSysId && er.RecStat == 1
+                                       && (today >= er.StDate && (today <= er.EndDate || er.EndDate == null))
+                                    join rs in _hrmContext.HrWkRosterShift on er.RstId equals rs.RstId
+                                    where rs.Day == dayCode
+                                    join s in _hrmContext.HrWkShift on rs.SftId equals s.SftId
+                                    select s).FirstOrDefaultAsync();
+
+                // 2. Fallback: most recent working shift from shiftRecords
+                if (todayShift == null)
+                {
+                    todayShift = shiftRecords.Values
+                        .Where(s => s.Sft != null && s.Sft.SftCode != "WK_END")
+                        .OrderByDescending(s => s.AtndcDate)
+                        .Select(s => s.Sft)
+                        .FirstOrDefault();
+                }
+
+                // 3. Fallback: most recent working shift from DB
+                if (todayShift == null)
+                {
+                    todayShift = await _hrmContext.HrEmpAtndcSft
+                        .Where(s => s.EmpSysId == empSysId && s.Sft != null && s.Sft.SftCode != "WK_END" && s.RecStat == 1)
+                        .OrderByDescending(s => s.AtndcDate)
+                        .Select(s => s.Sft)
+                        .FirstOrDefaultAsync();
+                }
+            }
+
             // Default fallback shift (07:30 to 15:30)
             var defaultStart = new TimeSpan(7, 30, 0);
             var defaultEnd = new TimeSpan(15, 30, 0);
@@ -327,12 +366,15 @@ namespace qHRM.Areas.Attendance.Data
                 shiftRecords.TryGetValue(d, out var sft);
                 if (vm.IsToday)
                 {
-                    if (sft?.Sft != null)
+                    var activeShift = sft?.Sft ?? todayShift;
+                    if (activeShift != null)
                     {
-                        vm.ShiftStart = sft.Sft.StTime.TimeOfDay;
-                        vm.ShiftEnd = sft.Sft.EndTime.TimeOfDay;
-                        vm.ShiftName = sft.Sft.NameEng ?? vm.ShiftName;
+                        vm.ShiftStart = activeShift.StTime.TimeOfDay;
+                        vm.ShiftEnd = activeShift.EndTime.TimeOfDay;
+                        vm.ShiftName = activeShift.NameEng ?? vm.ShiftName;
                     }
+
+                    int gracePeriodMinutes = activeShift != null ? activeShift.GrcPrd : 30;
 
                     if (todayPunch.HasValue)
                     {
@@ -342,8 +384,11 @@ namespace qHRM.Areas.Attendance.Data
                         vm.OutTimeStr = null;
 
                         TimeSpan shiftStartForCalc = vm.ShiftStart > TimeSpan.Zero ? vm.ShiftStart : defaultStart;
-                        if (vm.InTime.Value > shiftStartForCalc)
+                        TimeSpan graceDeadline = shiftStartForCalc.Add(TimeSpan.FromMinutes(gracePeriodMinutes));
+
+                        if (vm.InTime.Value > graceDeadline)
                         {
+                            // Late beyond grace period: late duration is calculated from the shift start time
                             int lateMinutes = (int)(vm.InTime.Value - shiftStartForCalc).TotalMinutes;
                             if (lateMinutes > 0)
                             {
@@ -352,6 +397,11 @@ namespace qHRM.Areas.Attendance.Data
                                 int lm = lateMinutes % 60;
                                 vm.LateByStr = $"Late by {lh:D2}:{lm:D2}";
                             }
+                        }
+                        else
+                        {
+                            vm.LateMinutes = 0;
+                            vm.LateByStr = null;
                         }
                         vm.WorkedHoursStr = "In Progress";
                     }
@@ -585,11 +635,16 @@ namespace qHRM.Areas.Attendance.Data
 
                     vm.WorkedWidthPercent = Math.Round(Math.Max(1.0, vm.OutPosPercent - vm.InPosPercent), 2);
 
-                    // Unworked late arrival period: 0% to InPos%
-                    if (vm.InPosPercent > 0.5)
+                    // Unworked late arrival period: only show red late bar if employee is actually late (exceeded grace period)
+                    if (vm.LateMinutes > 0 && vm.InPosPercent > 0.5)
                     {
                         vm.HasLatePeriod = true;
                         vm.LateWidthPercent = vm.InPosPercent;
+                    }
+                    else
+                    {
+                        vm.HasLatePeriod = false;
+                        vm.LateWidthPercent = 0;
                     }
 
                     // Unworked early departure period: OutPos% to 100%

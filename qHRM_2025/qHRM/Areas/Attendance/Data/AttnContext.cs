@@ -904,7 +904,23 @@ namespace qHRM.Areas.Attendance.Data
                             dayItem.OutTime = "--";
                             dayItem.WorkHours = "--";
                             dayItem.WorkMinutes = 0;
-                            dayItem.LateMinutes = 0;
+
+                            // Calculate late if punch is beyond grace period (shift start 07:30 + 30 min grace = 08:00)
+                            TimeSpan defaultShiftStart = new TimeSpan(7, 30, 0);
+                            int gracePeriodMins = 30;
+                            TimeSpan graceDeadline = defaultShiftStart.Add(TimeSpan.FromMinutes(gracePeriodMins));
+                            TimeSpan punchTime = todayPunch.Value.TimeOfDay;
+
+                            if (punchTime > graceDeadline)
+                            {
+                                dayItem.LateMinutes = (int)(punchTime - defaultShiftStart).TotalMinutes;
+                                if (dayItem.LateMinutes > 0) lateCount++;
+                            }
+                            else
+                            {
+                                dayItem.LateMinutes = 0;
+                            }
+
                             dayItem.EarlyLeaveMinutes = 0;
                             dayItem.OtMinutes = 0;
                             dayItem.Note = "";
@@ -1197,7 +1213,23 @@ namespace qHRM.Areas.Attendance.Data
                             dayItem.OutTime = "--";
                             dayItem.WorkHours = "--";
                             dayItem.WorkMinutes = 0;
-                            dayItem.LateMinutes = 0;
+
+                            // Calculate late if punch is beyond grace period (shift start 07:30 + 30 min grace = 08:00)
+                            TimeSpan defaultShiftStart = new TimeSpan(7, 30, 0);
+                            int gracePeriodMins = 30;
+                            TimeSpan graceDeadline = defaultShiftStart.Add(TimeSpan.FromMinutes(gracePeriodMins));
+                            TimeSpan punchTime = todayPunch.Value.TimeOfDay;
+
+                            if (punchTime > graceDeadline)
+                            {
+                                dayItem.LateMinutes = (int)(punchTime - defaultShiftStart).TotalMinutes;
+                                if (dayItem.LateMinutes > 0) lateCount++;
+                            }
+                            else
+                            {
+                                dayItem.LateMinutes = 0;
+                            }
+
                             dayItem.EarlyLeaveMinutes = 0;
                             dayItem.OtMinutes = 0;
                             dayItem.Note = "";

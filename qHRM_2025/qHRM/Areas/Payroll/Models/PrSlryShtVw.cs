@@ -13,6 +13,8 @@ namespace qHRM.Areas.Payroll.Models
         public string FullName { get; set; }
         public string DesigName { get; set; }
         public string DeptName { get; set; }
+        public int DeptId { get; set; }
+        public int DeptSrtOrd { get; set; }
         public decimal Basic { get; set; }
         public bool InHouse { get; set; }
 

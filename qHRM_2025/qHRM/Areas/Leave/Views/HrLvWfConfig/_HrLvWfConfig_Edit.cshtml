@@ -1,6 +1,8 @@
 @model qHRM.Areas.Leave.Models.HrLvWfConfig
 @{
-    bool isLeave = string.IsNullOrEmpty(Model?.WfType) || Model.WfType == "Leave Approval";
+    bool isLeave = string.IsNullOrEmpty(Model?.WfType) || Model.WfType == "Leave Approval" || Model.WfType.Contains("Leave");
+    bool isInHouse = Model?.WfType != null && Model.WfType.Contains("In-House");
+    bool isOutsource = isLeave && !isInHouse;
     bool isRegularization = Model?.WfType == "Regularization";
     bool isSickOrCasual = (Model?.WfCode != null && (Model.WfCode.Contains("SICK", StringComparison.OrdinalIgnoreCase) || Model.WfCode.Contains("CSL", StringComparison.OrdinalIgnoreCase)))
                        || (Model?.LvTypName != null && (Model.LvTypName.Contains("Sick", StringComparison.OrdinalIgnoreCase) || Model.LvTypName.Contains("Casual", StringComparison.OrdinalIgnoreCase)));
@@ -16,10 +18,9 @@
     @Html.HiddenFor(m => m.WfCfgId)
     @Html.HiddenFor(m => m.WfType)
     @Html.HiddenFor(m => m.LvTypId)
-    @Html.HiddenFor(m => m.BuHeadEmpId)
 
     <div class="row">
-        <!-- LEFT COLUMN -->
+        <!-- LEFT COLUMN: Workflow Mapping -->
         <div class="col-md-6">
             <h6 class="font-weight-bold mb-3" style="color:#540033;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
                 <i class="fas fa-cog"></i> Workflow Mapping
@@ -27,53 +28,37 @@
 
             <div class="form-group">
                 <label class="control-label font-weight-bold">Workflow Type</label>
-                <input value="@Model.WfType" class="form-control form-control-sm font-weight-bold text-primary" disabled />
+                <div>
+                    @if (isInHouse)
+                    {
+                        <span class="badge" style="background:#0d6efd;color:#fff;font-size:13px;padding:6px 10px;border-radius:4px;">
+                            <i class="fas fa-building mr-1"></i> Leave Approval (In-House)
+                        </span>
+                    }
+                    else if (isOutsource)
+                    {
+                        <span class="badge" style="background:#6f42c1;color:#fff;font-size:13px;padding:6px 10px;border-radius:4px;">
+                            <i class="fas fa-user-tag mr-1"></i> Leave Approval (Outsource)
+                        </span>
+                    }
+                    else
+                    {
+                        <input value="@Model.WfType" class="form-control form-control-sm font-weight-bold text-primary" disabled />
+                    }
+                </div>
             </div>
 
-            @if (isRegularization)
-    {
-        <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
-        <h6 class="font-weight-bold mb-3" style="color:#540033;">
-            <i class="fas fa-calendar-check"></i> Regularization Policy Rules
-        </h6>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label font-weight-bold">Maximum Allowed Window (Days)</label>
-                    <input asp-for="MaxDaysAllowed" type="number" min="1" max="90" class="form-control form-control-sm" />
-                    <small class="text-muted">Configurable regularization request window (Default: 14 days / 2 weeks)</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group pt-4">
-                    <div class="custom-control custom-checkbox">
-                        <input asp-for="AllowFutureDates" type="checkbox" class="custom-control-input" id="chkRegFutureDatesEdit" />
-                        <label class="custom-control-label font-weight-bold" for="chkRegFutureDatesEdit">Allow Future Dates</label>
-                    </div>
-                    <small class="text-muted">Leave unchecked to strictly disallow future dates</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label font-weight-bold">Working Days Allowed</label>
-                    <input type="text" class="form-control form-control-sm bg-light" value="Sunday - Thursday" readonly />
-                    <small class="text-muted">Weekends (Fri & Sat) are disabled</small>
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (isLeave)
+            @if (isLeave)
             {
                 <div class="form-group">
-                    <label class="control-label">Leave Type</label>
-                    <input value="@Model.LvTypName" class="form-control form-control-sm" disabled />
+                    <label class="control-label font-weight-bold">Leave Type</label>
+                    <input value="@Model.LvTypName" class="form-control form-control-sm bg-light" disabled />
                     <small class="text-muted">Leave Type cannot be changed.</small>
                 </div>
             }
 
             <div class="form-group">
-                <label asp-for="WfCode" class="control-label"></label>
+                <label asp-for="WfCode" class="control-label font-weight-bold"></label>
                 <input asp-for="WfCode" id="txtEditWfCode" class="form-control form-control-sm"
                        placeholder="e.g. LV_SICK, LV_CSL, SALARY_PROCESS, ENCASH_PROCESS" />
                 <span asp-validation-for="WfCode" class="text-danger"></span>
@@ -92,90 +77,113 @@
             <div class="form-group">
                 <div class="custom-control custom-switch">
                     <input asp-for="IsEnabled" type="checkbox" class="custom-control-input" id="chkIsEnabled" />
-                    <label class="custom-control-label" for="chkIsEnabled">Workflow Enabled</label>
+                    <label class="custom-control-label font-weight-bold" for="chkIsEnabled">Workflow Enabled</label>
                 </div>
             </div>
         </div>
 
-        <!-- RIGHT COLUMN: Approvers -->
+        <!-- RIGHT COLUMN: Designated Approvers -->
         <div class="col-md-6">
-            @if (isRegularization)
-    {
-        <hr style="border-color:rgba(153,0,73,.2);margin:16px 0;" />
-        <h6 class="font-weight-bold mb-3" style="color:#540033;">
-            <i class="fas fa-calendar-check"></i> Regularization Policy Rules
-        </h6>
-        <div class="row">
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label font-weight-bold">Maximum Allowed Window (Days)</label>
-                    <input asp-for="MaxDaysAllowed" type="number" min="1" max="90" class="form-control form-control-sm" />
-                    <small class="text-muted">Configurable regularization request window (Default: 14 days / 2 weeks)</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group pt-4">
-                    <div class="custom-control custom-checkbox">
-                        <input asp-for="AllowFutureDates" type="checkbox" class="custom-control-input" id="chkRegFutureDatesEdit" />
-                        <label class="custom-control-label font-weight-bold" for="chkRegFutureDatesEdit">Allow Future Dates</label>
-                    </div>
-                    <small class="text-muted">Leave unchecked to strictly disallow future dates</small>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="form-group">
-                    <label class="control-label font-weight-bold">Working Days Allowed</label>
-                    <input type="text" class="form-control form-control-sm bg-light" value="Sunday - Thursday" readonly />
-                    <small class="text-muted">Weekends (Fri & Sat) are disabled</small>
-                </div>
-            </div>
-        </div>
-    }
-
-    @if (isLeave)
+            @if (isInHouse)
             {
                 <h6 class="font-weight-bold mb-3" style="color:#540033;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
-                    <i class="fas fa-users"></i> Designated Approvers (Leave)
+                    <i class="fas fa-building"></i> Designated Approvers (In-House Leave)
                 </h6>
+                <small class="text-muted d-block mb-3">
+                    Approval sequence: Step 1 (HR Approver) &rarr; Step 2 (Reporting Manager) &rarr; Step 3 (BU Head) &rarr; Step 4 (Finance)@(isSickOrCasual ? "" : " &rarr; Step 5 (CEO)").
+                </small>
 
                 <div class="form-group">
-                    <label class="control-label">Step 1 - Outsource Record Owner</label>
-                    <select asp-for="OutsourceRecordOwnerEmpId" id="drpOutsourceOwner" class="form-control form-control-sm select2-dropdown"
-                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.OutsourceRecordOwnerEmpId))">
-                        <option value="">-- Select Outsource Record Owner --</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="control-label">Step 2 - Reporting Manager</label>
-                    <select asp-for="ReportingManagerEmpId" id="drpRepMgr" class="form-control form-control-sm select2-dropdown"
-                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.ReportingManagerEmpId))">
-                        <option value="">-- Select Reporting Manager --</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label class="control-label">Step 3 - HR</label>
+                    <label class="control-label font-weight-bold">Step 1 - HR Approver</label>
                     <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
                         <option value="">-- Select HR Approver --</option>
                     </select>
+                    <small class="text-muted">Initial HR verification / review (Default: Kaushalya Fonseka)</small>
                 </div>
 
                 <div class="form-group">
-                    <label class="control-label">Step 4 - Finance</label>
+                    <label class="control-label font-weight-bold">Step 2 - Reporting Manager</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="Dynamic (Employee Reporting Manager Hierarchy)" readonly />
+                    <small class="text-muted">Auto-resolved from HR Job Assignment (Rpt_Mng_Id)</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 3 - BU Head</label>
+                    <input type="text" class="form-control form-control-sm bg-light" value="Dynamic (Employee Reporting Manager Hierarchy)" readonly />
+                    <small class="text-muted">Auto-resolved from Employee Reporting Manager Hierarchy</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 4 - Finance</label>
                     <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
                         <option value="">-- Select Finance Approver --</option>
                     </select>
+                    <small class="text-muted">Finance Review & Approval (Default: Ashhar Zaeem)</small>
                 </div>
 
                 <div class="form-group" id="grpEditCeoStep" style="@(isSickOrCasual ? "display:none;" : "")">
-                    <label class="control-label">Step 5 - CEO (Final Approver)</label>
+                    <label class="control-label font-weight-bold">Step 5 - CEO (Final Approver)</label>
                     <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
                             asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
                         <option value="">-- Select CEO Approver --</option>
                     </select>
+                    <small class="text-muted">Final sign-off (Default: Hasan Sayed — Not required for Sick & Casual)</small>
+                </div>
+            }
+            else if (isOutsource)
+            {
+                <h6 class="font-weight-bold mb-3" style="color:#540033;border-bottom:2px solid rgba(153,0,73,.2);padding-bottom:6px;">
+                    <i class="fas fa-users"></i> Designated Approvers (Outsource Leave)
+                </h6>
+                <small class="text-muted d-block mb-3">
+                    Approval sequence: Step 1 (Outsource Record Owner) &rarr; Step 2 (Reporting Manager) &rarr; Step 3 (HR) &rarr; Step 4 (Finance) &rarr; Step 5 (CEO).
+                </small>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 1 - Outsource Record Owner</label>
+                    <select asp-for="OutsourceRecordOwnerEmpId" id="drpOutsourceOwner" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.OutsourceRecordOwnerEmpId))">
+                        <option value="">-- Select Outsource Record Owner --</option>
+                    </select>
+                    <small class="text-muted">Default: Sanuja Jayanthy</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 2 - Reporting Manager</label>
+                    <select asp-for="ReportingManagerEmpId" id="drpRepMgr" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.ReportingManagerEmpId))">
+                        <option value="">-- Select Reporting Manager --</option>
+                    </select>
+                    <small class="text-muted">Default: Salman Khan</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 3 - HR</label>
+                    <select asp-for="HrManagerEmpId" id="drpHrMgr" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.HrManagerEmpId))">
+                        <option value="">-- Select HR Approver --</option>
+                    </select>
+                    <small class="text-muted">Default: Kaushalya Fonseka</small>
+                </div>
+
+                <div class="form-group">
+                    <label class="control-label font-weight-bold">Step 4 - Finance</label>
+                    <select asp-for="FinanceEmpId" id="drpFinance" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.FinanceEmpId))">
+                        <option value="">-- Select Finance Approver --</option>
+                    </select>
+                    <small class="text-muted">Default: Ashhar Zaeem</small>
+                </div>
+
+                <div class="form-group" id="grpEditCeoStep">
+                    <label class="control-label font-weight-bold">Step 5 - CEO (Final Approver)</label>
+                    <select asp-for="CeoEmpId" id="drpCeo" class="form-control form-control-sm select2-dropdown"
+                            asp-items="@(new SelectList(ViewBag.lstEmp, "ESysId", "FulNme", Model?.CeoEmpId))">
+                        <option value="">-- Select CEO Approver --</option>
+                    </select>
+                    <small class="text-muted">Default: Hasan Sayed</small>
                 </div>
             }
             else if (isRegularization)

@@ -82,11 +82,12 @@ namespace qHRM.Areas.Leave.Controllers
             return PartialView("_HrLvWfConfig_Create", new HrLvWfConfig
             {
                 IsEnabled                 = true,
+                WfType                    = "Leave Approval (In-House)",
                 OutsourceRecordOwnerEmpId = 97,  // Step 1 - Outsource Record Owner (Sanuja Jayanthy)
                 ReportingManagerEmpId     = 405, // Step 2 - Reporting Manager (Salman Khan)
-                HrManagerEmpId            = 6,   // Step 3 - HR (Kaushalya Fonseka)
-                FinanceEmpId              = 452, // Step 4 - Finance (Ashhar Zaeem)
-                CeoEmpId                  = 11,  // Step 5 - CEO (Hasan Sayed)
+                HrManagerEmpId            = 6,   // HR (Kaushalya Fonseka)
+                FinanceEmpId              = 452, // Finance (Ashhar Zaeem)
+                CeoEmpId                  = 11,  // CEO (Hasan Sayed)
                 BuHeadEmpId               = 2,   // BU Head (Kelum Tennakoon)
                 PayrollCutoffDay          = 20
             });
@@ -101,20 +102,21 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                if (string.IsNullOrEmpty(cfg.WfType)) cfg.WfType = "Leave Approval";
+                if (string.IsNullOrEmpty(cfg.WfType)) cfg.WfType = "Leave Approval (In-House)";
+                bool isLeave = cfg.WfType.Contains("Leave");
 
                 // Check for duplicate
-                bool exists = cfg.WfType == "Leave Approval"
-                    ? _hrmContext.HrLvWfConfig.Any(c => (c.WfType == null || c.WfType == "Leave Approval") && c.LvTypId == cfg.LvTypId && c.RecStat == 1)
+                bool exists = isLeave
+                    ? _hrmContext.HrLvWfConfig.Any(c => c.WfType == cfg.WfType && c.LvTypId == cfg.LvTypId && c.RecStat == 1)
                     : _hrmContext.HrLvWfConfig.Any(c => c.WfType == cfg.WfType && c.RecStat == 1);
 
                 if (exists)
                     return RedirectToAction(nameof(Index))
                         .WithWarning("Workflow Configuration",
-                            $"An active workflow configuration already exists for '{cfg.WfType}'. " +
-                            "Please deactivate the existing one first.");
+                            $"An active workflow configuration already exists for '{cfg.WfType}' and the selected leave type. " +
+                            "Please deactivate or edit the existing one first.");
 
-                if (cfg.WfType == "Leave Approval")
+                if (isLeave)
                 {
                     var approverConfig = new
                     {
@@ -183,7 +185,7 @@ namespace qHRM.Areas.Leave.Controllers
                 _hrmContext.HrLvWfConfig.Add(cfg);
                 _hrmContext.SaveChanges();
 
-                if (cfg.WfType == "Leave Approval")
+                if (isLeave)
                 {
                     SyncWorkflowEngineApprovers(cfg);
                 }
@@ -215,6 +217,8 @@ namespace qHRM.Areas.Leave.Controllers
             cfg.LvTypName = cfg.LvTypId.HasValue 
                 ? _hrmContext.HrLvType.FirstOrDefault(t => t.LvTypId == cfg.LvTypId)?.NameEng 
                 : (cfg.WfType ?? "—");
+
+            bool isLeave = cfg.WfType == null || cfg.WfType == "Leave Approval" || cfg.WfType.Contains("Leave");
 
             if (cfg.WfType == "Regularization")
             {
@@ -249,7 +253,7 @@ namespace qHRM.Areas.Leave.Controllers
                 return PartialView("_HrLvWfConfig_Edit", cfg);
             }
 
-            if (cfg.WfType != "Leave Approval")
+            if (!isLeave)
             {
                 if (!string.IsNullOrEmpty(cfg.ApproverConfig) && cfg.ApproverConfig.Trim() != "{}")
                 {
@@ -295,21 +299,29 @@ namespace qHRM.Areas.Leave.Controllers
             PopulateApproversFromWorkflowEngine(cfg);
 
             bool isSickOrCasual = IsSickOrCasualLeave(cfg.WfCode, cfg.LvTypName);
+            bool isInHouse = cfg.WfType != null && cfg.WfType.Contains("In-House");
 
-            // Fallback default designated approvers in workflow step order:
-            // Step 1 - Outsource Record Owner -> Sanuja Jayanthy (97)
-            // Step 2 - Reporting Manager      -> Salman Khan (405)
-            // Step 3 - HR                     -> Kaushalya Fonseka (6)
-            // Step 4 - Finance                -> Ashhar Zaeem (452)
-            // Step 5 - CEO (Final Approver)   -> Hasan Sayed (11) (for 5-step workflows)
-            if (!cfg.OutsourceRecordOwnerEmpId.HasValue) cfg.OutsourceRecordOwnerEmpId = 97;  // Sanuja Jayanthy
-            if (!cfg.ReportingManagerEmpId.HasValue)     cfg.ReportingManagerEmpId     = 405; // Salman Khan
-            if (!cfg.HrManagerEmpId.HasValue)            cfg.HrManagerEmpId            = 6;   // Kaushalya Fonseka
-            if (!cfg.FinanceEmpId.HasValue)              cfg.FinanceEmpId              = 452; // Ashhar Zaeem
-            if (!cfg.BuHeadEmpId.HasValue)               cfg.BuHeadEmpId               = 2;   // Kelum Tennakoon
-            if (!isSickOrCasual && !cfg.CeoEmpId.HasValue)
+            if (isInHouse)
             {
-                cfg.CeoEmpId = 11; // Hasan Sayed
+                if (!cfg.HrManagerEmpId.HasValue) cfg.HrManagerEmpId = 6;   // Kaushalya Fonseka
+                if (!cfg.BuHeadEmpId.HasValue)    cfg.BuHeadEmpId    = 2;   // Kelum Tennakoon
+                if (!cfg.FinanceEmpId.HasValue)   cfg.FinanceEmpId   = 452; // Ashhar Zaeem
+                if (!isSickOrCasual && !cfg.CeoEmpId.HasValue)
+                {
+                    cfg.CeoEmpId = 11; // Hasan Sayed
+                }
+            }
+            else
+            {
+                if (!cfg.OutsourceRecordOwnerEmpId.HasValue) cfg.OutsourceRecordOwnerEmpId = 97;  // Sanuja Jayanthy
+                if (!cfg.ReportingManagerEmpId.HasValue)     cfg.ReportingManagerEmpId     = 405; // Salman Khan
+                if (!cfg.HrManagerEmpId.HasValue)            cfg.HrManagerEmpId            = 6;   // Kaushalya Fonseka
+                if (!cfg.FinanceEmpId.HasValue)              cfg.FinanceEmpId              = 452; // Ashhar Zaeem
+                if (!cfg.BuHeadEmpId.HasValue)               cfg.BuHeadEmpId               = 2;   // Kelum Tennakoon
+                if (!isSickOrCasual && !cfg.CeoEmpId.HasValue)
+                {
+                    cfg.CeoEmpId = 11; // Hasan Sayed
+                }
             }
 
             bool hasSavedPolicies = false;
@@ -406,7 +418,9 @@ namespace qHRM.Areas.Leave.Controllers
                 existing.MdfId       = Convert.ToInt32(HttpContext.Session.GetInt32("userEmpSysId"));
                 existing.MdfDateTime = DateTime.Now;
 
-                if (existing.WfType == "Leave Approval" || string.IsNullOrEmpty(existing.WfType))
+                bool isLeave = existing.WfType == "Leave Approval" || string.IsNullOrEmpty(existing.WfType) || existing.WfType.Contains("Leave");
+
+                if (isLeave)
                 {
                     var approverConfig = new
                     {
@@ -550,13 +564,16 @@ namespace qHRM.Areas.Leave.Controllers
                 if (string.IsNullOrWhiteSpace(wfConnStr)) return;
 
                 bool isSickOrCasual = IsSickOrCasualLeave(cfg.WfCode, cfg.LvTypName);
-                string targetDefCode = isSickOrCasual ? "OUT-SICK-CSL" : "OUT-SICK-ANNUAL";
+                bool isInHouse = cfg.WfType != null && cfg.WfType.Contains("In-House");
+                string targetDefCode = isInHouse
+                    ? (isSickOrCasual ? "INH-SICK-CSL" : "INH-ANUL")
+                    : (isSickOrCasual ? "OUT-SICK-CSL" : "OUT-SICK-ANNUAL");
 
                 using var conn = new SqlConnection(wfConnStr);
                 conn.Open();
 
                 using var cmd = new SqlCommand(@"
-                    SELECT ws.StepNumber, ws.Name, u.EmpSysId
+                    SELECT ws.StepNumber, ws.Name, ws.ApprovalType, u.EmpSysId
                     FROM WorkflowSteps ws
                     INNER JOIN WorkflowVersions wv ON ws.WorkflowVersionId = wv.Id AND wv.IsActive = 1
                     INNER JOIN WorkflowDefinitions wd ON wv.WorkflowDefinitionId = wd.Id AND wd.IsDeleted = 0
@@ -572,28 +589,57 @@ namespace qHRM.Areas.Leave.Controllers
                     int? empSysId = reader["EmpSysId"] != DBNull.Value ? Convert.ToInt32(reader["EmpSysId"]) : (int?)null;
                     if (!empSysId.HasValue || empSysId.Value <= 0) continue;
 
-                    switch (stepNum)
+                    if (isInHouse)
                     {
-                        case 1:
-                            if (!cfg.OutsourceRecordOwnerEmpId.HasValue)
-                                cfg.OutsourceRecordOwnerEmpId = empSysId;
-                            break;
-                        case 2:
-                            if (!cfg.ReportingManagerEmpId.HasValue)
-                                cfg.ReportingManagerEmpId = empSysId;
-                            break;
-                        case 3:
-                            if (!cfg.HrManagerEmpId.HasValue)
-                                cfg.HrManagerEmpId = empSysId;
-                            break;
-                        case 4:
-                            if (!cfg.FinanceEmpId.HasValue)
-                                cfg.FinanceEmpId = empSysId;
-                            break;
-                        case 5:
-                            if (!cfg.CeoEmpId.HasValue)
-                                cfg.CeoEmpId = empSysId;
-                            break;
+                        switch (stepNum)
+                        {
+                            case 1:
+                                if (!cfg.HrManagerEmpId.HasValue)
+                                    cfg.HrManagerEmpId = empSysId;
+                                break;
+                            case 2:
+                                if (!cfg.ReportingManagerEmpId.HasValue)
+                                    cfg.ReportingManagerEmpId = empSysId;
+                                break;
+                            case 3:
+                                if (!cfg.BuHeadEmpId.HasValue)
+                                    cfg.BuHeadEmpId = empSysId;
+                                break;
+                            case 4:
+                                if (!cfg.FinanceEmpId.HasValue)
+                                    cfg.FinanceEmpId = empSysId;
+                                break;
+                            case 5:
+                                if (!cfg.CeoEmpId.HasValue)
+                                    cfg.CeoEmpId = empSysId;
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        switch (stepNum)
+                        {
+                            case 1:
+                                if (!cfg.OutsourceRecordOwnerEmpId.HasValue)
+                                    cfg.OutsourceRecordOwnerEmpId = empSysId;
+                                break;
+                            case 2:
+                                if (!cfg.ReportingManagerEmpId.HasValue)
+                                    cfg.ReportingManagerEmpId = empSysId;
+                                break;
+                            case 3:
+                                if (!cfg.HrManagerEmpId.HasValue)
+                                    cfg.HrManagerEmpId = empSysId;
+                                break;
+                            case 4:
+                                if (!cfg.FinanceEmpId.HasValue)
+                                    cfg.FinanceEmpId = empSysId;
+                                break;
+                            case 5:
+                                if (!cfg.CeoEmpId.HasValue)
+                                    cfg.CeoEmpId = empSysId;
+                                break;
+                        }
                     }
                 }
             }
@@ -612,6 +658,9 @@ namespace qHRM.Areas.Leave.Controllers
 
                 var lvTypName = _hrmContext.HrLvType.FirstOrDefault(t => t.LvTypId == cfg.LvTypId)?.NameEng;
                 bool isSickOrCasual = IsSickOrCasualLeave(cfg.WfCode, lvTypName);
+                bool isInHouse = cfg.WfType != null && cfg.WfType.Contains("In-House");
+                bool isOutsource = cfg.WfType == null || cfg.WfType == "Leave Approval" || cfg.WfType.Contains("Outsource");
+
                 string outsourceDefCode = isSickOrCasual ? "OUT-SICK-CSL" : "OUT-SICK-ANNUAL";
                 string inHouseDefCode   = isSickOrCasual ? "INH-SICK-CSL" : "INH-ANUL";
 
@@ -646,21 +695,31 @@ namespace qHRM.Areas.Leave.Controllers
                     updateCmd.ExecuteNonQuery();
                 }
 
-                // Sync Outsource Workflow steps (Step 1: Outsource Record Owner, Step 3: HR, Step 4: Finance, Step 5: CEO)
-                UpdateStepTargetUser(outsourceDefCode, 1, cfg.OutsourceRecordOwnerEmpId);
-                UpdateStepTargetUser(outsourceDefCode, 3, cfg.HrManagerEmpId);
-                UpdateStepTargetUser(outsourceDefCode, 4, cfg.FinanceEmpId);
-                if (!isSickOrCasual)
+                if (isOutsource)
                 {
-                    UpdateStepTargetUser(outsourceDefCode, 5, cfg.CeoEmpId);
+                    // Outsource Workflow steps (Step 1: Outsource Record Owner, Step 3: HR, Step 4: Finance, Step 5: CEO)
+                    UpdateStepTargetUser(outsourceDefCode, 1, cfg.OutsourceRecordOwnerEmpId);
+                    UpdateStepTargetUser(outsourceDefCode, 3, cfg.HrManagerEmpId);
+                    UpdateStepTargetUser(outsourceDefCode, 4, cfg.FinanceEmpId);
+                    if (!isSickOrCasual)
+                    {
+                        UpdateStepTargetUser(outsourceDefCode, 5, cfg.CeoEmpId);
+                    }
                 }
 
-                // Sync In-House Workflow steps (Step 1: HR, Step 4: Finance, Step 5: CEO)
-                UpdateStepTargetUser(inHouseDefCode, 1, cfg.HrManagerEmpId);
-                UpdateStepTargetUser(inHouseDefCode, 4, cfg.FinanceEmpId);
-                if (!isSickOrCasual)
+                if (isInHouse)
                 {
-                    UpdateStepTargetUser(inHouseDefCode, 5, cfg.CeoEmpId);
+                    // In-House Workflow steps (Step 1: HR, Step 3: BU Head, Step 4: Finance, Step 5: CEO)
+                    UpdateStepTargetUser(inHouseDefCode, 1, cfg.HrManagerEmpId);
+                    if (cfg.BuHeadEmpId.HasValue)
+                    {
+                        UpdateStepTargetUser(inHouseDefCode, 3, cfg.BuHeadEmpId);
+                    }
+                    UpdateStepTargetUser(inHouseDefCode, 4, cfg.FinanceEmpId);
+                    if (!isSickOrCasual)
+                    {
+                        UpdateStepTargetUser(inHouseDefCode, 5, cfg.CeoEmpId);
+                    }
                 }
             }
             catch

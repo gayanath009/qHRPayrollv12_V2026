@@ -702,6 +702,60 @@ namespace qHRM.Areas.Payroll.Controllers
             }
         }
 
+        [HttpPost]
+        [AcceptVerbs("GET", "POST")]
+        public IActionResult PrintDeptSalarySheet(PrSalarySheetView obj, int sctn = 0)
+        {
+            try
+            {
+                int entId = (int)(HttpContext.Session.GetInt32("userEntId") ?? 1);
+                var cmp = _organizationContext.GetEntityByEntId(entId);
+                string compName = cmp?.NameEng ?? "Qatar Computer Services WLL";
+
+                int efYr = obj.EftYr > 0 ? obj.EftYr : DateTime.Today.Year;
+                int efMnt = obj.EftMnt > 0 ? obj.EftMnt : DateTime.Today.Month;
+
+                // Retrieve all employees for that month to compute correct internal & outsourced totals
+                var allEmployees = _payrollContext.GetSlryDtl(entId, "_paysheet", 0, efMnt, efYr)?.ToList() ?? new List<PrSlryShtVw>();
+
+                decimal intlAmt = allEmployees.Where(y => y.InHouse).Sum(y => y.NtSlry);
+                decimal otscdAmt = allEmployees.Where(y => !y.InHouse).Sum(y => y.NtSlry);
+
+                IEnumerable<PrSlryShtVw> displayEmployees;
+                if (sctn == 0)
+                {
+                    // In-House Staff
+                    displayEmployees = allEmployees.Where(y => y.InHouse).ToList();
+                }
+                else if (sctn == 1)
+                {
+                    // Outsourced Staff
+                    displayEmployees = allEmployees.Where(y => !y.InHouse).ToList();
+                }
+                else
+                {
+                    // All Staff
+                    displayEmployees = allEmployees;
+                }
+
+                byte[] pdfBytes = DepartmentSalarySheetPdfReport.GenerateReport(
+                    compName,
+                    efYr,
+                    efMnt,
+                    displayEmployees,
+                    intlAmt,
+                    otscdAmt,
+                    sctn,
+                    _webHostEnvironment.WebRootPath);
+
+                return File(pdfBytes, "application/pdf");
+            }
+            catch
+            {
+                throw;
+            }
+        }
+
         public IActionResult PrintSlrySht_Sctn(PrSalarySheetView obj, int sctn) // sctn : 0 => Inhouse, sctn : 1 => OutSourced
         {
             return PrintStaffSalarySheet(obj, sctn);
