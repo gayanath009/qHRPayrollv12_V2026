@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using qHRM.Areas.Payroll.Models;
 using qHRM.Areas.SysAdmin.Data;
@@ -1140,13 +1140,15 @@ namespace qHRM.Areas.Payroll.Data
                            Department = x.r.dp.NameEng,
                            Emp_Id = x.r.q.p.gi.EmpId,
                            Full_Name = x.r.q.p.gi.FullName,
-                           Designation = x.ds.NameEng,
-                           BasicSalary = x.r.q.p.ss.Basic,
-                           HouseRent = x.r.q.p.ss.HrAlwnc,
-                           Transport = x.r.q.p.ss.TrnsAlwnc,
-                           Position = x.r.q.p.ss.PstnAlwnc,
-                           ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
-                           Incentives = x.r.q.p.ss.IncntvAmt,
+                            Designation = x.ds.NameEng,
+                            WrktypId = x.r.q.p.gi.WrktypId ?? 1,
+                            BasicSalary = x.r.q.p.ss.Basic,
+                            HouseRent = x.r.q.p.ss.HrAlwnc,
+                            Transport = x.r.q.p.ss.TrnsAlwnc + x.r.q.p.ss.Tra,
+                            Position = x.r.q.p.ss.PstnAlwnc,
+                            ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
+                            SpcAllowance = x.r.q.p.ss.SpcAlwnc,
+                            Incentives = x.r.q.p.ss.IncntvAmt,
                            Mobile = x.r.q.p.ss.MobAlwnc,
                            Overtime = x.r.q.p.ss.OtAmt,
                            MedicalAllowance = x.r.q.p.ss.MedAlwnc,
@@ -1200,13 +1202,15 @@ namespace qHRM.Areas.Payroll.Data
                            Emp_Sys_Id = x.r.q.p.gi.EmpSysId,
                            Emp_Id = x.r.q.p.gi.EmpId,
                            Full_Name = x.r.q.p.gi.FullName,
-                           Designation = x.ds.NameEng,
-                           BasicSalary = x.r.q.p.ss.Basic,
-                           HouseRent = x.r.q.p.ss.HrAlwnc,
-                           Transport = x.r.q.p.ss.TrnsAlwnc,
-                           Position = x.r.q.p.ss.PstnAlwnc,
-                           ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
-                           Incentives = x.r.q.p.ss.IncntvAmt,
+                            Designation = x.ds.NameEng,
+                            WrktypId = x.r.q.p.gi.WrktypId ?? 1,
+                            BasicSalary = x.r.q.p.ss.Basic,
+                            HouseRent = x.r.q.p.ss.HrAlwnc,
+                            Transport = x.r.q.p.ss.TrnsAlwnc + x.r.q.p.ss.Tra,
+                            Position = x.r.q.p.ss.PstnAlwnc,
+                            ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
+                            SpcAllowance = x.r.q.p.ss.SpcAlwnc,
+                            Incentives = x.r.q.p.ss.IncntvAmt,
                            Mobile = x.r.q.p.ss.MobAlwnc,
                            Overtime = x.r.q.p.ss.OtAmt,
                            MedicalAllowance = x.r.q.p.ss.MedAlwnc,
@@ -1373,27 +1377,29 @@ SELECT
     LTRIM(RTRIM(ISNULL(e.First_Name, '') + ' ' + ISNULL(e.Mdl_Name, '') + ' ' + ISNULL(e.Last_Name, ''))) AS Full_Name,
     ISNULL(dp.Name_Eng, '') AS Department,
     ISNULL(ds.Name_Eng, '') AS Designation,
+    ISNULL(e.Wrktyp_Id, 1) AS Wrktyp_Id,
     ISNULL(d.Basic, 0) AS BasicSalary,
     ISNULL(d.HR_Alwnc, 0) AS HouseRent,
     ISNULL(d.Trns_Alwnc + d.TRA, 0) AS Transport,
     ISNULL(d.Pstn_Alwnc, 0) AS Position,
     ISNULL(d.Proj_Alwnc, 0) AS ProjectAllowance,
+    ISNULL(d.Spc_Alwnc, 0) AS SpcAllowance,
     ISNULL(d.Incntv_Amt, 0) AS Incentives,
     ISNULL(d.Mob_Alwnc, 0) AS Mobile,
-    ISNULL(d.Ot_Amt, 0) AS Overtime,
+    ISNULL(ROUND(d.Ot_Amt, 0), 0) AS Overtime,
     ISNULL(d.Med_Alwnc, 0) AS MedicalAllowance,
     ISNULL(d.Bonus_Amt, 0) AS BonusAmt,
     ISNULL(d.Othr_Alwnc, 0) AS OthrAlwnc,
-    ISNULL(d.Othr_Pmt, 0) AS OthrPmt,
+    ISNULL(ROUND(d.Othr_Pmt, 0), 0) AS OthrPmt,
     ISNULL(d.AirTckt_Fee, 0) AS AirTcktFee,
     ISNULL(d.Anl_Lv_Enchmnt, 0) AS AnlLvEnchmnt,
-    ISNULL(d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + d.Othr_Pmt + d.Ot_Amt + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt, 0) AS GrossSalary,
+    ISNULL(d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + ROUND(d.Othr_Pmt, 0) + ROUND(d.Ot_Amt, 0) + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt, 0) AS GrossSalary,
     ISNULL(d.Slry_Adv, 0) AS SalaryAdvance,
     ISNULL(d.Stf_Ln_Pmt, 0) AS StaffLoans,
-    ISNULL(d.Np_Amt, 0) AS NoPay,
-    ISNULL(d.Othr_Rcvry, 0) AS OthrRcvryAmt,
-    ISNULL(d.Slry_Adv + d.Stf_Ln_Pmt + d.Np_Amt + d.Othr_Rcvry, 0) AS TotalDeductions,
-    ISNULL((d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + d.Othr_Pmt + d.Ot_Amt + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt) - (d.Slry_Adv + d.Stf_Ln_Pmt + d.Np_Amt + d.Othr_Rcvry), 0) AS NtSlry,
+    ISNULL(ROUND(d.Np_Amt, 0), 0) AS NoPay,
+    ISNULL(ROUND(d.Othr_Rcvry, 0), 0) AS OthrRcvryAmt,
+    ISNULL(d.Slry_Adv + d.Stf_Ln_Pmt + ROUND(d.Np_Amt, 0) + ROUND(d.Othr_Rcvry, 0), 0) AS TotalDeductions,
+    ISNULL((d.Basic + d.HR_Alwnc + d.Trns_Alwnc + d.TRA + d.Pstn_Alwnc + d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + ROUND(d.Othr_Pmt, 0) + ROUND(d.Ot_Amt, 0) + d.Bonus_Amt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt) - (d.Slry_Adv + d.Stf_Ln_Pmt + ROUND(d.Np_Amt, 0) + ROUND(d.Othr_Rcvry, 0)), 0) AS NtSlry,
     ISNULL(d.Pmt_Mod, 1) AS PmtMod,
     ISNULL(d.Bnk_Acct, '') AS BnkAcct,
     ISNULL(d.Rmks, '') AS Remarks
@@ -1435,11 +1441,13 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                                     Emp_Id = rdr["Emp_Id"].ToString(),
                                     Full_Name = rdr["Full_Name"].ToString(),
                                     Designation = rdr["Designation"].ToString(),
+                                    WrktypId = Convert.ToInt32(rdr["Wrktyp_Id"]),
                                     BasicSalary = Convert.ToDecimal(rdr["BasicSalary"]),
                                     HouseRent = Convert.ToDecimal(rdr["HouseRent"]),
                                     Transport = Convert.ToDecimal(rdr["Transport"]),
                                     Position = Convert.ToDecimal(rdr["Position"]),
                                     ProjectAllowance = Convert.ToDecimal(rdr["ProjectAllowance"]),
+                                    SpcAllowance = Convert.ToDecimal(rdr["SpcAllowance"]),
                                     Incentives = Convert.ToDecimal(rdr["Incentives"]),
                                     Mobile = Convert.ToDecimal(rdr["Mobile"]),
                                     Overtime = Convert.ToDecimal(rdr["Overtime"]),
@@ -2683,13 +2691,15 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                            Emp_Sys_Id = x.r.q.p.gi.EmpSysId,
                            Emp_Id = x.r.q.p.gi.EmpId,
                            Full_Name = x.r.q.p.gi.FullName,
-                           Designation = x.ds.NameEng,
-                           BasicSalary = x.r.q.p.ss.Basic,
-                           HouseRent = x.r.q.p.ss.HrAlwnc,
-                           Transport = x.r.q.p.ss.TrnsAlwnc,
-                           Position = x.r.q.p.ss.PstnAlwnc,
-                           ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
-                           Incentives = x.r.q.p.ss.IncntvAmt,
+                            Designation = x.ds.NameEng,
+                            WrktypId = x.r.q.p.gi.WrktypId ?? 1,
+                            BasicSalary = x.r.q.p.ss.Basic,
+                            HouseRent = x.r.q.p.ss.HrAlwnc,
+                            Transport = x.r.q.p.ss.TrnsAlwnc + x.r.q.p.ss.Tra,
+                            Position = x.r.q.p.ss.PstnAlwnc,
+                            ProjectAllowance = x.r.q.p.ss.ProjAlwnc,
+                            SpcAllowance = x.r.q.p.ss.SpcAlwnc,
+                            Incentives = x.r.q.p.ss.IncntvAmt,
                            Mobile = x.r.q.p.ss.MobAlwnc,
                            Overtime = x.r.q.p.ss.OtAmt,
                            MedicalAllowance = x.r.q.p.ss.MedAlwnc,
@@ -3251,8 +3261,6 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 summary.CategoryText = "All Staff";
             }
 
-            Console.WriteLine($"[DEBUG-SERVER] GetCompanySalarySummary ENTER: year={year}, month={month}, entId={entId}, staffCat={staffCat}, targetWrktyp={targetWrktyp}");
-
             try
             {
                 // 1. Locate salary process header for this period
@@ -3267,188 +3275,87 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     hdr = hdrQuery.OrderByDescending(h => h.PrcId).FirstOrDefault();
                 }
 
-                Console.WriteLine($"[DEBUG-SERVER] GetCompanySalarySummary: found hdr={hdr?.PrcId}, EftYear={hdr?.EftYear}, EftMonth={hdr?.EftMonth}, EntId={hdr?.EntId}");
-
                 if (hdr != null)
                 {
-                    var conn = _hrmContext.Database.GetDbConnection();
-                    bool wasOpen = conn.State == System.Data.ConnectionState.Open;
-                    if (!wasOpen) conn.Open();
+                    int targetEnt = (hdr.EntId > 0) ? hdr.EntId : entId;
 
-                    try
+                    // Read from the exact same salary process source method used by Payroll/HrPrSlryPrcDtl
+                    var allSalDtl = GetSalaryDtl(targetEnt, "_passive", hdr.PrcId, month, year)
+                        ?.Where(x => x != null && x.Emp_Sys_Id > 0)
+                        .ToList();
+
+                    if (allSalDtl == null || !allSalDtl.Any())
                     {
-                        using (var cmd = conn.CreateCommand())
-                        {
-                            string sql = @"
-SELECT 
-    ISNULL(e.Wrktyp_Id, 1) AS Wrktyp_Id,
-    COUNT(*) AS EmpCount,
-    ISNULL(SUM(d.Basic), 0) AS TotalBasic,
-    ISNULL(SUM(d.HR_Alwnc), 0) AS TotalHousing,
-    ISNULL(SUM(d.Trns_Alwnc + d.TRA), 0) AS TotalTransport,
-    ISNULL(SUM(d.Med_Alwnc + d.Mob_Alwnc + d.Proj_Alwnc + d.Spc_Alwnc + d.Incntv_Amt + d.Prfm_Alwnc + d.Othr_Alwnc + d.Othr_Pmt + d.AirTckt_Fee + d.Anl_Lv_Enchmnt), 0) AS TotalOtherAlwnc,
-    ISNULL(SUM(d.Ot_Amt), 0) AS TotalOvertime,
-    ISNULL(SUM(d.Bonus_Amt), 0) AS TotalBonus,
-    ISNULL(SUM(d.Slry_Adv), 0) AS TotalSlryAdv,
-    ISNULL(SUM(d.Stf_Ln_Pmt), 0) AS TotalStfLnPmt,
-    ISNULL(SUM(d.Np_Amt), 0) AS TotalNoPay,
-    ISNULL(SUM(d.Othr_Rcvry), 0) AS TotalOthrRcvry
-FROM HR_PrSlryPrcDtl_Psv d
-INNER JOIN (
-    SELECT Emp_Sys_Id, MAX(Prc_Rvsn) AS MaxRvsn
-    FROM HR_PrSlryPrcDtl_Psv
-    WHERE Prc_Id = @PrcId AND Rec_Stat = 1
-    GROUP BY Emp_Sys_Id
-) latest ON d.Emp_Sys_Id = latest.Emp_Sys_Id AND d.Prc_Rvsn = latest.MaxRvsn
-INNER JOIN HR_EmpGenInfo e ON d.Emp_Sys_Id = e.Emp_Sys_Id
-WHERE d.Prc_Id = @PrcId AND d.Rec_Stat = 1
-GROUP BY ISNULL(e.Wrktyp_Id, 1)";
-
-                            var pPrc = cmd.CreateParameter();
-                            pPrc.ParameterName = "@PrcId";
-                            pPrc.Value = hdr.PrcId;
-                            cmd.Parameters.Add(pPrc);
-
-                            cmd.CommandText = sql;
-
-                            var rows = new List<SlryCatRow>();
-                            using (var rdr = cmd.ExecuteReader())
-                            {
-                                while (rdr.Read())
-                                {
-                                    rows.Add(new SlryCatRow
-                                    {
-                                        WrktypId = Convert.ToInt32(rdr["Wrktyp_Id"]),
-                                        EmpCount = Convert.ToInt32(rdr["EmpCount"]),
-                                        TotalBasic = Convert.ToDecimal(rdr["TotalBasic"]),
-                                        TotalHousing = Convert.ToDecimal(rdr["TotalHousing"]),
-                                        TotalTransport = Convert.ToDecimal(rdr["TotalTransport"]),
-                                        TotalOtherAlwnc = Convert.ToDecimal(rdr["TotalOtherAlwnc"]),
-                                        TotalOvertime = Convert.ToDecimal(rdr["TotalOvertime"]),
-                                        TotalBonus = Convert.ToDecimal(rdr["TotalBonus"]),
-                                        TotalSlryAdv = Convert.ToDecimal(rdr["TotalSlryAdv"]),
-                                        TotalStfLnPmt = Convert.ToDecimal(rdr["TotalStfLnPmt"]),
-                                        TotalNoPay = Convert.ToDecimal(rdr["TotalNoPay"]),
-                                        TotalOthrRcvry = Convert.ToDecimal(rdr["TotalOthrRcvry"])
-                                    });
-                                }
-                            }
-
-                            // If not yet finalized in HR_PrSlryPrcDtl_Psv, fallback to HR_PrSlryPrcDtl_Actv
-                            if (!rows.Any())
-                            {
-                                cmd.CommandText = sql.Replace("HR_PrSlryPrcDtl_Psv", "HR_PrSlryPrcDtl_Actv");
-                                using (var rdr = cmd.ExecuteReader())
-                                {
-                                    while (rdr.Read())
-                                    {
-                                        rows.Add(new SlryCatRow
-                                        {
-                                            WrktypId = Convert.ToInt32(rdr["Wrktyp_Id"]),
-                                            EmpCount = Convert.ToInt32(rdr["EmpCount"]),
-                                            TotalBasic = Convert.ToDecimal(rdr["TotalBasic"]),
-                                            TotalHousing = Convert.ToDecimal(rdr["TotalHousing"]),
-                                            TotalTransport = Convert.ToDecimal(rdr["TotalTransport"]),
-                                            TotalOtherAlwnc = Convert.ToDecimal(rdr["TotalOtherAlwnc"]),
-                                            TotalOvertime = Convert.ToDecimal(rdr["TotalOvertime"]),
-                                            TotalBonus = Convert.ToDecimal(rdr["TotalBonus"]),
-                                            TotalSlryAdv = Convert.ToDecimal(rdr["TotalSlryAdv"]),
-                                            TotalStfLnPmt = Convert.ToDecimal(rdr["TotalStfLnPmt"]),
-                                            TotalNoPay = Convert.ToDecimal(rdr["TotalNoPay"]),
-                                            TotalOthrRcvry = Convert.ToDecimal(rdr["TotalOthrRcvry"])
-                                        });
-                                    }
-                                }
-                            }
-
-                            Console.WriteLine($"[DEBUG-SERVER] GetCompanySalarySummary: read {rows.Count} rows from DB for PrcId {hdr.PrcId}");
-
-                            if (rows.Any())
-                            {
-                                summary.IsProcessed = true;
-                                summary.StatusText = (hdr.PrcStat == 3) ? "Processed & Finalized" : 
-                                                     ((hdr.PrcStat == 2) ? "Verified" : "Processed");
-
-                                var inHouseRow = rows.FirstOrDefault(r => r.WrktypId == 1);
-                                var outsrcRow = rows.FirstOrDefault(r => r.WrktypId == 2);
-
-                                summary.InHouseCount = inHouseRow?.EmpCount ?? 0;
-                                summary.InHouseBasic = inHouseRow?.TotalBasic ?? 0;
-                                summary.InHouseGross = (inHouseRow != null) 
-                                    ? (inHouseRow.TotalBasic + inHouseRow.TotalHousing + inHouseRow.TotalTransport + inHouseRow.TotalOtherAlwnc + inHouseRow.TotalOvertime + inHouseRow.TotalBonus) 
-                                    : 0;
-                                summary.InHouseNet = summary.InHouseGross - ((inHouseRow != null) 
-                                    ? (inHouseRow.TotalSlryAdv + inHouseRow.TotalStfLnPmt + inHouseRow.TotalNoPay + inHouseRow.TotalOthrRcvry) 
-                                    : 0);
-
-                                summary.OutsourceCount = outsrcRow?.EmpCount ?? 0;
-                                summary.OutsourceBasic = outsrcRow?.TotalBasic ?? 0;
-                                summary.OutsourceGross = (outsrcRow != null) 
-                                    ? (outsrcRow.TotalBasic + outsrcRow.TotalHousing + outsrcRow.TotalTransport + outsrcRow.TotalOtherAlwnc + outsrcRow.TotalOvertime + outsrcRow.TotalBonus) 
-                                    : 0;
-                                summary.OutsourceNet = summary.OutsourceGross - ((outsrcRow != null) 
-                                    ? (outsrcRow.TotalSlryAdv + outsrcRow.TotalStfLnPmt + outsrcRow.TotalNoPay + outsrcRow.TotalOthrRcvry) 
-                                    : 0);
-
-                                var displayRows = targetWrktyp.HasValue 
-                                    ? rows.Where(r => r.WrktypId == targetWrktyp.Value).ToList() 
-                                    : rows;
-
-                                if (targetWrktyp.HasValue && !displayRows.Any())
-                                {
-                                    summary.IsProcessed = true;
-                                    summary.StatusText = (hdr.PrcStat == 3) ? "Processed & Finalized" : 
-                                                         ((hdr.PrcStat == 2) ? "Verified" : "Processed");
-                                    summary.EmployeeCount = 0;
-                                    summary.TotalBasic = 0;
-                                    summary.TotalHousing = 0;
-                                    summary.TotalTransport = 0;
-                                    summary.TotalOtherAllowances = 0;
-                                    summary.TotalOvertime = 0;
-                                    summary.TotalBonus = 0;
-                                    summary.TotalAllowances = 0;
-                                    summary.TotalGross = 0;
-                                    summary.TotalDeductions = 0;
-                                    summary.TotalNet = 0;
-                                    summary.StaffLoan = 0;
-                                    summary.SalaryAdvance = 0;
-                                    summary.NoPay = 0;
-                                    summary.OtherRecoveries = 0;
-                                    return summary;
-                                }
-
-                                summary.EmployeeCount = displayRows.Sum(r => r.EmpCount);
-                                summary.TotalBasic = displayRows.Sum(r => r.TotalBasic);
-                                summary.TotalHousing = displayRows.Sum(r => r.TotalHousing);
-                                summary.TotalTransport = displayRows.Sum(r => r.TotalTransport);
-                                summary.TotalOtherAllowances = displayRows.Sum(r => r.TotalOtherAlwnc);
-                                summary.TotalOvertime = displayRows.Sum(r => r.TotalOvertime);
-                                summary.TotalBonus = displayRows.Sum(r => r.TotalBonus);
-                                summary.TotalAllowances = summary.TotalHousing + summary.TotalTransport + summary.TotalOtherAllowances + summary.TotalOvertime + summary.TotalBonus;
-                                summary.TotalGross = summary.TotalBasic + summary.TotalAllowances;
-
-                                summary.StaffLoan = displayRows.Sum(r => r.TotalStfLnPmt);
-                                summary.SalaryAdvance = displayRows.Sum(r => r.TotalSlryAdv);
-                                summary.NoPay = displayRows.Sum(r => r.TotalNoPay);
-                                summary.OtherRecoveries = displayRows.Sum(r => r.TotalOthrRcvry);
-                                summary.TotalDeductions = summary.StaffLoan + summary.SalaryAdvance + summary.NoPay + summary.OtherRecoveries;
-                                summary.TotalNet = summary.TotalGross - summary.TotalDeductions;
-
-                                return summary;
-                            }
-                        }
+                        allSalDtl = GetSalaryDtlDirect(targetEnt, year, month)
+                            ?.Where(x => x != null && x.Emp_Sys_Id > 0)
+                            .ToList();
                     }
-                    finally
+
+                    if (allSalDtl != null && allSalDtl.Any())
                     {
-                        if (!wasOpen && conn.State == System.Data.ConnectionState.Open)
+                        summary.IsProcessed = true;
+                        summary.StatusText = (hdr.PrcStat == 3) ? "Processed & Finalized" : 
+                                             ((hdr.PrcStat == 2) ? "Verified" : "Processed");
+
+                        var inHouseList = allSalDtl.Where(r => r.WrktypId == 1).ToList();
+                        var outsrcList = allSalDtl.Where(r => r.WrktypId == 2).ToList();
+
+                        summary.InHouseCount = inHouseList.Count;
+                        summary.InHouseBasic = inHouseList.Sum(r => r.BasicSalary);
+                        summary.InHouseGross = inHouseList.Sum(r => r.GrossSalary);
+                        summary.InHouseNet = inHouseList.Sum(r => r.NtSlry);
+
+                        summary.OutsourceCount = outsrcList.Count;
+                        summary.OutsourceBasic = outsrcList.Sum(r => r.BasicSalary);
+                        summary.OutsourceGross = outsrcList.Sum(r => r.GrossSalary);
+                        summary.OutsourceNet = outsrcList.Sum(r => r.NtSlry);
+
+                        var displayRows = targetWrktyp.HasValue 
+                            ? allSalDtl.Where(r => r.WrktypId == targetWrktyp.Value).ToList() 
+                            : allSalDtl;
+
+                        if (targetWrktyp.HasValue && !displayRows.Any())
                         {
-                            conn.Close();
+                            summary.EmployeeCount = 0;
+                            summary.TotalBasic = 0;
+                            summary.TotalHousing = 0;
+                            summary.TotalTransport = 0;
+                            summary.TotalOtherAllowances = 0;
+                            summary.TotalOvertime = 0;
+                            summary.TotalBonus = 0;
+                            summary.TotalAllowances = 0;
+                            summary.TotalGross = 0;
+                            summary.TotalDeductions = 0;
+                            summary.TotalNet = 0;
+                            summary.StaffLoan = 0;
+                            summary.SalaryAdvance = 0;
+                            summary.NoPay = 0;
+                            summary.OtherRecoveries = 0;
+                            return summary;
                         }
+
+                        summary.EmployeeCount = displayRows.Count;
+                        summary.TotalBasic = displayRows.Sum(r => r.BasicSalary);
+                        summary.TotalHousing = displayRows.Sum(r => r.HouseRent);
+                        summary.TotalTransport = displayRows.Sum(r => r.Transport);
+                        summary.TotalOtherAllowances = displayRows.Sum(r => r.Position + r.Mobile + r.ProjectAllowance + r.SpcAllowance + r.Incentives + r.MedicalAllowance + r.OthrAlwnc + r.OthrPmt + r.AirTcktFee + r.AnlLvEnchmnt);
+                        summary.TotalOvertime = displayRows.Sum(r => r.Overtime);
+                        summary.TotalBonus = displayRows.Sum(r => r.BonusAmt);
+                        summary.TotalAllowances = summary.TotalHousing + summary.TotalTransport + summary.TotalOtherAllowances + summary.TotalOvertime + summary.TotalBonus;
+                        summary.TotalGross = displayRows.Sum(r => r.GrossSalary);
+
+                        summary.StaffLoan = displayRows.Sum(r => r.StaffLoans);
+                        summary.SalaryAdvance = displayRows.Sum(r => r.SalaryAdvance);
+                        summary.NoPay = displayRows.Sum(r => r.NoPay);
+                        summary.OtherRecoveries = displayRows.Sum(r => r.OthrRcvryAmt);
+                        summary.TotalDeductions = displayRows.Sum(r => r.TotalDeductions);
+                        summary.TotalNet = displayRows.Sum(r => r.NtSlry);
+
+                        return summary;
                     }
                 }
 
                 // Unprocessed / no processed salary for requested period:
-                // Show ONLY processed salaries; do not show any projected or forecast figures in the controls.
                 summary.IsProcessed = false;
                 summary.StatusText = "Not Processed";
                 summary.EmployeeCount = 0;
@@ -3485,7 +3392,6 @@ GROUP BY ISNULL(e.Wrktyp_Id, 1)";
             }
         }
         #endregion
-
         #region ==============Air Ticket Prices by Country==============
         public List<HrPrAirTicketPriceVw> GetAirTicketPrices()
         {

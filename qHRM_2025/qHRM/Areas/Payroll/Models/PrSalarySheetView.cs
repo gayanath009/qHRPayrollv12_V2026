@@ -14,6 +14,7 @@ namespace qHRM.Areas.Payroll.Models
         public string Emp_Id { get; set; }
         public string Full_Name { get; set; }
         public string Designation { get; set; }
+        public int WrktypId { get; set; }
         public decimal BasicSalary { get; set; }
 
         //Allowances & Additions
