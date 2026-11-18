@@ -1033,6 +1033,7 @@ namespace qHRM.Areas.Leave.Data
                     return new LeaveApprovalTimelineViewModel
                     {
                         Success = true,
+                        LvId = lvId,
                         InstanceNo = "Draft / Unsubmitted",
                         LeaveType = lvType?.NameEng ?? "Leave",
                         Period = $"{lvRecord.StDate:yyyy-MM-dd} to {lvRecord.EndDate:yyyy-MM-dd} ({lvRecord.Days} Days)",
@@ -1260,9 +1261,10 @@ namespace qHRM.Areas.Leave.Data
                     _ => "Leave Initiated"
                 };
 
-                return new LeaveApprovalTimelineViewModel
+                var timeline = new LeaveApprovalTimelineViewModel
                 {
                     Success = true,
+                    LvId = lvId,
                     ApplicantName = requesterName,
                     ApplicantCode = requesterEmpId,
                     ReferenceNo = $"Ref # {lvRecord.LvId}",
@@ -1281,6 +1283,66 @@ namespace qHRM.Areas.Leave.Data
                     AttachmentType = attachmentType,
                     Events = timelineEvents
                 };
+
+                // Identify currently pending approval step (if any)
+                if (!string.Equals(overallStatus, "Approved", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(overallStatus, "Rejected", StringComparison.OrdinalIgnoreCase) &&
+                    !string.Equals(overallStatus, "Draft", StringComparison.OrdinalIgnoreCase))
+                {
+                    var pendingEv = timelineEvents?.FirstOrDefault(e => e.IsCurrent || e.Status == "Pending" || e.Status == "Pending Review");
+                    if (pendingEv != null && pendingEv.ApprovalId.HasValue)
+                    {
+                        timeline.PendingApprovalId = pendingEv.ApprovalId;
+                        timeline.PendingApproverName = pendingEv.EmployeeName;
+                        timeline.PendingApproverEmail = pendingEv.Email;
+                        timeline.PendingStepName = pendingEv.StepName;
+                        timeline.PendingStepNumber = pendingEv.StepNumber;
+                        timeline.CanAdminAct = true;
+                    }
+
+                    // Direct query fallback for pending approval if not resolved from timeline events
+                    if (timeline.PendingApprovalId == null && wfInst != null)
+                    {
+                        try
+                        {
+                            string wfDbCon = GetWorkflowEngineDbConnectionString();
+                            if (!string.IsNullOrEmpty(wfDbCon))
+                            {
+                                using var actConn = new Microsoft.Data.SqlClient.SqlConnection(wfDbCon);
+                                await actConn.OpenAsync();
+                                using var actCmd = new Microsoft.Data.SqlClient.SqlCommand(@"
+                                    SELECT TOP 1
+                                        s.StepNumber,
+                                        s.Name AS StepName,
+                                        a.Id AS ApprovalId,
+                                        u.FullName AS ApproverName,
+                                        u.Email AS ApproverEmail
+                                    FROM WorkflowInstanceSteps s
+                                    INNER JOIN WorkflowApprovals a ON a.WorkflowInstanceStepId = s.Id AND a.IsDeleted = 0
+                                    LEFT JOIN Users u ON a.ApproverId = u.Id
+                                    WHERE s.WorkflowInstanceId = @InstId AND s.Status = 1 AND a.Status = 1 AND s.IsDeleted = 0
+                                    ORDER BY s.StepNumber", actConn);
+                                actCmd.Parameters.AddWithValue("@InstId", wfInst.WfInstanceId);
+                                using var actRdr = await actCmd.ExecuteReaderAsync();
+                                if (await actRdr.ReadAsync())
+                                {
+                                    if (actRdr["ApprovalId"] != DBNull.Value)
+                                    {
+                                        timeline.PendingApprovalId = (Guid)actRdr["ApprovalId"];
+                                        timeline.CanAdminAct = true;
+                                    }
+                                    timeline.PendingApproverName = actRdr["ApproverName"] != DBNull.Value ? actRdr["ApproverName"].ToString() : (timeline.PendingApproverName ?? "Approver");
+                                    timeline.PendingApproverEmail = actRdr["ApproverEmail"] != DBNull.Value ? actRdr["ApproverEmail"].ToString() : "";
+                                    timeline.PendingStepName = actRdr["StepName"] != DBNull.Value ? actRdr["StepName"].ToString() : (timeline.PendingStepName ?? "Approval Step");
+                                    timeline.PendingStepNumber = actRdr["StepNumber"] != DBNull.Value ? Convert.ToInt32(actRdr["StepNumber"]) : (int?)null;
+                                }
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                return timeline;
             }
             catch (Exception ex)
             {
@@ -1374,9 +1436,11 @@ namespace qHRM.Areas.Leave.Data
                     s.Name AS InstanceStepName,
                     s.StartDate AS StepStartDate,
                     s.EndDate AS StepEndDate,
+                    a.Id AS ApprovalId,
                     a.Status AS ApprovalStatus,
                     a.ApproverId,
                     uApprover.FullName AS ApproverName,
+                    uApprover.Email AS ApproverEmail,
                     a.ActionDate,
                     a.Comment
                 FROM WorkflowSteps ws
@@ -1395,7 +1459,9 @@ namespace qHRM.Areas.Leave.Data
                 int stepNum = reader["StepNumber"] != DBNull.Value ? Convert.ToInt32(reader["StepNumber"]) : 1;
                 int? stepStat = reader["StepStatus"] != DBNull.Value ? (int?)Convert.ToInt32(reader["StepStatus"]) : null;
                 int? appStat = reader["ApprovalStatus"] != DBNull.Value ? (int?)Convert.ToInt32(reader["ApprovalStatus"]) : null;
+                Guid? approvalId = (reader["ApprovalId"] != DBNull.Value && Guid.TryParse(reader["ApprovalId"].ToString(), out var parsedAppId)) ? (Guid?)parsedAppId : null;
                 string approver = reader["ApproverName"] != DBNull.Value ? reader["ApproverName"].ToString() : "";
+                string approverEmail = reader["ApproverEmail"] != DBNull.Value ? reader["ApproverEmail"].ToString() : "";
                 string approverIdStr = reader["ApproverId"] != DBNull.Value ? reader["ApproverId"].ToString() : "";
                 string targetUserName = reader["TargetUserName"] != DBNull.Value ? reader["TargetUserName"].ToString() : "";
                 string targetUserIdStr = reader["TargetUserId"] != DBNull.Value ? reader["TargetUserId"].ToString() : "";
@@ -1536,6 +1602,8 @@ namespace qHRM.Areas.Leave.Data
                         existingStep.StatusText = statusLabel;
                         existingStep.ActionDate = actDate.HasValue ? actDate.Value.ToString("dd-MMM-yyyy hh:mm tt") : existingStep.ActionDate;
                         existingStep.Comment = comment;
+                        if (approvalId.HasValue) existingStep.ApprovalId = approvalId.Value;
+                        if (!string.IsNullOrEmpty(approverEmail)) existingStep.Email = approverEmail;
                         existingStep.IsCompleted = isApproved;
                         existingStep.IsCurrent = isPending;
                         existingStep.IsRejected = isRejected;
@@ -1554,7 +1622,9 @@ namespace qHRM.Areas.Leave.Data
                         StatusText = statusLabel,
                         ActionDate = actDate.HasValue ? actDate.Value.ToString("dd-MMM-yyyy hh:mm tt") : (isPending ? "Pending Approval" : "—"),
                         EmployeeName = empName,
+                        Email = approverEmail,
                         Comment = comment,
+                        ApprovalId = approvalId,
                         IsCompleted = isApproved,
                         IsCurrent = isPending,
                         IsRejected = isRejected,
@@ -1568,7 +1638,8 @@ namespace qHRM.Areas.Leave.Data
             {
                 using var cmdFallback = new Microsoft.Data.SqlClient.SqlCommand(@"
                     SELECT s.StepNumber, s.Name as StepName, s.Status as StepStatus,
-                           a.Status as ApprovalStatus, u.FullName as ApproverName, a.ActionDate, a.Comment,
+                           a.Id as ApprovalId, a.Status as ApprovalStatus, u.FullName as ApproverName,
+                           u.Email as ApproverEmail, a.ActionDate, a.Comment,
                            ws.ApprovalType, r.Name as TargetRoleName
                     FROM WorkflowInstanceSteps s
                     LEFT JOIN WorkflowApprovals a ON a.WorkflowInstanceStepId = s.Id
@@ -1585,7 +1656,9 @@ namespace qHRM.Areas.Leave.Data
                     int stepNum = Convert.ToInt32(readerFallback["StepNumber"]);
                     int stepStat = readerFallback["StepStatus"] != DBNull.Value ? Convert.ToInt32(readerFallback["StepStatus"]) : 1;
                     int appStat = readerFallback["ApprovalStatus"] != DBNull.Value ? Convert.ToInt32(readerFallback["ApprovalStatus"]) : 1;
+                    Guid? approvalId = (readerFallback["ApprovalId"] != DBNull.Value && Guid.TryParse(readerFallback["ApprovalId"].ToString(), out var parsedFbAppId)) ? (Guid?)parsedFbAppId : null;
                     string approver = readerFallback["ApproverName"] != DBNull.Value ? readerFallback["ApproverName"].ToString() : "";
+                    string approverEmail = readerFallback["ApproverEmail"] != DBNull.Value ? readerFallback["ApproverEmail"].ToString() : "";
                     string stepName = readerFallback["StepName"] != DBNull.Value ? readerFallback["StepName"].ToString() : "";
                     DateTime? actDate = readerFallback["ActionDate"] != DBNull.Value ? (DateTime?)Convert.ToDateTime(readerFallback["ActionDate"]) : null;
                     string comment = readerFallback["Comment"] != DBNull.Value ? readerFallback["Comment"].ToString() : "";
@@ -1613,7 +1686,9 @@ namespace qHRM.Areas.Leave.Data
                         StatusText = statusLabel,
                         ActionDate = actDate.HasValue ? actDate.Value.ToString("dd-MMM-yyyy hh:mm tt") : (isPending ? "Pending Approval" : "—"),
                         EmployeeName = empName,
+                        Email = approverEmail,
                         Comment = comment,
+                        ApprovalId = approvalId,
                         IsCompleted = isApproved,
                         IsCurrent = isPending,
                         IsRejected = isRejected,
@@ -2816,6 +2891,146 @@ namespace qHRM.Areas.Leave.Data
                 }
             }
             catch { }
+        }
+
+        // =====================================================================
+        // SEND LEAVE APPROVER REMINDER EMAIL
+        // Admin triggers a reminder email to the currently pending approver
+        // =====================================================================
+        public async Task<(bool success, string message)> SendLeaveApproverReminderAsync(int lvId)
+        {
+            try
+            {
+                var lvRecord = await _hrmContext.HrLvRegister.FirstOrDefaultAsync(l => l.LvId == lvId);
+                if (lvRecord == null)
+                    return (false, "Leave application record not found.");
+
+                var wfInst = await _hrmContext.HrLvWfInstance
+                    .OrderByDescending(x => x.WfInstId)
+                    .FirstOrDefaultAsync(x => x.LvId == lvId);
+                if (wfInst == null)
+                    return (false, "Leave application has not been submitted to the approval workflow.");
+
+                if (_notificationService == null)
+                    return (false, "Workflow notification service is not available.");
+
+                string wfConStr = GetWorkflowEngineDbConnectionString();
+                if (string.IsNullOrEmpty(wfConStr))
+                    return (false, "Workflow Engine database connection not available.");
+
+                string stepName = null;
+                Guid approverWfId = Guid.Empty;
+                string approverName = null;
+                string username = null;
+                int approverEmpSysId = 0;
+
+                using (var conn = new Microsoft.Data.SqlClient.SqlConnection(wfConStr))
+                {
+                    await conn.OpenAsync();
+                    using var cmd = new Microsoft.Data.SqlClient.SqlCommand(@"
+                        SELECT TOP 1
+                            s.StepNumber,
+                            s.Name AS StepName,
+                            a.Id AS ApprovalId,
+                            a.ApproverId,
+                            u.FullName AS ApproverName,
+                            u.Email AS ApproverEmail,
+                            u.Username AS ApproverUsername,
+                            u.EmpSysId
+                        FROM WorkflowInstanceSteps s
+                        INNER JOIN WorkflowApprovals a ON a.WorkflowInstanceStepId = s.Id AND a.IsDeleted = 0
+                        LEFT JOIN Users u ON a.ApproverId = u.Id
+                        WHERE s.WorkflowInstanceId = @InstId AND s.Status = 1 AND a.Status = 1 AND s.IsDeleted = 0
+                        ORDER BY s.StepNumber", conn);
+                    cmd.Parameters.AddWithValue("@InstId", wfInst.WfInstanceId);
+
+                    using var reader = await cmd.ExecuteReaderAsync();
+                    if (await reader.ReadAsync())
+                    {
+                        stepName = reader["StepName"]?.ToString() ?? "Approval Step";
+                        if (reader["ApproverId"] != DBNull.Value)
+                            approverWfId = (Guid)reader["ApproverId"];
+                        approverName = reader["ApproverName"]?.ToString() ?? "Approver";
+                        username = reader["ApproverUsername"]?.ToString() ?? "";
+                        if (reader["EmpSysId"] != DBNull.Value && int.TryParse(reader["EmpSysId"].ToString(), out int uEmpSysId) && uEmpSysId > 0)
+                        {
+                            approverEmpSysId = uEmpSysId;
+                        }
+                    }
+                }
+
+                if (string.IsNullOrEmpty(stepName) || approverWfId == Guid.Empty)
+                {
+                    return (false, "No active pending approval step found for this leave application.");
+                }
+
+                // Resolve approver's EmpSysId
+                if (approverEmpSysId == 0)
+                {
+                    var mapping = await _hrmContext.HrWfUserMapping.FirstOrDefaultAsync(m => m.WfUserId == approverWfId);
+                    if (mapping != null) approverEmpSysId = mapping.EmpSysId;
+                }
+
+                if (approverEmpSysId == 0 && !string.IsNullOrEmpty(username))
+                {
+                    var emp = await _hrmContext.HrEmpGenInfo.FirstOrDefaultAsync(e => e.EmpId == username);
+                    if (emp != null) approverEmpSysId = emp.EmpSysId;
+                }
+
+                if (approverEmpSysId == 0 && !string.IsNullOrEmpty(approverName))
+                {
+                    var trimmed = approverName.Trim();
+                    var emp = await _hrmContext.HrEmpGenInfo.FirstOrDefaultAsync(e => (e.FirstName + " " + e.LastName).Trim() == trimmed || e.FullName == trimmed);
+                    if (emp != null) approverEmpSysId = emp.EmpSysId;
+                }
+
+                // STRICT REQUIREMENT: Only pick Ofc_Email from HR_EmpJobAssign table
+                string approverEmail = "";
+                if (approverEmpSysId > 0)
+                {
+                    var job = await _hrmContext.HrEmpJobAssign
+                        .Where(j => j.EmpSysId == approverEmpSysId && j.WkStat == 1 && !string.IsNullOrEmpty(j.OfcEmail))
+                        .OrderByDescending(j => j.StDate)
+                        .FirstOrDefaultAsync();
+                    if (job == null)
+                    {
+                        job = await _hrmContext.HrEmpJobAssign
+                            .Where(j => j.EmpSysId == approverEmpSysId && !string.IsNullOrEmpty(j.OfcEmail))
+                            .OrderByDescending(j => j.StDate)
+                            .FirstOrDefaultAsync();
+                    }
+                    approverEmail = job?.OfcEmail?.Trim() ?? "";
+                }
+
+                if (string.IsNullOrEmpty(approverEmail))
+                {
+                    return (false, $"Approver '{approverName}' does not have an official Ofc_Email configured in HR_EmpJobAssign.");
+                }
+
+                var requester = await _hrmContext.HrEmpGenInfo.FirstOrDefaultAsync(e => e.EmpSysId == lvRecord.EmpSysId);
+                string requesterName = requester?.FullName ?? $"Employee #{lvRecord.EmpSysId}";
+                string requesterEmpId = requester?.EmpId ?? lvRecord.EmpSysId.ToString();
+                var lvType = await _hrmContext.HrLvType.FirstOrDefaultAsync(t => t.LvTypId == lvRecord.LvTypId);
+
+                await _notificationService.SendLeaveApprovalRequiredNotificationAsync(
+                    lvRecord.LvId,
+                    wfInst.WfInstId,
+                    stepName,
+                    approverEmpSysId,
+                    approverName,
+                    approverEmail,
+                    lvRecord,
+                    lvType?.NameEng ?? "Leave",
+                    requesterName,
+                    requesterEmpId,
+                    sendEmail: true);
+
+                return (true, $"Reminder email successfully sent to {approverName} ({approverEmail}).");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"Error triggering reminder email: {ex.Message}");
+            }
         }
     }
 }

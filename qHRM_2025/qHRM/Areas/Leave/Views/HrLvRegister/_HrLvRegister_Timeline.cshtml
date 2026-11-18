@@ -160,8 +160,9 @@ else
                                 }
                                 @if (!string.IsNullOrEmpty(ev.Comment))
                                 {
-                                    <div class="mt-2 px-2 py-1 bg-light border rounded text-secondary" style="font-size: 0.75rem; max-width: 160px; word-break: break-word;">
-                                        <i class="fas fa-comment-dots mr-1 text-muted"></i>@ev.Comment
+                                    <div class="mt-2 px-2.5 py-1.5 border rounded-pill shadow-sm" style="font-size: 0.82rem; font-weight: 600; color: #1e293b; background-color: #f8fafc; border-color: #cbd5e1 !important; max-width: 185px; word-break: break-word; line-height: 1.35; display: inline-flex; align-items: center; justify-content: center; gap: 5px;">
+                                        <i class="fas fa-comment-dots" style="color: #475569; font-size: 0.85rem; flex-shrink: 0;"></i>
+                                        <span style="color: #1e293b;">@ev.Comment</span>
                                     </div>
                                 }
                             </div>
@@ -172,6 +173,49 @@ else
                 </div>
             }
         </div>
+
+        <!-- Admin Workflow Actions Section (Visible ONLY to Admin when request is pending with an approver) -->
+        @if (Model.IsAdmin && Model.CanAdminAct && Model.PendingApprovalId.HasValue)
+        {
+            <div class="mt-4 p-3 rounded" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1.5px solid #cbd5e1; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                <div class="d-flex flex-wrap align-items-center justify-content-between">
+                    <div class="d-flex align-items-center mb-2 mb-lg-0">
+                        <div class="mr-3" style="width: 44px; height: 44px; border-radius: 50%; background: #ede9fe; display: flex; align-items: center; justify-content: center; color: #6d28d9; flex-shrink: 0; box-shadow: 0 2px 6px rgba(109,40,217,0.15);">
+                            <i class="fas fa-user-shield fa-lg"></i>
+                        </div>
+                        <div>
+                            <div class="font-weight-bold" style="font-size: 0.98rem; color: #0f172a;">
+                                Administrator Action &bull; Pending with <span style="color: #1d4ed8; font-weight: 700;">@Model.PendingApproverName</span>
+                            </div>
+                            <div class="text-muted" style="font-size: 0.82rem; color: #64748b; margin-top: 2px;">
+                                Current Stage: <strong class="text-dark">@Model.PendingStepName</strong> &bull; You can take action on behalf of this approver or trigger an email reminder.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap align-items-center" style="gap: 8px;">
+                        <button type="button" class="btn btn-sm" id="btnAdminReminder"
+                                onclick="sendAdminReminder(@Model.LvId, '@(Model.PendingApproverName?.Replace("'", "\\'"))')"
+                                style="background: #ffffff; border: 1.5px solid #3b82f6; color: #1d4ed8; font-weight: 600; padding: 6px 14px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);"
+                                onmouseover="this.style.backgroundColor='#eff6ff';" onmouseout="this.style.backgroundColor='#ffffff';">
+                            <i class="fas fa-bell"></i> Send Email Reminder
+                        </button>
+                        <button type="button" class="btn btn-sm btn-danger" id="btnAdminReject"
+                                onclick="openAdminActionModal('reject', @Model.LvId, '@Model.PendingApprovalId', '@(Model.PendingApproverName?.Replace("'", "\\'"))', '@(Model.PendingStepName?.Replace("'", "\\'"))')"
+                                style="background: #dc2626; border: none; color: #ffffff; font-weight: 600; padding: 6px 14px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(220,38,38,0.25);"
+                                onmouseover="this.style.backgroundColor='#b91c1c';" onmouseout="this.style.backgroundColor='#dc2626';">
+                            <i class="fas fa-times-circle"></i> Reject on Behalf
+                        </button>
+                        <button type="button" class="btn btn-sm btn-success" id="btnAdminApprove"
+                                onclick="openAdminActionModal('approve', @Model.LvId, '@Model.PendingApprovalId', '@(Model.PendingApproverName?.Replace("'", "\\'"))', '@(Model.PendingStepName?.Replace("'", "\\'"))')"
+                                style="background: #16a34a; border: none; color: #ffffff; font-weight: 600; padding: 6px 14px; border-radius: 7px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(22,163,74,0.25);"
+                                onmouseover="this.style.backgroundColor='#15803d';" onmouseout="this.style.backgroundColor='#16a34a';">
+                            <i class="fas fa-check-circle"></i> Approve on Behalf
+                        </button>
+                    </div>
+                </div>
+                <div id="adminActionAlert" class="mt-2 d-none"></div>
+            </div>
+        }
     </div>
 
     <!-- Attachment Viewer Modal (Self-Contained) -->
@@ -261,6 +305,182 @@ else
             }
 
             $('#modalAttachmentViewer').modal('show');
+        }
+    </script>
+
+    <!-- Modal for Admin Approve / Reject on Behalf -->
+    <div class="modal fade" id="modalAdminActionPrompt" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 1070;">
+        <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 520px;">
+            <div class="modal-content" style="border-radius: 12px; border: none; box-shadow: 0 15px 35px rgba(0,0,0,0.25);">
+                <div class="modal-header text-white py-3" id="adminModalHeader" style="border-top-left-radius: 12px; border-top-right-radius: 12px;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-shield-alt mr-2 fa-lg"></i>
+                        <h5 class="modal-title font-weight-bold mb-0 text-white" id="adminModalTitle" style="font-size: 1.05rem;">
+                            Confirm Action
+                        </h5>
+                    </div>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4" style="background: #ffffff;">
+                    <div id="adminModalInfoBanner" class="p-3 rounded mb-3" style="font-size: 0.88rem; line-height: 1.45;"></div>
+                    <div class="form-group mb-2">
+                        <label for="adminActionRemarks" class="font-weight-bold text-dark" style="font-size: 0.88rem;">
+                            Optional Remarks / Reason:
+                        </label>
+                        <textarea id="adminActionRemarks" class="form-control" rows="3" placeholder="Enter any additional remarks (optional)..." style="font-size: 0.88rem; border-radius: 8px;"></textarea>
+                    </div>
+                    <div class="small text-muted mt-2" id="adminModalAuditNote" style="font-size: 0.8rem;"></div>
+                    <div id="adminModalAlertArea" class="mt-2 d-none"></div>
+                </div>
+                <div class="modal-footer bg-light py-2.5 px-4 d-flex justify-content-between" style="border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                    <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal" style="border-radius: 6px; padding: 6px 16px;">Cancel</button>
+                    <button type="button" class="btn btn-sm text-white" id="btnAdminModalSubmit" style="border-radius: 6px; padding: 6px 18px; font-weight: 600;">
+                        Confirm
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        var currentAdminAction = {
+            type: '',
+            lvId: 0,
+            approvalId: '',
+            approverName: '',
+            stepName: ''
+        };
+
+        function openAdminActionModal(actionType, lvId, approvalId, approverName, stepName) {
+            currentAdminAction = {
+                type: actionType,
+                lvId: lvId,
+                approvalId: approvalId,
+                approverName: approverName,
+                stepName: stepName
+            };
+
+            if ($("#modalAdminActionPrompt").parent()[0] !== document.body) {
+                $("#modalAdminActionPrompt").appendTo("body");
+            }
+
+            $("#adminActionRemarks").val("");
+            $("#adminModalAlertArea").addClass("d-none").empty();
+            $("#btnAdminModalSubmit").prop("disabled", false);
+
+            if (actionType === 'approve') {
+                $("#adminModalHeader").css("background", "linear-gradient(135deg, #15803d, #16a34a)");
+                $("#adminModalTitle").html('<i class="fas fa-check-circle mr-2"></i> Approve on Behalf of ' + approverName);
+                $("#adminModalInfoBanner")
+                    .css({ "background-color": "#f0fdf4", "border": "1px solid #bbf7d0", "color": "#166534" })
+                    .html('<strong>Confirmation:</strong> Are you sure you want to approve this leave application on behalf of <strong>' + approverName + '</strong> (' + stepName + ')?');
+                $("#adminModalAuditNote").html('<i class="fas fa-info-circle mr-1 text-primary"></i> Timeline comment will be recorded as: <code>System has approved Behalf of ' + approverName + '</code>');
+                $("#btnAdminModalSubmit")
+                    .css({ "background-color": "#16a34a", "border-color": "#16a34a" })
+                    .html('<i class="fas fa-check mr-1"></i> Confirm Approval');
+            } else {
+                $("#adminModalHeader").css("background", "linear-gradient(135deg, #b91c1c, #dc2626)");
+                $("#adminModalTitle").html('<i class="fas fa-times-circle mr-2"></i> Reject on Behalf of ' + approverName);
+                $("#adminModalInfoBanner")
+                    .css({ "background-color": "#fef2f2", "border": "1px solid #fecaca", "color": "#991b1b" })
+                    .html('<strong>Warning:</strong> Are you sure you want to reject this leave application on behalf of <strong>' + approverName + '</strong> (' + stepName + ')?');
+                $("#adminModalAuditNote").html('<i class="fas fa-info-circle mr-1 text-danger"></i> Timeline comment will be recorded as: <code>System has rejected Behalf of ' + approverName + '</code>');
+                $("#btnAdminModalSubmit")
+                    .css({ "background-color": "#dc2626", "border-color": "#dc2626" })
+                    .html('<i class="fas fa-times mr-1"></i> Confirm Rejection');
+            }
+
+            $("#modalAdminActionPrompt").modal("show");
+        }
+
+        $(document).off('click', '#btnAdminModalSubmit').on('click', '#btnAdminModalSubmit', function () {
+            var remarks = $("#adminActionRemarks").val();
+            var $btn = $(this);
+            $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Processing...');
+
+            var token = $('input[name="__RequestVerificationToken"]').first().val();
+            var targetUrl = currentAdminAction.type === 'approve'
+                ? '@Url.Action("AdminApproveBehalf", "HrLvRegister", new { area = "Leave" })'
+                : '@Url.Action("AdminRejectBehalf", "HrLvRegister", new { area = "Leave" })';
+
+            $.ajax({
+                url: targetUrl,
+                type: 'POST',
+                contentType: 'application/json',
+                headers: { "RequestVerificationToken": token },
+                data: JSON.stringify({
+                    lvId: currentAdminAction.lvId,
+                    approvalId: currentAdminAction.approvalId,
+                    approverName: currentAdminAction.approverName,
+                    remarks: remarks
+                }),
+                success: function (res) {
+                    if (res.success) {
+                        $("#adminModalAlertArea").removeClass("d-none")
+                            .html('<div class="alert alert-success py-2 px-3 mb-0"><i class="fas fa-check-circle mr-1"></i> ' + (res.message || 'Action completed successfully.') + '</div>');
+                        setTimeout(function () {
+                            $("#modalAdminActionPrompt").modal("hide");
+                            if (typeof openTimeline === 'function') {
+                                openTimeline(currentAdminAction.lvId);
+                            }
+                            var gridElem = document.getElementById("Grid");
+                            if (gridElem && gridElem.ej2_instances && gridElem.ej2_instances[0]) {
+                                gridElem.ej2_instances[0].refresh();
+                            }
+                        }, 900);
+                    } else {
+                        $btn.prop("disabled", false).html('Confirm');
+                        $("#adminModalAlertArea").removeClass("d-none")
+                            .html('<div class="alert alert-danger py-2 px-3 mb-0"><i class="fas fa-exclamation-triangle mr-1"></i> ' + (res.message || 'Error occurred.') + '</div>');
+                    }
+                },
+                error: function (xhr, status, err) {
+                    $btn.prop("disabled", false).html('Confirm');
+                    var errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : (err || 'Server error occurred.');
+                    $("#adminModalAlertArea").removeClass("d-none")
+                        .html('<div class="alert alert-danger py-2 px-3 mb-0"><i class="fas fa-exclamation-triangle mr-1"></i> ' + errMsg + '</div>');
+                }
+            });
+        });
+
+        function sendAdminReminder(lvId, approverName) {
+            if (!confirm("Are you sure you want to trigger an email reminder to " + approverName + " for this pending leave approval?")) {
+                return;
+            }
+
+            var $btn = $("#btnAdminReminder");
+            var origHtml = $btn.html();
+            $btn.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> Sending...');
+            var token = $('input[name="__RequestVerificationToken"]').first().val();
+
+            $.ajax({
+                url: '@Url.Action("SendApproverReminder", "HrLvRegister", new { area = "Leave" })',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: { "RequestVerificationToken": token },
+                data: JSON.stringify({ lvId: lvId }),
+                success: function (res) {
+                    $btn.prop("disabled", false).html(origHtml);
+                    if (res.success) {
+                        $("#adminActionAlert").removeClass("d-none")
+                            .html('<div class="alert alert-success py-2 px-3 mb-0" style="font-size:0.85rem;"><i class="fas fa-check-circle mr-1"></i> ' + (res.message || 'Reminder email sent successfully.') + '</div>');
+                        setTimeout(function () {
+                            $("#adminActionAlert").fadeOut(600, function () { $(this).empty().removeClass("d-none").show(); });
+                        }, 4500);
+                    } else {
+                        $("#adminActionAlert").removeClass("d-none")
+                            .html('<div class="alert alert-danger py-2 px-3 mb-0" style="font-size:0.85rem;"><i class="fas fa-exclamation-triangle mr-1"></i> ' + (res.message || 'Failed to send reminder email.') + '</div>');
+                    }
+                },
+                error: function (xhr, status, err) {
+                    $btn.prop("disabled", false).html(origHtml);
+                    var errMsg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : (err || 'Server communication error.');
+                    $("#adminActionAlert").removeClass("d-none")
+                        .html('<div class="alert alert-danger py-2 px-3 mb-0" style="font-size:0.85rem;"><i class="fas fa-exclamation-triangle mr-1"></i> ' + errMsg + '</div>');
+                }
+            });
         }
     </script>
 }

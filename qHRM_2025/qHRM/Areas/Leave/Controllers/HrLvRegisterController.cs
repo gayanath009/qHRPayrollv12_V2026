@@ -1363,6 +1363,13 @@ namespace qHRM.Areas.Leave.Controllers
             try
             {
                 var timeline = await _lvWfService.GetLeaveApprovalTimelineAsync(lvId);
+                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
+                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
+                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
+                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                timeline.IsAdmin = isAdmin;
                 return PartialView("_HrLvRegister_Timeline", timeline);
             }
             catch (Exception ex)
@@ -1432,6 +1439,125 @@ namespace qHRM.Areas.Leave.Controllers
 
                 await _lvWfService.RejectStepAsync(req.ApprovalId, req.Comment);
                 return Json(new { success = true, message = "Rejection recorded successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // =====================================================================
+        // POST: HrLvRegister/AdminApproveBehalf
+        // Administrator approves a leave workflow step on behalf of the pending approver.
+        // =====================================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdminApproveBehalf([FromBody] AdminBehalfActionRequest req)
+        {
+            try
+            {
+                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
+                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
+                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
+                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                if (!isAdmin)
+                {
+                    return Json(new { success = false, message = "Access denied. Only Administrators can approve on behalf of an approver." });
+                }
+
+                if (req == null || req.ApprovalId == Guid.Empty)
+                {
+                    return Json(new { success = false, message = "Invalid approval request details." });
+                }
+
+                string approver = !string.IsNullOrWhiteSpace(req.ApproverName) ? req.ApproverName.Trim() : "Approver";
+                string comment = $"System has approved Behalf of {approver}";
+                if (!string.IsNullOrWhiteSpace(req.Remarks))
+                {
+                    comment += $" - {req.Remarks.Trim()}";
+                }
+
+                await _lvWfService.ApproveStepAsync(req.ApprovalId, comment);
+                return Json(new { success = true, message = $"Approved successfully on behalf of {approver}." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // =====================================================================
+        // POST: HrLvRegister/AdminRejectBehalf
+        // Administrator rejects a leave workflow step on behalf of the pending approver.
+        // =====================================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AdminRejectBehalf([FromBody] AdminBehalfActionRequest req)
+        {
+            try
+            {
+                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
+                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
+                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
+                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                if (!isAdmin)
+                {
+                    return Json(new { success = false, message = "Access denied. Only Administrators can reject on behalf of an approver." });
+                }
+
+                if (req == null || req.ApprovalId == Guid.Empty)
+                {
+                    return Json(new { success = false, message = "Invalid rejection request details." });
+                }
+
+                string approver = !string.IsNullOrWhiteSpace(req.ApproverName) ? req.ApproverName.Trim() : "Approver";
+                string comment = $"System has rejected Behalf of {approver}";
+                if (!string.IsNullOrWhiteSpace(req.Remarks))
+                {
+                    comment += $" - {req.Remarks.Trim()}";
+                }
+
+                await _lvWfService.RejectStepAsync(req.ApprovalId, comment);
+                return Json(new { success = true, message = $"Rejected successfully on behalf of {approver}." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // =====================================================================
+        // POST: HrLvRegister/SendApproverReminder
+        // Administrator triggers a reminder email to the currently pending approver.
+        // =====================================================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SendApproverReminder([FromBody] AdminReminderRequest req)
+        {
+            try
+            {
+                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
+                int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
+                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
+                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
+                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
+                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                if (!isAdmin)
+                {
+                    return Json(new { success = false, message = "Access denied. Only Administrators can send reminder emails." });
+                }
+
+                if (req == null || req.LvId <= 0)
+                {
+                    return Json(new { success = false, message = "Invalid leave application reference." });
+                }
+
+                var (success, msg) = await _lvWfService.SendLeaveApproverReminderAsync(req.LvId);
+                return Json(new { success = success, message = msg });
             }
             catch (Exception ex)
             {
@@ -1901,5 +2027,20 @@ namespace qHRM.Areas.Leave.Controllers
     {
         public Guid   ApprovalId { get; set; }
         public string Comment    { get; set; }
+    }
+
+    /// <summary>Request body for administrator approval/rejection on behalf of pending approver.</summary>
+    public class AdminBehalfActionRequest
+    {
+        public int    LvId         { get; set; }
+        public Guid   ApprovalId   { get; set; }
+        public string ApproverName { get; set; }
+        public string Remarks      { get; set; }
+    }
+
+    /// <summary>Request body for administrator triggering reminder email to pending approver.</summary>
+    public class AdminReminderRequest
+    {
+        public int LvId { get; set; }
     }
 }

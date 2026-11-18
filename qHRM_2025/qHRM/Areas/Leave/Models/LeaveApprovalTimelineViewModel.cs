@@ -7,6 +7,7 @@ namespace qHRM.Areas.Leave.Models
     {
         public bool Success { get; set; } = true;
         public string Message { get; set; }
+        public int LvId { get; set; }
         public string ApplicantName { get; set; }
         public string ApplicantCode { get; set; }
         public string LeaveType { get; set; }
@@ -23,6 +24,13 @@ namespace qHRM.Areas.Leave.Models
         public string AttachmentUrl { get; set; } = string.Empty;
         public string AttachmentFileName { get; set; } = string.Empty;
         public string AttachmentType { get; set; } = string.Empty;
+        public bool IsAdmin { get; set; } = false;
+        public bool CanAdminAct { get; set; } = false;
+        public Guid? PendingApprovalId { get; set; }
+        public string PendingApproverName { get; set; }
+        public string PendingApproverEmail { get; set; }
+        public string PendingStepName { get; set; }
+        public int? PendingStepNumber { get; set; }
         public List<LeaveTimelineEventViewModel> Events { get; set; } = new List<LeaveTimelineEventViewModel>();
     }
 
@@ -40,6 +48,7 @@ namespace qHRM.Areas.Leave.Models
         public string Email { get; set; }
         public string Comment { get; set; }
         public string ActedIn { get; set; }
+        public Guid? ApprovalId { get; set; }
         public bool IsCompleted { get; set; }
         public bool IsCurrent { get; set; }
         public bool IsRejected { get; set; }
