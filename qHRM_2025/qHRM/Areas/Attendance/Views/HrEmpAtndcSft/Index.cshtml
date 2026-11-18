@@ -630,7 +630,7 @@
                                 <e-grid-column field="DeptName" headerText="Department" width="130"></e-grid-column>
                                 <e-grid-column field="InTime" headerText="In Time" width="90"></e-grid-column>
                                 <e-grid-column field="OutTime" headerText="Out Time" width="90"></e-grid-column>
-                                <e-grid-column field="Status" headerText="Status" width="110"></e-grid-column>
+                                <e-grid-column field="Status" headerText="Status" width="110" textAlign="Center"></e-grid-column>
                                 <e-grid-column field="WrkMnt" headerText="Work (Mins)" width="100"></e-grid-column>
                                 <e-grid-column field="LateInMnt" headerText="Late (Mins)" width="95"></e-grid-column>
                                 <e-grid-column field="ErlyLvMnt" headerText="Early Lv (Mins)" width="110"></e-grid-column>
@@ -1157,8 +1157,17 @@
     }
 
     function excelQueryCellInfo(args) {
-        if (args.column.headerText === 'Status' && args.value && args.value.toString().includes("Absent")) {
-            args.style = { fontColor: '#dc2626' };
+        if (args.column.headerText === 'Status' && args.value) {
+            var status = args.value.toString().trim().toLowerCase();
+            if (status.indexOf("absent") >= 0) {
+                args.style = { backColor: '#ef4444', fontColor: '#ffffff', bold: true };
+            } else if (status.indexOf("missing") >= 0) {
+                args.style = { backColor: '#fee2e2', fontColor: '#991b1b', bold: true };
+            } else if (status.indexOf("late") >= 0 || status.indexOf("early") >= 0 || status.indexOf("earlry") >= 0) {
+                args.style = { backColor: '#facc15', fontColor: '#713f12', bold: true };
+            } else if (status === "ontime" || status === "on time" || status.indexOf("ontime") >= 0 || status.indexOf("on time") >= 0) {
+                args.style = { backColor: '#22c55e', fontColor: '#ffffff', bold: true };
+            }
         }
     }
 
@@ -1202,9 +1211,16 @@
     }
 
     function mrkLteCmrs(args) {
-        if (args.column.field === 'Status') {
-            if (args.data.Status && args.data.Status.includes("Absent")) {
-                args.cell.setAttribute('style', 'background-color:#fee2e2;color:#991b1b;font-weight:600;');
+        if (args.column.field === 'Status' && args.data && args.data.Status) {
+            var status = (args.data.Status || "").trim().toLowerCase();
+            if (status.indexOf("absent") >= 0) {
+                args.cell.setAttribute('style', 'background-color:#ef4444 !important;color:#ffffff !important;font-weight:600;text-align:center;');
+            } else if (status.indexOf("missing") >= 0) {
+                args.cell.setAttribute('style', 'background-color:#fee2e2 !important;color:#991b1b !important;font-weight:600;text-align:center;');
+            } else if (status.indexOf("late") >= 0 || status.indexOf("early") >= 0 || status.indexOf("earlry") >= 0) {
+                args.cell.setAttribute('style', 'background-color:#facc15 !important;color:#713f12 !important;font-weight:600;text-align:center;');
+            } else if (status === "ontime" || status === "on time" || status.indexOf("ontime") >= 0 || status.indexOf("on time") >= 0) {
+                args.cell.setAttribute('style', 'background-color:#22c55e !important;color:#ffffff !important;font-weight:600;text-align:center;');
             }
         }
     }
