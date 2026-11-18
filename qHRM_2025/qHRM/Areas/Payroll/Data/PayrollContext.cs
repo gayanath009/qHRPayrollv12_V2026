@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using qHRM.Areas.Payroll.Models;
 using qHRM.Areas.SysAdmin.Data;
@@ -3476,9 +3476,10 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
             int prevYear = month == 1 ? year - 1 : year;
             DateTime cutoffStart = new DateTime(prevYear, prevMonth, 21);
             DateTime cutoffEnd = new DateTime(year, month, 20);
+            DateTime cutoffOneYearAgo = cutoffEnd.AddYears(-1);
 
             var savedEmpIds = _hrmContext.HrPrStaffLvTktEncash
-                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .Select(x => x.EmpSysId)
                 .ToList();
 
@@ -3494,7 +3495,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                             where (e.CurrStat == 0
                               && e.JoinedDate <= cutoffEnd.AddYears(-1)
                               && ((e.JoinedDate.Month == prevMonth && e.JoinedDate.Day >= 21) || (e.JoinedDate.Month == month && e.JoinedDate.Day <= 20)))
-                              || savedEmpIds.Contains(e.EmpSysId)
+                              || (savedEmpIds.Contains(e.EmpSysId) && e.JoinedDate <= cutoffOneYearAgo)
                             select new
                             {
                                 e.EmpSysId,
@@ -3530,7 +3531,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 .ToDictionary(x => x.CntryId, x => x.Price);
 
             var savedRecords = _hrmContext.HrPrStaffLvTktEncash
-                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .ToDictionary(x => x.EmpSysId, x => x);
 
             var leaveBooked = _hrmContext.HrLvOpeningBalance
@@ -3551,6 +3552,10 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
 
             foreach (var emp in empQuery)
             {
+                // Must have completed at least 1 full year of service by the cutoff date
+                if (emp.JoinedDate.AddYears(1) > cutoffEnd || emp.JoinedDate > cutoffOneYearAgo)
+                    continue;
+
                 bool isOutsource = emp.WrktypId == 2 || (emp.DeptName != null && emp.DeptName.IndexOf("Outsource", StringComparison.OrdinalIgnoreCase) >= 0);
                 string cat = isOutsource ? "OUTSOURCE" : "INTERNAL";
 
@@ -3613,16 +3618,17 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 decimal airTicketValue;
                 decimal totalSettlement;
                 string remarks;
+                bool isExcluded = (saved != null && saved.RecStat == 2);
 
                 if (saved != null)
                 {
                     monthlySalary = saved.MonthlySalary;
                     dailySalary = saved.DailySalary;
-                    totalLeaveSalary = saved.TotalLeaveSalary;
+                    totalLeaveSalary = Math.Round(saved.TotalLeaveSalary, 0, MidpointRounding.AwayFromZero);
                     tktCount = saved.TktCount;
                     tktPrice = saved.TktPrice;
-                    airTicketValue = saved.AirTicketValue;
-                    totalSettlement = saved.TotalSettlement;
+                    airTicketValue = Math.Round(saved.AirTicketValue, 0, MidpointRounding.AwayFromZero);
+                    totalSettlement = Math.Round(saved.TotalSettlement, 0, MidpointRounding.AwayFromZero);
                     remarks = saved.Remarks ?? "-";
                 }
                 else
@@ -3646,11 +3652,11 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     dailySalary = Math.Round(monthlySalary / 30.0m, 2);
                     if (netLeaveDays % 30 == 0 && netLeaveDays > 0)
                     {
-                        totalLeaveSalary = (netLeaveDays / 30) * monthlySalary;
+                        totalLeaveSalary = Math.Round((netLeaveDays / 30) * monthlySalary, 0, MidpointRounding.AwayFromZero);
                     }
                     else
                     {
-                        totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 2);
+                        totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 0, MidpointRounding.AwayFromZero);
                     }
 
                     int defaultTktCount = 1;
@@ -3662,8 +3668,8 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
 
                     ticketPrices.TryGetValue(emp.CntryId, out tktPrice);
 
-                    airTicketValue = Math.Round(tktCount * tktPrice, 2);
-                    totalSettlement = totalLeaveSalary + airTicketValue;
+                    airTicketValue = Math.Round(tktCount * tktPrice, 0, MidpointRounding.AwayFromZero);
+                    totalSettlement = Math.Round(totalLeaveSalary + airTicketValue, 0, MidpointRounding.AwayFromZero);
 
                     remarks = "-";
                     if (netLeaveDays > 0 && tktCount > 1)
@@ -3702,6 +3708,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     AirTicketValue = airTicketValue,
                     TotalSettlement = totalSettlement,
                     Remarks = remarks,
+                    IsExcluded = isExcluded,
                     PrcStat = saved?.PrcStat ?? 1
                 });
             }
@@ -3716,18 +3723,18 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
             foreach (var rec in records)
             {
                 var existing = _hrmContext.HrPrStaffLvTktEncash
-                    .FirstOrDefault(x => x.PrcYear == rec.PrcYear && x.PrcMonth == rec.PrcMonth && x.EmpSysId == rec.EmpSysId && x.RecStat == 1);
+                    .FirstOrDefault(x => x.PrcYear == rec.PrcYear && x.PrcMonth == rec.PrcMonth && x.EmpSysId == rec.EmpSysId && (x.RecStat == 1 || x.RecStat == 2));
 
                 if (rec.NetLeaveDays % 30 == 0 && rec.NetLeaveDays > 0)
                 {
-                    rec.TotalLeaveSalary = (rec.NetLeaveDays / 30) * rec.MonthlySalary;
+                    rec.TotalLeaveSalary = Math.Round((rec.NetLeaveDays / 30) * rec.MonthlySalary, 0, MidpointRounding.AwayFromZero);
                 }
                 else
                 {
-                    rec.TotalLeaveSalary = Math.Round((rec.MonthlySalary / 30.0m) * rec.NetLeaveDays, 2);
+                    rec.TotalLeaveSalary = Math.Round((rec.MonthlySalary / 30.0m) * rec.NetLeaveDays, 0, MidpointRounding.AwayFromZero);
                 }
-                rec.AirTicketValue = Math.Round(rec.TktCount * rec.TktPrice, 2);
-                rec.TotalSettlement = rec.TotalLeaveSalary + rec.AirTicketValue;
+                rec.AirTicketValue = Math.Round(rec.TktCount * rec.TktPrice, 0, MidpointRounding.AwayFromZero);
+                rec.TotalSettlement = Math.Round(rec.TotalLeaveSalary + rec.AirTicketValue, 0, MidpointRounding.AwayFromZero);
 
                 if (existing != null)
                 {
@@ -3745,6 +3752,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     existing.TotalSettlement = rec.TotalSettlement;
                     existing.Remarks = rec.Remarks;
                     existing.PrcStat = 2; // Confirmed
+                    existing.RecStat = rec.RecStat;
                     existing.ModBy = userId;
                     existing.ModDateTime = DateTime.Now;
                 }
@@ -3754,7 +3762,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     rec.PrcStat = 2; // Confirmed
                     rec.CrtBy = userId;
                     rec.CrtDateTime = DateTime.Now;
-                    rec.RecStat = 1;
+                    rec.RecStat = rec.RecStat == 0 ? (short)1 : rec.RecStat;
                     _hrmContext.HrPrStaffLvTktEncash.Add(rec);
                 }
             }

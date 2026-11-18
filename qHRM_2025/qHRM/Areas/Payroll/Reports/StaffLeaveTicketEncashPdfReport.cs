@@ -193,7 +193,7 @@ namespace qHRM.Areas.Payroll.Reports
                 }
                 hdr.Cells[11].Style.TextBrush = brushRedText;
 
-                var list = records != null ? records.ToList() : new List<HrPrStaffLvTktEncashVw>();
+                var list = records != null ? records.Where(x => !x.IsExcluded).ToList() : new List<HrPrStaffLvTktEncashVw>();
                 var internalStaff = list.Where(x => x.StaffCategory == "INTERNAL").ToList();
                 var outsourceStaff = list.Where(x => x.StaffCategory == "OUTSOURCE").ToList();
 
@@ -452,7 +452,7 @@ namespace qHRM.Areas.Payroll.Reports
         private static string FormatNumber(decimal value)
         {
             if (value == 0) return "0";
-            return value.ToString("#,##0.00");
+            return value.ToString("#,##0");
         }
     }
 }

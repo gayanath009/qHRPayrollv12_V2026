@@ -476,6 +476,27 @@
     .tb-btn-excel:hover { background: #fce7f3; }
     .tb-btn-print { background: #f1f5f9; color: #334155 !important; border-color: #cbd5e1; }
     .tb-btn-print:hover { background: #e2e8f0; }
+
+    .emp-row.is-excluded {
+        background-color: #f8fafc !important;
+        opacity: 0.55;
+    }
+    .emp-row.is-excluded td {
+        background-color: #f8fafc !important;
+        color: #94a3b8 !important;
+    }
+    .emp-row.is-excluded input {
+        background-color: #f1f5f9 !important;
+        color: #94a3b8 !important;
+        pointer-events: none;
+    }
+    .btn-exclude-toggle {
+        font-size: 0.68rem !important;
+        padding: 2px 6px !important;
+        font-weight: 600 !important;
+        border-radius: 4px !important;
+        white-space: nowrap !important;
+    }
 </style>
 
 <div class="slry-wrap">
@@ -510,28 +531,28 @@
         <!-- Card 1: Processed Employees -->
         <div class="stat-card sc-indigo">
             <div class="stat-card-label">PROCESSED EMPLOYEES</div>
-            <div class="stat-card-val" id="statEmpCount">@(Model?.Count() ?? 0)</div>
+            <div class="stat-card-val" id="statEmpCount">@(Model?.Count(x => !x.IsExcluded) ?? 0)</div>
             <div class="stat-card-sub">Eligible Staff</div>
         </div>
 
         <!-- Card 2: Total Leave Salary -->
         <div class="stat-card sc-green">
             <div class="stat-card-label">TOTAL LEAVE SALARY</div>
-            <div class="stat-card-val" id="statLeaveTotal">@string.Format("{0:N2}", totalLeave)</div>
+            <div class="stat-card-val" id="statLeaveTotal">@string.Format("{0:N0}", totalLeave)</div>
             <div class="stat-card-sub">QR. (In-House + Outsource)</div>
         </div>
 
         <!-- Card 3: Total Air Tickets -->
         <div class="stat-card sc-red">
             <div class="stat-card-label">TOTAL AIR TICKETS</div>
-            <div class="stat-card-val" id="statTicketTotal">@string.Format("{0:N2}", totalTicket)</div>
+            <div class="stat-card-val" id="statTicketTotal">@string.Format("{0:N0}", totalTicket)</div>
             <div class="stat-card-sub">QR. (Ticket Allowance)</div>
         </div>
 
         <!-- Card 4: Net Settlement (Grand Total) -->
         <div class="stat-card sc-amber">
             <div class="stat-card-label">NET SETTLEMENT (GRAND TOTAL)</div>
-            <div class="stat-card-val" id="statGrandTotal" style="color: #b45309;">@string.Format("{0:N2}", grandTotal)</div>
+            <div class="stat-card-val" id="statGrandTotal" style="color: #b45309;">@string.Format("{0:N0}", grandTotal)</div>
             <div class="stat-card-sub">QR. Net Payable</div>
         </div>
 
@@ -678,6 +699,7 @@
                         <table class="table table-bordered table-sm encash-table mb-0" id="encashGridTable">
                             <thead>
                                 <tr>
+                                    <th style="width: 75px; min-width: 75px; text-align: center;">Exclude</th>
                                     <th style="width: 80px; min-width: 80px;">Employee ID</th>
                                     <th style="width: 55px; min-width: 55px;">Title</th>
                                     <th style="width: 150px; min-width: 150px;">Full Name</th>
@@ -702,15 +724,15 @@
                                 @if (selectedCat == "ALL" || selectedCat == "INTERNAL")
                                 {
                                     <tr class="group-header-row">
-                                        <td colspan="18"><i class="fas fa-building mr-1"></i> In-House Staff</td>
+                                        <td colspan="19"><i class="fas fa-building mr-1"></i> In-House Staff</td>
                                     </tr>
                                     @if (!internalStaff.Any())
                                     {
-                                        <tr><td colspan="18" class="text-center text-muted py-2">No eligible in-house staff found for this cycle.</td></tr>
+                                        <tr><td colspan="19" class="text-center text-muted py-2">No eligible in-house staff found for this cycle.</td></tr>
                                     }
                                     @foreach (var emp in internalStaff)
                                     {
-                                        <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="INTERNAL"
+                                        <tr class="emp-row @(emp.IsExcluded ? "is-excluded" : "")" data-excluded="@(emp.IsExcluded ? "true" : "false")" data-sysid="@emp.EmpSysId" data-cat="INTERNAL"
                                             data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-dailysalary="@emp.DailySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-netdays="@emp.NetLeaveDays"
                                             data-tktprice="@emp.TktPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-leavesalary="@emp.TotalLeaveSalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
@@ -720,6 +742,20 @@
                                             data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
                                             data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-paidleave="@emp.PaidLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)">
+                                            <td class="text-center" style="width: 75px; min-width: 75px;">
+                                                @if (emp.IsExcluded)
+                                                {
+                                                    <button type="button" class="btn btn-xs btn-outline-secondary btn-exclude-toggle" onclick="toggleExclude(this);" title="Click to include employee" @(isCompleted ? "disabled" : "")>
+                                                        <i class="fas fa-undo mr-1"></i>Include
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-xs btn-outline-danger btn-exclude-toggle" onclick="toggleExclude(this);" title="Click to exclude employee" @(isCompleted ? "disabled" : "")>
+                                                        <i class="fas fa-user-slash mr-1"></i>Exclude
+                                                    </button>
+                                                }
+                                            </td>
                                             <td class="text-center font-weight-bold">@emp.EmpId</td>
                                             <td class="text-center">@emp.CourtesyTitle</td>
                                             <td>@emp.FullName</td>
@@ -732,24 +768,24 @@
                                             <td class="text-center">@emp.ApplicableDays</td>
                                             <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
                                             <td class="text-center">
-                                                <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" @(isCompleted ? "disabled" : "") />
+                                                <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
                                             <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
-                                            <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                                            <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N0") : "-")</td>
                                             <td class="text-center">
-                                                <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted ? "disabled" : "") />
+                                                <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
-                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N2")</td>
-                                            <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N2")</td>
+                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N0")</td>
+                                            <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N0")</td>
                                             <td class="small remarks-cell">@emp.Remarks</td>
                                         </tr>
                                     }
                                     <tr class="subtotal-row" id="rowSubtotalInternal">
-                                        <td colspan="13" class="text-right">Total Leave Salary &amp; Air Ticket for In-House Staff:</td>
-                                        <td class="text-right font-weight-bold" id="subtotalInternalLeave">@string.Format("{0:N2}", ViewBag.InternalLeaveTotal ?? 0)</td>
+                                        <td colspan="14" class="text-right">Total Leave Salary &amp; Air Ticket for In-House Staff:</td>
+                                        <td class="text-right font-weight-bold" id="subtotalInternalLeave">@string.Format("{0:N0}", ViewBag.InternalLeaveTotal ?? 0)</td>
                                         <td></td>
-                                        <td class="text-right font-weight-bold" id="subtotalInternalTicket">@string.Format("{0:N2}", ViewBag.InternalTicketTotal ?? 0)</td>
-                                        <td class="text-right font-weight-bold" id="subtotalInternalSettlement">@string.Format("{0:N2}", ViewBag.InternalSettlementTotal ?? 0)</td>
+                                        <td class="text-right font-weight-bold" id="subtotalInternalTicket">@string.Format("{0:N0}", ViewBag.InternalTicketTotal ?? 0)</td>
+                                        <td class="text-right font-weight-bold" id="subtotalInternalSettlement">@string.Format("{0:N0}", ViewBag.InternalSettlementTotal ?? 0)</td>
                                         <td></td>
                                     </tr>
                                 }
@@ -757,15 +793,15 @@
                                 @if (selectedCat == "ALL" || selectedCat == "OUTSOURCE")
                                 {
                                     <tr class="group-header-row">
-                                        <td colspan="18"><i class="fas fa-users-cog mr-1"></i> Outsource Staff</td>
+                                        <td colspan="19"><i class="fas fa-users-cog mr-1"></i> Outsource Staff</td>
                                     </tr>
                                     @if (!outsourceStaff.Any())
                                     {
-                                        <tr><td colspan="18" class="text-center text-muted py-2">No eligible outsource staff found for this cycle.</td></tr>
+                                        <tr><td colspan="19" class="text-center text-muted py-2">No eligible outsource staff found for this cycle.</td></tr>
                                     }
                                     @foreach (var emp in outsourceStaff)
                                     {
-                                        <tr class="emp-row" data-sysid="@emp.EmpSysId" data-cat="OUTSOURCE"
+                                        <tr class="emp-row @(emp.IsExcluded ? "is-excluded" : "")" data-excluded="@(emp.IsExcluded ? "true" : "false")" data-sysid="@emp.EmpSysId" data-cat="OUTSOURCE"
                                             data-encashid="@emp.EncashId" data-salary="@emp.MonthlySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-dailysalary="@emp.DailySalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-netdays="@emp.NetLeaveDays"
                                             data-tktprice="@emp.TktPrice.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)" data-leavesalary="@emp.TotalLeaveSalary.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)"
@@ -775,6 +811,20 @@
                                             data-reset="@emp.NextResetDate.ToString("yyyy-MM-dd")"
                                             data-appdays="@emp.ApplicableDays" data-eligdays="@emp.EligibleLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)"
                                             data-paidleave="@emp.PaidLeaveDays.ToString("0.#####", System.Globalization.CultureInfo.InvariantCulture)">
+                                            <td class="text-center" style="width: 75px; min-width: 75px;">
+                                                @if (emp.IsExcluded)
+                                                {
+                                                    <button type="button" class="btn btn-xs btn-outline-secondary btn-exclude-toggle" onclick="toggleExclude(this);" title="Click to include employee" @(isCompleted ? "disabled" : "")>
+                                                        <i class="fas fa-undo mr-1"></i>Include
+                                                    </button>
+                                                }
+                                                else
+                                                {
+                                                    <button type="button" class="btn btn-xs btn-outline-danger btn-exclude-toggle" onclick="toggleExclude(this);" title="Click to exclude employee" @(isCompleted ? "disabled" : "")>
+                                                        <i class="fas fa-user-slash mr-1"></i>Exclude
+                                                    </button>
+                                                }
+                                            </td>
                                             <td class="text-center font-weight-bold">@emp.EmpId</td>
                                             <td class="text-center">@emp.CourtesyTitle</td>
                                             <td>@emp.FullName</td>
@@ -787,32 +837,32 @@
                                             <td class="text-center">@emp.ApplicableDays</td>
                                             <td class="text-right">@emp.EligibleLeaveDays.ToString("F5")</td>
                                             <td class="text-center">
-                                                <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" @(isCompleted ? "disabled" : "") />
+                                                <input type="number" min="0" max="365" value="@emp.NetLeaveDays" class="form-control form-control-sm netdays-input" onchange="onNetDaysChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
                                             <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
-                                            <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
+                                            <td class="text-right font-weight-bold leave-salary-cell">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N0") : "-")</td>
                                             <td class="text-center">
-                                                <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted ? "disabled" : "") />
+                                                <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
-                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N2")</td>
-                                            <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N2")</td>
+                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N0")</td>
+                                            <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N0")</td>
                                             <td class="small remarks-cell">@emp.Remarks</td>
                                         </tr>
                                     }
                                     <tr class="subtotal-row" id="rowSubtotalOutsource">
-                                        <td colspan="13" class="text-right">Total Leave Salary &amp; Air Ticket for Outsource Staff:</td>
-                                        <td class="text-right font-weight-bold" id="subtotalOutsourceLeave">@string.Format("{0:N2}", ViewBag.OutsourceLeaveTotal ?? 0)</td>
+                                        <td colspan="14" class="text-right">Total Leave Salary &amp; Air Ticket for Outsource Staff:</td>
+                                        <td class="text-right font-weight-bold" id="subtotalOutsourceLeave">@string.Format("{0:N0}", ViewBag.OutsourceLeaveTotal ?? 0)</td>
                                         <td></td>
-                                        <td class="text-right font-weight-bold" id="subtotalOutsourceTicket">@string.Format("{0:N2}", ViewBag.OutsourceTicketTotal ?? 0)</td>
-                                        <td class="text-right font-weight-bold" id="subtotalOutsourceSettlement">@string.Format("{0:N2}", ViewBag.OutsourceSettlementTotal ?? 0)</td>
+                                        <td class="text-right font-weight-bold" id="subtotalOutsourceTicket">@string.Format("{0:N0}", ViewBag.OutsourceTicketTotal ?? 0)</td>
+                                        <td class="text-right font-weight-bold" id="subtotalOutsourceSettlement">@string.Format("{0:N0}", ViewBag.OutsourceSettlementTotal ?? 0)</td>
                                         <td></td>
                                     </tr>
                                 }
 
                                 <!-- Grand Total -->
                                 <tr class="grandtotal-row" id="rowGrandTotal">
-                                    <td colspan="16" class="text-right">Grand Total Settlement:</td>
-                                    <td class="text-right font-weight-bold" style="color: #540033;" id="grandTotalSettlement">@string.Format("{0:N2}", ViewBag.GrandTotal ?? 0)</td>
+                                    <td colspan="17" class="text-right">Grand Total Settlement:</td>
+                                    <td class="text-right font-weight-bold" style="color: #540033;" id="grandTotalSettlement">@string.Format("{0:N0}", ViewBag.GrandTotal ?? 0)</td>
                                     <td></td>
                                 </tr>
                             </tbody>
@@ -863,6 +913,27 @@
         window.location.href = '/Payroll/HrPrStaffLvTktEncash/Index?year=' + y + '&month=' + m + '&staffCat=' + cat + '&load=true';
     }
 
+    function toggleExclude(btn) {
+        var tr = $(btn).closest('tr');
+        var isExcluded = tr.hasClass('is-excluded');
+        if (isExcluded) {
+            tr.removeClass('is-excluded');
+            tr.attr('data-excluded', 'false');
+            tr.find('input').prop('disabled', false);
+            $(btn).removeClass('btn-outline-secondary').addClass('btn-outline-danger')
+                  .html('<i class="fas fa-user-slash mr-1"></i>Exclude')
+                  .attr('title', 'Click to exclude employee');
+        } else {
+            tr.addClass('is-excluded');
+            tr.attr('data-excluded', 'true');
+            tr.find('input').prop('disabled', true);
+            $(btn).removeClass('btn-outline-danger').addClass('btn-outline-secondary')
+                  .html('<i class="fas fa-undo mr-1"></i>Include')
+                  .attr('title', 'Click to include employee');
+        }
+        recalcTotals();
+    }
+
     function onNetDaysChanged(input) {
         var tr = $(input).closest('tr');
         var netDays = parseInt($(input).val());
@@ -870,17 +941,17 @@
         tr.data('netdays', netDays);
 
         var monthlySalary = parseFloat(tr.data('salary')) || 0;
-        var leaveSalary = (netDays % 30 === 0 && netDays > 0) ? (netDays / 30) * monthlySalary : Math.round((monthlySalary / 30.0) * netDays * 100) / 100;
+        var leaveSalary = (netDays % 30 === 0 && netDays > 0) ? Math.round((netDays / 30) * monthlySalary) : Math.round((monthlySalary / 30.0) * netDays);
         tr.data('leavesalary', leaveSalary);
 
-        tr.find('.leave-salary-cell').text(leaveSalary > 0 ? leaveSalary.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "-");
+        tr.find('.leave-salary-cell').text(leaveSalary > 0 ? leaveSalary.toLocaleString('en-US', { maximumFractionDigits: 0 }) : "-");
 
         var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
         var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-        var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
-        var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
+        var tktValue = Math.round(tktCount * tktPrice);
+        var settlement = Math.round(leaveSalary + tktValue);
 
-        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
 
         // Remarks update
         var remarks = "-";
@@ -906,11 +977,11 @@
         var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
         var netDays = parseInt(tr.find('.netdays-input').val()) || 0;
 
-        var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
-        var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
+        var tktValue = Math.round(tktCount * tktPrice);
+        var settlement = Math.round(leaveSalary + tktValue);
 
-        tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
 
         // Remarks update
         var remarks = "-";
@@ -929,15 +1000,21 @@
     function recalcTotals() {
         var intLeave = 0, intTkt = 0, intSettle = 0;
         var outLeave = 0, outTkt = 0, outSettle = 0;
+        var activeCount = 0;
 
         $('.emp-row').each(function () {
             var tr = $(this);
+            if (tr.hasClass('is-excluded') || tr.attr('data-excluded') === 'true') {
+                return;
+            }
+
+            activeCount++;
             var cat = tr.data('cat');
-            var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
+            var leaveSalary = Math.round(parseFloat(tr.data('leavesalary')) || 0);
             var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
             var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-            var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
-            var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
+            var tktValue = Math.round(tktCount * tktPrice);
+            var settlement = Math.round(leaveSalary + tktValue);
 
             if (cat === 'INTERNAL') {
                 intLeave += leaveSalary;
@@ -950,20 +1027,22 @@
             }
         });
 
-        $('#subtotalInternalLeave').text(intLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#subtotalInternalTicket').text(intTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#subtotalInternalSettlement').text(intSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#statEmpCount').text(activeCount);
 
-        $('#subtotalOutsourceLeave').text(outLeave.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#subtotalOutsourceTicket').text(outTkt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#subtotalOutsourceSettlement').text(outSettle.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#subtotalInternalLeave').text(intLeave.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#subtotalInternalTicket').text(intTkt.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#subtotalInternalSettlement').text(intSettle.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+
+        $('#subtotalOutsourceLeave').text(outLeave.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#subtotalOutsourceTicket').text(outTkt.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#subtotalOutsourceSettlement').text(outSettle.toLocaleString('en-US', { maximumFractionDigits: 0 }));
 
         var grand = intSettle + outSettle;
-        $('#grandTotalSettlement').text(grand.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#grandTotalSettlement').text(grand.toLocaleString('en-US', { maximumFractionDigits: 0 }));
 
-        $('#statLeaveTotal').text((intLeave + outLeave).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#statTicketTotal').text((intTkt + outTkt).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
-        $('#statGrandTotal').text(grand.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+        $('#statLeaveTotal').text((intLeave + outLeave).toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#statTicketTotal').text((intTkt + outTkt).toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        $('#statGrandTotal').text(grand.toLocaleString('en-US', { maximumFractionDigits: 0 }));
         $('#statBreakdown').html('<span style="color:#0891b2;">' + outSettle.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</span> / <span style="color:#475569;">' + intSettle.toLocaleString('en-US', { maximumFractionDigits: 0 }) + '</span>');
     }
 
@@ -971,12 +1050,13 @@
         var items = [];
         $('.emp-row').each(function () {
             var tr = $(this);
+            var isExcluded = tr.hasClass('is-excluded') || tr.attr('data-excluded') === 'true';
             var netDays = parseInt(tr.find('.netdays-input').val()) || 0;
             var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
             var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-            var leaveSalary = parseFloat(tr.data('leavesalary')) || 0;
-            var tktValue = Math.round(tktCount * tktPrice * 100) / 100;
-            var settlement = Math.round((leaveSalary + tktValue) * 100) / 100;
+            var leaveSalary = Math.round(parseFloat(tr.data('leavesalary')) || 0);
+            var tktValue = Math.round(tktCount * tktPrice);
+            var settlement = Math.round(leaveSalary + tktValue);
 
             items.push({
                 encashId: parseInt(tr.data('encashid')) || 0,
@@ -998,7 +1078,8 @@
                 tktPrice: tktPrice,
                 airTicketValue: tktValue,
                 totalSettlement: settlement,
-                remarks: tr.find('.remarks-cell').text().trim()
+                remarks: tr.find('.remarks-cell').text().trim(),
+                isExcluded: isExcluded
             });
         });
 

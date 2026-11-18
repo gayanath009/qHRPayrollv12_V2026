@@ -10,8 +10,8 @@
     int prevYear = selectedMonth == 1 ? selectedYear - 1 : selectedYear;
     string cutoffPeriodText = $"Cut off period 21/{prevMonth:D2}/{prevYear % 100:D2} to 20/{selectedMonth:D2}/{selectedYear % 100:D2}";
 
-    var internalStaff = Model?.Where(x => x.StaffCategory == "INTERNAL").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
-    var outsourceStaff = Model?.Where(x => x.StaffCategory == "OUTSOURCE").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+    var internalStaff = Model?.Where(x => !x.IsExcluded && x.StaffCategory == "INTERNAL").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
+    var outsourceStaff = Model?.Where(x => !x.IsExcluded && x.StaffCategory == "OUTSOURCE").ToList() ?? new List<qHRM.Areas.Payroll.Models.HrPrStaffLvTktEncashVw>();
 }
 
 <!DOCTYPE html>
@@ -128,9 +128,9 @@
                         <td class="text-right">@emp.EligibleLeaveDays.ToString("0.#####")</td>
                         <td class="text-center font-weight-bold" style="color: red;">@emp.NetLeaveDays</td>
                         <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
-                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
-                        <td class="text-right">@emp.AirTicketValue.ToString("N2")</td>
-                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N2")</td>
+                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N0") : "-")</td>
+                        <td class="text-right">@emp.AirTicketValue.ToString("N0")</td>
+                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N0")</td>
                         <td>@emp.Remarks</td>
                     </tr>
                 }
@@ -162,9 +162,9 @@
                         <td class="text-right">@emp.EligibleLeaveDays.ToString("0.#####")</td>
                         <td class="text-center font-weight-bold" style="color: red;">@emp.NetLeaveDays</td>
                         <td class="text-right">@emp.MonthlySalary.ToString("N2")</td>
-                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N2") : "-")</td>
-                        <td class="text-right">@emp.AirTicketValue.ToString("N2")</td>
-                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N2")</td>
+                        <td class="text-right">@(emp.TotalLeaveSalary > 0 ? emp.TotalLeaveSalary.ToString("N0") : "-")</td>
+                        <td class="text-right">@emp.AirTicketValue.ToString("N0")</td>
+                        <td class="text-right font-weight-bold">@emp.TotalSettlement.ToString("N0")</td>
                         <td>@emp.Remarks</td>
                     </tr>
                 }

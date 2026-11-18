@@ -80,7 +80,7 @@ namespace qHRM.Areas.Payroll.Controllers
             ViewBag.Month = pMonth;
             ViewBag.StaffCat = category;
             bool hasSavedRecords = await _hrmContext.HrPrStaffLvTktEncash
-                .AnyAsync(x => x.PrcYear == pYear && x.PrcMonth == pMonth && x.RecStat == 1);
+                .AnyAsync(x => x.PrcYear == pYear && x.PrcMonth == pMonth && (x.RecStat == 1 || x.RecStat == 2));
 
             bool isLoaded = load || hasSavedRecords;
             ViewBag.IsLoaded = isLoaded;
@@ -101,15 +101,15 @@ namespace qHRM.Areas.Payroll.Controllers
             {
                 records = _payrollContext.CalculateStaffLvTktEncash(pYear, pMonth, category);
 
-                ViewBag.InternalLeaveTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
-                ViewBag.InternalTicketTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
-                ViewBag.InternalSettlementTotal = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalSettlement);
+                ViewBag.InternalLeaveTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
+                ViewBag.InternalTicketTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
+                ViewBag.InternalSettlementTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "INTERNAL").Sum(x => x.TotalSettlement);
 
-                ViewBag.OutsourceLeaveTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
-                ViewBag.OutsourceTicketTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.AirTicketValue);
-                ViewBag.OutsourceSettlementTotal = records.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalSettlement);
+                ViewBag.OutsourceLeaveTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
+                ViewBag.OutsourceTicketTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "OUTSOURCE").Sum(x => x.AirTicketValue);
+                ViewBag.OutsourceSettlementTotal = records.Where(x => !x.IsExcluded && x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalSettlement);
 
-                ViewBag.GrandTotal = records.Sum(x => x.TotalSettlement);
+                ViewBag.GrandTotal = records.Where(x => !x.IsExcluded).Sum(x => x.TotalSettlement);
             }
 
             var encashHdr = await _hrmContext.HrPrStaffLvTktEncashHdr.FirstOrDefaultAsync(h => h.PrcYear == pYear && h.PrcMonth == pMonth);
@@ -165,6 +165,7 @@ namespace qHRM.Areas.Payroll.Controllers
             public decimal AirTicketValue { get; set; }
             public decimal TotalSettlement { get; set; }
             public string Remarks { get; set; }
+            public bool IsExcluded { get; set; } = false;
         }
 
         [HttpPost]
@@ -201,9 +202,11 @@ namespace qHRM.Areas.Payroll.Controllers
                     AirTicketValue = x.AirTicketValue,
                     TotalSettlement = x.TotalSettlement,
                     Remarks = x.Remarks,
-                    PrcStat = 2
+                    PrcStat = 2,
+                    RecStat = (short)(x.IsExcluded ? 2 : 1)
                 }).ToList();
 
+                entities = entities.Where(e => e.JoinedDate.AddYears(1) <= new DateTime(items.First().PrcYear, items.First().PrcMonth, 20)).ToList();
                 _payrollContext.SaveStaffLvTktEncashList(entities, userId);
 
                 int pYear = items.First().PrcYear;
@@ -279,7 +282,7 @@ namespace qHRM.Areas.Payroll.Controllers
             {
                 int userId = HttpContext.Session.GetInt32("userEmpSysId") ?? HttpContext.Session.GetInt32("userID") ?? 1;
                 if (userId <= 0) userId = 1;
-                var allRecords = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL");
+                var allRecords = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL").Where(x => !x.IsExcluded).ToList();
                 decimal inLv = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
                 decimal inTkt = allRecords.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
                 decimal outLv = allRecords.Where(x => x.StaffCategory == "OUTSOURCE").Sum(x => x.TotalLeaveSalary);
@@ -298,7 +301,7 @@ namespace qHRM.Areas.Payroll.Controllers
         {
             try
             {
-                var records = _payrollContext.CalculateStaffLvTktEncash(year, month, staffCat);
+                var records = _payrollContext.CalculateStaffLvTktEncash(year, month, staffCat).Where(x => !x.IsExcluded).ToList();
                 byte[] bytes = StaffLeaveTicketEncashExcelReport.GenerateReport(year, month, records);
 
                 string monthName = new DateTime(year, month, 1).ToString("MMMM");
@@ -315,7 +318,7 @@ namespace qHRM.Areas.Payroll.Controllers
         public IActionResult PrintReport(int year, int month, string staffCat = "ALL")
         {
             string category = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
-            var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category);
+            var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category).Where(x => !x.IsExcluded).ToList();
 
             string companyName = "Qatar Computer Services WLL";
             byte[] pdfBytes = StaffLeaveTicketEncashPdfReport.GenerateReport(companyName, year, month, records, _host.WebRootPath);
@@ -388,10 +391,10 @@ namespace qHRM.Areas.Payroll.Controllers
                 }
 
                 string category = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
-                var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category);
+                var records = _payrollContext.CalculateStaffLvTktEncash(year, month, category).Where(x => !x.IsExcluded).ToList();
                 if (!records.Any())
                 {
-                    records = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL");
+                    records = _payrollContext.CalculateStaffLvTktEncash(year, month, "ALL").Where(x => !x.IsExcluded).ToList();
                 }
 
                 var empSysIds = records.Select(x => x.EmpSysId).Distinct().ToList();

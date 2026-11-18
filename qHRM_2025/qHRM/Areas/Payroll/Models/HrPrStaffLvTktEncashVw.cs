@@ -78,6 +78,8 @@ namespace qHRM.Areas.Payroll.Models
         [Display(Name = "Remarks")]
         public string Remarks { get; set; }
 
+        public bool IsExcluded { get; set; } = false;
+
         public short PrcStat { get; set; }
     }
 }

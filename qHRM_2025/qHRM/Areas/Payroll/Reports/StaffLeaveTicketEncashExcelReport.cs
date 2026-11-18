@@ -93,8 +93,8 @@ namespace qHRM.Areas.Payroll.Reports
                 }
 
                 int currentRow = 6;
-                var internalStaff = records.Where(x => x.StaffCategory == "INTERNAL").ToList();
-                var outsourceStaff = records.Where(x => x.StaffCategory == "OUTSOURCE").ToList();
+                var internalStaff = records.Where(x => !x.IsExcluded && x.StaffCategory == "INTERNAL").ToList();
+                var outsourceStaff = records.Where(x => !x.IsExcluded && x.StaffCategory == "OUTSOURCE").ToList();
 
                 // 1. Internal Staff rows
                 decimal internalLeaveSum = 0;
@@ -268,7 +268,7 @@ namespace qHRM.Areas.Payroll.Reports
             if (emp.TotalLeaveSalary > 0)
             {
                 sheet.Range[row, 14].Number = (double)emp.TotalLeaveSalary;
-                sheet.Range[row, 14].NumberFormat = "#,##0.00";
+                sheet.Range[row, 14].NumberFormat = "#,##0";
             }
             else
             {
@@ -277,11 +277,11 @@ namespace qHRM.Areas.Payroll.Reports
             }
 
             sheet.Range[row, 15].Number = (double)emp.AirTicketValue;
-            sheet.Range[row, 15].NumberFormat = "#,##0.00";
+            sheet.Range[row, 15].NumberFormat = "#,##0";
             sheet.Range[row, 15].HorizontalAlignment = ExcelHAlign.HAlignRight;
 
             sheet.Range[row, 16].Number = (double)emp.TotalSettlement;
-            sheet.Range[row, 16].NumberFormat = "#,##0.00";
+            sheet.Range[row, 16].NumberFormat = "#,##0";
             sheet.Range[row, 16].HorizontalAlignment = ExcelHAlign.HAlignRight;
 
             sheet.Range[row, 17].Text = emp.Remarks;

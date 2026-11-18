@@ -369,17 +369,17 @@
             </div>
             <div class="stat-card sc-indigo">
                 <div class="stat-card-label">In-House Staff Settlement</div>
-                <div class="stat-card-val">@(((hdr?.TotalInternalSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
-                <div class="stat-card-sub">Leave: @((hdr?.TotalInternalLeave ?? 0).ToString("N2")) | Ticket: @((hdr?.TotalInternalTicket ?? 0).ToString("N2"))</div>
+                <div class="stat-card-val">@(((hdr?.TotalInternalSettlement ?? 0)).ToString("N0")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
+                <div class="stat-card-sub">Leave: @((hdr?.TotalInternalLeave ?? 0).ToString("N0")) | Ticket: @((hdr?.TotalInternalTicket ?? 0).ToString("N0"))</div>
             </div>
             <div class="stat-card sc-purple">
                 <div class="stat-card-label">Outsource Staff Settlement</div>
-                <div class="stat-card-val">@(((hdr?.TotalOutsourceSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
-                <div class="stat-card-sub">Leave: @((hdr?.TotalOutsourceLeave ?? 0).ToString("N2")) | Ticket: @((hdr?.TotalOutsourceTicket ?? 0).ToString("N2"))</div>
+                <div class="stat-card-val">@(((hdr?.TotalOutsourceSettlement ?? 0)).ToString("N0")) <span style="font-size:0.8rem; font-weight:600; color:var(--clr-muted);">QAR</span></div>
+                <div class="stat-card-sub">Leave: @((hdr?.TotalOutsourceLeave ?? 0).ToString("N0")) | Ticket: @((hdr?.TotalOutsourceTicket ?? 0).ToString("N0"))</div>
             </div>
             <div class="stat-card sc-burgundy">
                 <div class="stat-card-label">Grand Total Settlement</div>
-                <div class="stat-card-val" style="color:#540033;">@(((hdr?.GrandTotalSettlement ?? 0)).ToString("N2")) <span style="font-size:0.8rem; font-weight:600; color:#830050;">QAR</span></div>
+                <div class="stat-card-val" style="color:#540033;">@(((hdr?.GrandTotalSettlement ?? 0)).ToString("N0")) <span style="font-size:0.8rem; font-weight:600; color:#830050;">QAR</span></div>
                 <div class="stat-card-sub">Total Payout for @monthName @year</div>
             </div>
         </div>
@@ -467,10 +467,10 @@
                                     <td class="text-center">@r.NextResetDate.ToString("dd MMM yyyy")</td>
                                     <td class="text-right font-weight-bold">@r.NetLeaveDays</td>
                                     <td class="text-right">@r.MonthlySalary.ToString("N2")</td>
-                                    <td class="text-right font-weight-bold">@r.TotalLeaveSalary.ToString("N2")</td>
+                                    <td class="text-right font-weight-bold">@r.TotalLeaveSalary.ToString("N0")</td>
                                     <td class="text-center">@r.TktCount</td>
-                                    <td class="text-right">@r.AirTicketValue.ToString("N2")</td>
-                                    <td class="text-right font-weight-bold" style="color:#540033 !important;">@r.TotalSettlement.ToString("N2")</td>
+                                    <td class="text-right">@r.AirTicketValue.ToString("N0")</td>
+                                    <td class="text-right font-weight-bold" style="color:#540033 !important;">@r.TotalSettlement.ToString("N0")</td>
                                     <td style="color: #000000 !important; font-size: 0.78rem;">@r.Remarks</td>
                                 </tr>
                             }
@@ -478,10 +478,10 @@
                         <tfoot>
                             <tr>
                                 <td colspan="8">Totals:</td>
-                                <td class="text-right font-weight-bold">@records.Sum(x => x.TotalLeaveSalary).ToString("N2")</td>
+                                <td class="text-right font-weight-bold">@records.Sum(x => x.TotalLeaveSalary).ToString("N0")</td>
                                 <td class="text-center">@records.Sum(x => x.TktCount)</td>
-                                <td class="text-right font-weight-bold">@records.Sum(x => x.AirTicketValue).ToString("N2")</td>
-                                <td class="text-right font-weight-bold" style="color:#540033 !important; font-size:0.9rem;">@records.Sum(x => x.TotalSettlement).ToString("N2")</td>
+                                <td class="text-right font-weight-bold">@records.Sum(x => x.AirTicketValue).ToString("N0")</td>
+                                <td class="text-right font-weight-bold" style="color:#540033 !important; font-size:0.9rem;">@records.Sum(x => x.TotalSettlement).ToString("N0")</td>
                                 <td></td>
                             </tr>
                         </tfoot>

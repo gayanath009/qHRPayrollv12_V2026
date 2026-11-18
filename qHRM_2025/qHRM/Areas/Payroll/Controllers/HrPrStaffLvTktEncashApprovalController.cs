@@ -55,7 +55,7 @@ namespace qHRM.Areas.Payroll.Controllers
                 hdr = await _workflowService.GetOrCreateEncashmentHdrAsync(pYear, pMonth);
             }
 
-            var records = _payrollContext.CalculateStaffLvTktEncash(pYear, pMonth, "ALL");
+            var records = _payrollContext.CalculateStaffLvTktEncash(pYear, pMonth, "ALL").Where(x => !x.IsExcluded).ToList();
 
             decimal inLv = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.TotalLeaveSalary);
             decimal inTkt = records.Where(x => x.StaffCategory == "INTERNAL").Sum(x => x.AirTicketValue);
