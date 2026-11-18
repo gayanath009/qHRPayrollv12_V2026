@@ -709,6 +709,19 @@
         color: #ffffff;
     }
 
+    .chk-skip-day:checked ~ .custom-control-label::before {
+        background-color: #e11d48 !important;
+        border-color: #e11d48 !important;
+    }
+    .row-skipped {
+        background-color: #f8fafc !important;
+        opacity: 0.55;
+        transition: opacity 0.2s ease;
+    }
+    .row-skipped td {
+        color: #94a3b8 !important;
+    }
+
     /* Toast Notification (Image matching media_1794076566972_8bb28adf.png) */
     .app-toast-container {
         position: fixed;
@@ -1441,6 +1454,7 @@
                                     <tr>
                                         <th style="width: 120px;">Worked day</th>
                                         <th style="width: 170px;">Original Timings</th>
+                                        <th style="width: 65px;" class="text-center" title="Skip this day from regularization">Skip</th>
                                         <th style="width: 130px;">Check-in *</th>
                                         <th style="width: 130px;">Check-out *</th>
                                         <th style="width: 100px;" class="text-center">Total Hours</th>
@@ -1450,7 +1464,7 @@
                                 </thead>
                                 <tbody id="tbodyApplicableDates">
                                     <tr>
-                                        <td colspan="7" class="text-center py-4 text-muted">
+                                        <td colspan="8" class="text-center py-4 text-muted">
                                             <i class="fas fa-spinner fa-spin mr-1"></i> Loading applicable dates...
                                         </td>
                                     </tr>
@@ -1829,6 +1843,12 @@
                                     </div>
                                 </div>
                             </td>
+                            <td class="text-center align-middle">
+                                <div class="custom-control custom-checkbox d-inline-block" title="Skip regularization for this day">
+                                    <input type="checkbox" class="custom-control-input chk-skip-day" id="chkSkip_${idx}" ${!isEligible ? 'disabled checked' : ''} onchange="toggleRowSkip(${idx})" />
+                                    <label class="custom-control-label font-weight-bold" for="chkSkip_${idx}" style="cursor: pointer;"></label>
+                                </div>
+                            </td>
                             <td>
                                 <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkInTime_${idx}" value="" title="Check-in Time (AM by default)" ${disabledAttr} oninput="onCheckInChanged(${idx})" onchange="onCheckInChanged(${idx})" />
                             </td>
@@ -1860,8 +1880,61 @@
                 tbody.innerHTML = rowsHtml;
             })
             .catch(err => {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-danger">Failed to load dates: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-danger">Failed to load dates: ${err.message}</td></tr>`;
             });
+    }
+
+    // =========================================================================
+    // TOGGLE ROW SKIP REGULARIZATION
+    // Disables inputs and dims row when marked to skip; excludes from validation
+    // =========================================================================
+    function toggleRowSkip(idx) {
+        const chk = document.getElementById(`chkSkip_${idx}`);
+        if (!chk) return;
+        const isSkipped = chk.checked;
+        const row = document.querySelector(`tr[data-index="${idx}"]`);
+        const inEl = document.getElementById(`chkInTime_${idx}`);
+        const outEl = document.getElementById(`chkOutTime_${idx}`);
+        const selEl = document.getElementById(`selReason_${idx}`);
+        const descEl = document.getElementById(`txtDesc_${idx}`);
+        const totEl = document.getElementById(`totHours_${idx}`);
+
+        if (isSkipped) {
+            if (row) {
+                row.classList.add('table-secondary', 'row-skipped');
+            }
+            if (inEl) {
+                inEl.disabled = true;
+                inEl.value = '';
+                inEl.classList.remove('border-danger');
+            }
+            if (outEl) {
+                outEl.disabled = true;
+                outEl.value = '';
+                outEl.classList.remove('border-danger');
+            }
+            if (selEl) {
+                selEl.disabled = true;
+                selEl.classList.remove('border-danger');
+            }
+            if (descEl) {
+                descEl.disabled = true;
+                descEl.classList.remove('border-danger');
+            }
+            if (totEl) {
+                totEl.innerText = '00:00';
+                totEl.classList.add('text-muted');
+            }
+        } else {
+            if (row) {
+                row.classList.remove('table-secondary', 'row-skipped');
+            }
+            if (inEl) inEl.disabled = false;
+            if (outEl) outEl.disabled = false;
+            if (selEl) selEl.disabled = false;
+            if (descEl) descEl.disabled = false;
+            if (totEl) totEl.classList.remove('text-muted');
+        }
     }
 
     // =========================================================================
@@ -2004,25 +2077,37 @@
             const isEligible = (d.IsEligible !== undefined) ? d.IsEligible : (d.isEligible !== undefined ? d.isEligible : true);
             if (!isEligible) continue;
 
-            const workedDay = d.WorkedDayText || d.workedDayText || `Day ${i + 1}`;
-            const reason = document.getElementById(`selReason_${i}`)?.value;
-            if (!reason || reason === 'Select' || reason === '') {
-                showAppToast('Validation', `Please select a Regularization Reason for ${workedDay}.`, true);
-                document.getElementById(`selReason_${i}`)?.focus();
-                return;
+            // If user checked Skip for this day, skip validation and submission
+            const isSkipped = document.getElementById(`chkSkip_${i}`)?.checked;
+            if (isSkipped) {
+                continue;
             }
 
+            const workedDay = d.WorkedDayText || d.workedDayText || `Day ${i + 1}`;
             const inTime = document.getElementById(`chkInTime_${i}`)?.value;
             const outTime = document.getElementById(`chkOutTime_${i}`)?.value;
 
+            if (!inTime && !outTime) {
+                showAppToast('Validation', `Please enter timings for ${workedDay} or check 'Skip' to exclude it.`, true);
+                document.getElementById(`chkInTime_${i}`)?.focus();
+                return;
+            }
+
             if (!inTime) {
-                showAppToast('Validation', `Please specify Check-in time for ${workedDay}.`, true);
+                showAppToast('Validation', `Please specify Check-in time for ${workedDay} or check 'Skip' to exclude it.`, true);
                 document.getElementById(`chkInTime_${i}`)?.focus();
                 return;
             }
             if (!outTime) {
-                showAppToast('Validation', `Please specify Check-out time for ${workedDay}.`, true);
+                showAppToast('Validation', `Please specify Check-out time for ${workedDay} or check 'Skip' to exclude it.`, true);
                 document.getElementById(`chkOutTime_${i}`)?.focus();
+                return;
+            }
+
+            const reason = document.getElementById(`selReason_${i}`)?.value;
+            if (!reason || reason === 'Select' || reason === '') {
+                showAppToast('Validation', `Please select a Regularization Reason for ${workedDay}.`, true);
+                document.getElementById(`selReason_${i}`)?.focus();
                 return;
             }
 
@@ -2060,7 +2145,7 @@
         }
 
         if (itemsToSubmit.length === 0) {
-            showAppToast('Validation', 'Please select at least one eligible working day.', true);
+            showAppToast('Validation', 'Please select at least one day to regularize (uncheck Skip).', true);
             return;
         }
 
