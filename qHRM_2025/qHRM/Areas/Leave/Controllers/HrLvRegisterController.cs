@@ -1363,12 +1363,8 @@ namespace qHRM.Areas.Leave.Controllers
             try
             {
                 var timeline = await _lvWfService.GetLeaveApprovalTimelineAsync(lvId);
-                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
                 int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
-                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
-                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
-                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
-                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                bool isAdmin = (sessionGrpId == 1);
                 timeline.IsAdmin = isAdmin;
                 return PartialView("_HrLvRegister_Timeline", timeline);
             }
@@ -1456,15 +1452,11 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
                 int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
-                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
-                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
-                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
-                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                bool isAdmin = (sessionGrpId == 1);
                 if (!isAdmin)
                 {
-                    return Json(new { success = false, message = "Access denied. Only Administrators can approve on behalf of an approver." });
+                    return Json(new { success = false, message = "Access denied. Only Administrators (Admin Group) can approve on behalf of an approver." });
                 }
 
                 if (req == null || req.ApprovalId == Guid.Empty)
@@ -1498,15 +1490,11 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
                 int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
-                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
-                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
-                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
-                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                bool isAdmin = (sessionGrpId == 1);
                 if (!isAdmin)
                 {
-                    return Json(new { success = false, message = "Access denied. Only Administrators can reject on behalf of an approver." });
+                    return Json(new { success = false, message = "Access denied. Only Administrators (Admin Group) can reject on behalf of an approver." });
                 }
 
                 if (req == null || req.ApprovalId == Guid.Empty)
@@ -1540,15 +1528,11 @@ namespace qHRM.Areas.Leave.Controllers
         {
             try
             {
-                int sessionEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
                 int sessionGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
-                bool isSelfOnlyUser = _empContext.IsRestrictedSelfOnlyUser(sessionEmpSysId, sessionGrpId);
-                bool isOutsourceAdmin = !isSelfOnlyUser && _empContext.IsOutsourceAdmin(sessionEmpSysId, sessionGrpId);
-                bool showAllEmp = !isSelfOnlyUser && !isOutsourceAdmin && _empContext.GetUserShowAllEmployees(sessionEmpSysId, sessionGrpId);
-                bool isAdmin = (sessionGrpId == 1 || sessionGrpId == 2 || sessionGrpId == 7 || showAllEmp);
+                bool isAdmin = (sessionGrpId == 1);
                 if (!isAdmin)
                 {
-                    return Json(new { success = false, message = "Access denied. Only Administrators can send reminder emails." });
+                    return Json(new { success = false, message = "Access denied. Only Administrators (Admin Group) can send reminder emails." });
                 }
 
                 if (req == null || req.LvId <= 0)
