@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Hosting;
+﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using qHRM.Areas.Payroll.Models;
 using qHRM.Areas.SysAdmin.Data;
@@ -3479,6 +3479,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
             DateTime cutoffOneYearAgo = cutoffEnd.AddYears(-1);
 
             var savedEmpIds = _hrmContext.HrPrStaffLvTktEncash
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
                 .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .Select(x => x.EmpSysId)
                 .ToList();
@@ -3495,6 +3496,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                             where (e.CurrStat == 0
                               && e.JoinedDate <= cutoffEnd.AddYears(-1)
                               && ((e.JoinedDate.Month == prevMonth && e.JoinedDate.Day >= 21) || (e.JoinedDate.Month == month && e.JoinedDate.Day <= 20)))
+                              || savedEmpIds.Contains(e.EmpSysId)
                               || (savedEmpIds.Contains(e.EmpSysId) && e.JoinedDate <= cutoffOneYearAgo)
                             select new
                             {
@@ -3531,6 +3533,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 .ToDictionary(x => x.CntryId, x => x.Price);
 
             var savedRecords = _hrmContext.HrPrStaffLvTktEncash
+                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
                 .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .ToDictionary(x => x.EmpSysId, x => x);
 
@@ -3624,9 +3627,12 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 {
                     monthlySalary = saved.MonthlySalary;
                     dailySalary = saved.DailySalary;
+                    totalLeaveSalary = saved.TotalLeaveSalary;
                     totalLeaveSalary = Math.Round(saved.TotalLeaveSalary, 0, MidpointRounding.AwayFromZero);
                     tktCount = saved.TktCount;
                     tktPrice = saved.TktPrice;
+                    airTicketValue = saved.AirTicketValue;
+                    totalSettlement = saved.TotalSettlement;
                     airTicketValue = Math.Round(saved.AirTicketValue, 0, MidpointRounding.AwayFromZero);
                     totalSettlement = Math.Round(saved.TotalSettlement, 0, MidpointRounding.AwayFromZero);
                     remarks = saved.Remarks ?? "-";
@@ -3652,10 +3658,12 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     dailySalary = Math.Round(monthlySalary / 30.0m, 2);
                     if (netLeaveDays % 30 == 0 && netLeaveDays > 0)
                     {
+                        totalLeaveSalary = (netLeaveDays / 30) * monthlySalary;
                         totalLeaveSalary = Math.Round((netLeaveDays / 30) * monthlySalary, 0, MidpointRounding.AwayFromZero);
                     }
                     else
                     {
+                        totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 2);
                         totalLeaveSalary = Math.Round((monthlySalary / 30.0m) * netLeaveDays, 0, MidpointRounding.AwayFromZero);
                     }
 
@@ -3668,6 +3676,8 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
 
                     ticketPrices.TryGetValue(emp.CntryId, out tktPrice);
 
+                    airTicketValue = Math.Round(tktCount * tktPrice, 2);
+                    totalSettlement = totalLeaveSalary + airTicketValue;
                     airTicketValue = Math.Round(tktCount * tktPrice, 0, MidpointRounding.AwayFromZero);
                     totalSettlement = Math.Round(totalLeaveSalary + airTicketValue, 0, MidpointRounding.AwayFromZero);
 
@@ -3762,6 +3772,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     rec.PrcStat = 2; // Confirmed
                     rec.CrtBy = userId;
                     rec.CrtDateTime = DateTime.Now;
+                    rec.RecStat = 1;
                     rec.RecStat = rec.RecStat == 0 ? (short)1 : rec.RecStat;
                     _hrmContext.HrPrStaffLvTktEncash.Add(rec);
                 }
