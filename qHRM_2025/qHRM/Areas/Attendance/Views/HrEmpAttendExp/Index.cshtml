@@ -1384,14 +1384,13 @@
                         </select>
                     </div>
 
-                    <!-- Period Dropdown: Day, Week, Month, Custom -->
+                    <!-- Period Dropdown: Day, Week, Custom -->
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label class="reg-field-label">Period</label>
                             <select id="modalPeriodType" class="form-control form-control-sm" onchange="onPeriodTypeChanged(this.value)">
                                 <option value="Day">Day</option>
                                 <option value="Week">Week</option>
-                                <option value="Month">Month</option>
                                 <option value="Custom">Custom</option>
                             </select>
                         </div>
@@ -1831,13 +1830,13 @@
                                 </div>
                             </td>
                             <td>
-                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkInTime_${idx}" value="${inTimeVal}" ${disabledAttr} oninput="recalculateRowHours(${idx})" onchange="recalculateRowHours(${idx})" />
+                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkInTime_${idx}" value="" title="Check-in Time (AM by default)" ${disabledAttr} oninput="onCheckInChanged(${idx})" onchange="onCheckInChanged(${idx})" />
                             </td>
                             <td>
-                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkOutTime_${idx}" value="${outTimeVal}" ${disabledAttr} oninput="recalculateRowHours(${idx})" onchange="recalculateRowHours(${idx})" />
+                                <input type="time" class="form-control form-control-sm input-time-control text-center font-weight-bold" id="chkOutTime_${idx}" value="" title="Check-out Time (PM by default)" ${disabledAttr} oninput="onCheckOutChanged(${idx})" onchange="onCheckOutChanged(${idx})" />
                             </td>
                             <td class="text-center align-middle">
-                                <span class="font-weight-bold text-dark" id="totHours_${idx}">${totHoursVal}</span>
+                                <span class="font-weight-bold text-dark" id="totHours_${idx}">00:00</span>
                             </td>
                             <td>
                                 <select class="form-control form-control-sm select-reason" id="selReason_${idx}" ${disabledAttr} onchange="onReasonChanged(${idx})">
@@ -1892,7 +1891,77 @@
 
     // =========================================================================
     // DYNAMIC HOURS CALCULATION BASED ON CHECK-IN & CHECK-OUT TIMER CONTROLS
+    // Check-in defaults to AM, Check-out defaults to PM
     // =========================================================================
+    function onCheckInChanged(idx) {
+        const inEl = document.getElementById(`chkInTime_${idx}`);
+        if (!inEl) return;
+        let val = inEl.value;
+        if (val) {
+            const parts = val.split(':');
+            let h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+
+            const lastH = inEl.dataset.lastH ? parseInt(inEl.dataset.lastH, 10) : null;
+            const lastM = inEl.dataset.lastM ? parseInt(inEl.dataset.lastM, 10) : null;
+            const isManualToggle = (lastH !== null && Math.abs(h - lastH) === 12 && m === lastM);
+
+            if (isManualToggle) {
+                inEl.dataset.manualChoice = "true";
+            } else if (!inEl.dataset.manualChoice) {
+                // By default, Check-in is AM (morning shift):
+                // If input entered / defaulted to PM (h >= 12), convert to AM
+                if (h >= 12) {
+                    h = h % 12;
+                    val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    inEl.value = val;
+                }
+            }
+            inEl.dataset.lastH = h;
+            inEl.dataset.lastM = m;
+        } else {
+            delete inEl.dataset.lastH;
+            delete inEl.dataset.lastM;
+            delete inEl.dataset.manualChoice;
+        }
+        recalculateRowHours(idx);
+    }
+
+    function onCheckOutChanged(idx) {
+        const outEl = document.getElementById(`chkOutTime_${idx}`);
+        if (!outEl) return;
+        let val = outEl.value;
+        if (val) {
+            const parts = val.split(':');
+            let h = parseInt(parts[0], 10);
+            const m = parseInt(parts[1], 10);
+
+            const lastH = outEl.dataset.lastH ? parseInt(outEl.dataset.lastH, 10) : null;
+            const lastM = outEl.dataset.lastM ? parseInt(outEl.dataset.lastM, 10) : null;
+            const isManualToggle = (lastH !== null && Math.abs(h - lastH) === 12 && m === lastM);
+
+            if (isManualToggle) {
+                outEl.dataset.manualChoice = "true";
+            } else if (!outEl.dataset.manualChoice) {
+                // By default, Check-out is PM (afternoon/evening):
+                // In 12-hour locales, typing numbers 1..11 yields 01:00..11:59 (AM).
+                // Automatically convert 1..11 to PM (13:00..23:59):
+                if (h >= 1 && h <= 11) {
+                    h = h + 12;
+                    val = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+                    outEl.value = val;
+                }
+            }
+            outEl.dataset.lastH = h;
+            outEl.dataset.lastM = m;
+        } else {
+            delete outEl.dataset.lastH;
+            delete outEl.dataset.lastM;
+            delete outEl.dataset.manualChoice;
+        }
+        recalculateRowHours(idx);
+    }
+
     function recalculateRowHours(idx) {
         const inEl = document.getElementById(`chkInTime_${idx}`);
         const outEl = document.getElementById(`chkOutTime_${idx}`);
