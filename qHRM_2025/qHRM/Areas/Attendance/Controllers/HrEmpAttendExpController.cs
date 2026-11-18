@@ -271,9 +271,47 @@ namespace qHRM.Areas.Employee.Controllers
                     }
                 }
 
-                if ((periodType == "Day" || string.IsNullOrEmpty(periodType)) && (tDate.DayOfWeek == DayOfWeek.Friday || tDate.DayOfWeek == DayOfWeek.Saturday))
+                var config = await _regService.GetConfigAsync();
+                DateTime today = DateTime.Today;
+                DateTime yesterday = today.AddDays(-1);
+
+                if (periodType == "Day" || string.IsNullOrEmpty(periodType))
                 {
-                    return Json(new { success = false, message = $"Regularization is not applicable for weekends (Friday and Saturday). {tDate:dd-MMM-yyyy} is a weekend.", dates = new List<object>() });
+                    if (tDate >= today)
+                    {
+                        return Json(new { success = false, message = "Today's attendance cannot be regularized until the shift is completed. You can regularize attendance up to yesterday.", dates = new List<object>() });
+                    }
+                    if (tDate.DayOfWeek == DayOfWeek.Friday || tDate.DayOfWeek == DayOfWeek.Saturday)
+                    {
+                        return Json(new { success = false, message = $"Regularization is not applicable for weekends (Friday and Saturday). {tDate:dd-MMM-yyyy} is a weekend.", dates = new List<object>() });
+                    }
+                }
+
+                if (periodType == "Custom")
+                {
+                    DateTime start = tDate.Date;
+                    DateTime end = (cEndDate ?? tDate.AddDays(4)).Date;
+                    if (end > yesterday)
+                    {
+                        end = yesterday;
+                        cEndDate = yesterday;
+                    }
+                    if (start > yesterday)
+                    {
+                        start = yesterday;
+                        tDate = yesterday;
+                    }
+
+                    int workingDaysCount = AttendanceRegularizationService.CountWorkingDays(start, end);
+                    if (workingDaysCount > config.MaxDaysAllowed)
+                    {
+                        return Json(new
+                        {
+                            success = false,
+                            message = $"You cannot regularize more than {config.MaxDaysAllowed} working days entries. Selected range has {workingDaysCount} working days.",
+                            dates = new List<object>()
+                        });
+                    }
                 }
 
                 var dates = await _regService.GetApplicableDatesForRegularizationAsync(targetId, periodType ?? "Day", tDate, cEndDate);
@@ -321,6 +359,19 @@ namespace qHRM.Areas.Employee.Controllers
                 if (items == null || !items.Any())
                 {
                     return Json(new { success = false, message = "No valid dates selected." });
+                }
+
+                var config = await _regService.GetConfigAsync();
+                DateTime today = DateTime.Today;
+
+                if (items.Any(i => i.Date.Date >= today))
+                {
+                    return Json(new { success = false, message = "Today's attendance cannot be regularized until the shift is completed." });
+                }
+
+                if (items.Count > config.MaxDaysAllowed)
+                {
+                    return Json(new { success = false, message = $"You cannot regularize more than {config.MaxDaysAllowed} working days entries." });
                 }
 
                 string webRoot = _env.WebRootPath ?? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");

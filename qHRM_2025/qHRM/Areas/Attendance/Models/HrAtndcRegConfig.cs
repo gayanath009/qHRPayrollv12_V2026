@@ -11,10 +11,10 @@ namespace qHRM.Areas.Attendance.Models
         [Column("Config_Id")]
         public int ConfigId { get; set; }
 
-        [Display(Name = "Maximum Allowed Window (Days)")]
+        [Display(Name = "Maximum Allowed Window (Working Days)")]
         [Required]
         [Column("Max_Days_Allowed")]
-        public int MaxDaysAllowed { get; set; } = 14;
+        public int MaxDaysAllowed { get; set; } = 7;
 
         [Display(Name = "Allow Future Dates")]
         [Column("Allow_Future_Dates")]

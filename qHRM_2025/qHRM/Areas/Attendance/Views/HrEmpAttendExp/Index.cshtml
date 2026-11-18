@@ -1321,14 +1321,14 @@
                                 <form id="formConfig" onsubmit="saveConfiguration(event)">
                                     @Html.AntiForgeryToken()
                                     <div class="form-group mb-3">
-                                        <label class="reg-field-label">Permitted Regularization Window (Past Days)</label>
+                                        <label class="reg-field-label">Permitted Regularization Window (Working Days)</label>
                                         <div class="input-group">
                                             <input type="number" id="cfgMaxDays" class="form-control" min="1" max="90" value="@config.MaxDaysAllowed" required />
                                             <div class="input-group-append">
-                                                <span class="input-group-text">Days</span>
+                                                <span class="input-group-text">Working Days</span>
                                             </div>
                                         </div>
-                                        <small class="text-muted">Employees can submit regularization requests for dates within this previous window (Default: 14 days / 2 weeks).</small>
+                                        <small class="text-muted">Employees can submit regularization requests for up to this number of past working days (Default: 7 working days).</small>
                                     </div>
 
                                     <div class="form-group mb-3">
@@ -1408,18 +1408,18 @@
                             </select>
                         </div>
 
-                        <!-- Date / Date Range Controls -->
+                        <!-- Date / Date Range Controls (Today's attendance cannot be regularized) -->
                         <div class="col-md-6" id="wrapSingleDate">
                             <label class="reg-field-label">Date</label>
                             <div class="input-group input-group-sm">
-                                <input type="date" id="modalTargetDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" max="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
+                                <input type="date" id="modalTargetDate" class="form-control" value="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" max="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
                             </div>
                         </div>
 
                         <div class="col-md-3" id="wrapCustomEndDate" style="display: none;">
                             <label class="reg-field-label">End Date</label>
                             <div class="input-group input-group-sm">
-                                <input type="date" id="modalCustomEndDate" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" max="@DateTime.Today.ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
+                                <input type="date" id="modalCustomEndDate" class="form-control" value="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" max="@DateTime.Today.AddDays(-1).ToString("yyyy-MM-dd")" onchange="loadApplicableDates()" />
                             </div>
                         </div>
                     </div>
@@ -1672,6 +1672,72 @@
     // =========================================================================
     // MODAL: REQUEST REGULARIZATION
     // =========================================================================
+    // =========================================================================
+    // WORKING DAYS & CONFIGURATION HELPERS
+    // =========================================================================
+    const maxWorkingDaysConfig = @config.MaxDaysAllowed;
+
+    function getYesterdayYMD() {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    function isQatarWorkingDay(d) {
+        const day = d.getDay();
+        return day !== 5 && day !== 6; // 5 = Friday, 6 = Saturday (weekends in Qatar)
+    }
+
+    function getLatestWorkingDay(date) {
+        let d = new Date(date);
+        while (d.getDay() === 5 || d.getDay() === 6) {
+            d.setDate(d.getDate() - 1);
+        }
+        return d;
+    }
+
+    function countWorkingDays(startDateStr, endDateStr) {
+        if (!startDateStr || !endDateStr) return 0;
+        let start = new Date(startDateStr);
+        let end = new Date(endDateStr);
+        if (end < start) return 0;
+
+        let count = 0;
+        let curr = new Date(start);
+        while (curr <= end) {
+            if (isQatarWorkingDay(curr)) {
+                count++;
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
+        return count;
+    }
+
+    function getStartDateForWorkingDaysBackwards(endDate, workingDaysCount) {
+        let curr = new Date(endDate);
+        let count = 0;
+        while (count < workingDaysCount) {
+            if (isQatarWorkingDay(curr)) {
+                count++;
+                if (count === workingDaysCount) {
+                    return curr;
+                }
+            }
+            curr.setDate(curr.getDate() - 1);
+        }
+        return curr;
+    }
+
+    function formatDateYMD(d) {
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     function openRegularizationModal(targetDateStr, empSysId) {
         if (targetDateStr) {
             const checkDate = new Date(targetDateStr);
@@ -1700,10 +1766,19 @@
         if (wrapSingle) wrapSingle.className = 'col-md-6';
         if (wrapCustom) wrapCustom.style.display = 'none';
 
-        if (targetDateStr) {
-            document.getElementById('modalTargetDate').value = targetDateStr;
+        const yesterdayStr = getYesterdayYMD();
+        const targetDateInput = document.getElementById('modalTargetDate');
+        const customEndDateInput = document.getElementById('modalCustomEndDate');
+        targetDateInput.max = yesterdayStr;
+        customEndDateInput.max = yesterdayStr;
+
+        if (targetDateStr && targetDateStr <= yesterdayStr) {
+            targetDateInput.value = targetDateStr;
         } else {
-            document.getElementById('modalTargetDate').value = new Date().toISOString().split('T')[0];
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const latestWorking = getLatestWorkingDay(yesterdayDate);
+            targetDateInput.value = formatDateYMD(latestWorking);
         }
 
         document.getElementById('fileAttachmentInput').value = '';
@@ -1720,13 +1795,31 @@
     function onPeriodTypeChanged(periodType) {
         const wrapSingle = document.getElementById('wrapSingleDate');
         const wrapCustom = document.getElementById('wrapCustomEndDate');
+        const yesterdayStr = getYesterdayYMD();
+        const targetDateInput = document.getElementById('modalTargetDate');
+        const customEndDateInput = document.getElementById('modalCustomEndDate');
+
+        targetDateInput.max = yesterdayStr;
+        customEndDateInput.max = yesterdayStr;
 
         if (periodType === 'Custom') {
             wrapSingle.className = 'col-md-3';
             wrapCustom.style.display = 'block';
+
+            // End date defaults to yesterday
+            customEndDateInput.value = yesterdayStr;
+
+            // Start date defaults to maxWorkingDaysConfig working days backwards from yesterday
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const startDateObj = getStartDateForWorkingDaysBackwards(yesterdayDate, maxWorkingDaysConfig);
+            targetDateInput.value = formatDateYMD(startDateObj);
         } else {
             wrapSingle.className = 'col-md-6';
             wrapCustom.style.display = 'none';
+            if (targetDateInput.value > yesterdayStr) {
+                targetDateInput.value = yesterdayStr;
+            }
         }
         loadApplicableDates();
     }
@@ -1759,12 +1852,24 @@
 
         const tbody = document.getElementById('tbodyApplicableDates');
         const btnSubmit = document.getElementById('btnSubmitRegularization');
+        const yesterdayStr = getYesterdayYMD();
+
+        // Strict rule: Today's attendance cannot be regularized until shift completes
+        if (targetDate > yesterdayStr) {
+            document.getElementById('modalTargetDate').value = yesterdayStr;
+            showAppToast('Validation', "Today's attendance cannot be regularized until the shift is completed.", true);
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Today's attendance cannot be regularized until the shift is completed. You can regularize attendance up to yesterday.</td></tr>`;
+            document.getElementById('lblApplicableSummary').innerText = '0 eligible day(s)';
+            applicableDatesCache = [];
+            if (btnSubmit) btnSubmit.disabled = true;
+            return;
+        }
 
         if (periodType === 'Day' && targetDate) {
             const checkDate = new Date(targetDate);
             const dayOfWeek = checkDate.getDay();
             if (dayOfWeek === 5 || dayOfWeek === 6) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Weekends (Friday and Saturday) are non-working days and cannot be regularized.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> Weekends (Friday and Saturday) are non-working days and cannot be regularized.</td></tr>`;
                 document.getElementById('lblApplicableSummary').innerText = '0 eligible day(s) (Weekend)';
                 applicableDatesCache = [];
                 if (btnSubmit) btnSubmit.disabled = true;
@@ -1772,7 +1877,34 @@
             }
         }
 
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Calculating applicable dates and missing hours...</td></tr>`;
+        if (periodType === 'Custom') {
+            if (customEndDate > yesterdayStr) {
+                document.getElementById('modalCustomEndDate').value = yesterdayStr;
+                showAppToast('Validation', "Today's attendance cannot be regularized. End Date has been set to yesterday.", true);
+                loadApplicableDates();
+                return;
+            }
+
+            if (customEndDate < targetDate) {
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> End Date cannot be before Start Date.</td></tr>`;
+                document.getElementById('lblApplicableSummary').innerText = '0 day(s)';
+                applicableDatesCache = [];
+                if (btnSubmit) btnSubmit.disabled = true;
+                return;
+            }
+
+            const workingDaysCount = countWorkingDays(targetDate, customEndDate);
+            if (workingDaysCount > maxWorkingDaysConfig) {
+                showAppToast('Warning', `You cannot regularize more than ${maxWorkingDaysConfig} working days entries.`, true);
+                tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-warning font-weight-bold"><i class="fas fa-exclamation-triangle mr-1"></i> You cannot regularize more than ${maxWorkingDaysConfig} working days entries. Selected range contains ${workingDaysCount} working days. Please adjust your date range.</td></tr>`;
+                document.getElementById('lblApplicableSummary').innerText = `${workingDaysCount} working days (Exceeds max ${maxWorkingDaysConfig})`;
+                applicableDatesCache = [];
+                if (btnSubmit) btnSubmit.disabled = true;
+                return;
+            }
+        }
+
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted"><i class="fas fa-spinner fa-spin mr-1"></i> Calculating applicable dates and missing hours...</td></tr>`;
 
         fetch(`/Attendance/HrEmpAttendExp/GetApplicableDates?empSysId=${empSysId}&periodType=${periodType}&targetDate=${targetDate}&customEndDate=${customEndDate}`)
             .then(res => res.json())
@@ -1780,7 +1912,7 @@
                 const datesList = data.Dates || data.dates;
                 if (!data.success && !data.Success || !datesList || datesList.length === 0) {
                     const errorMsg = data.message || data.Message || 'No eligible working days found for this period.';
-                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-muted">${errorMsg}</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">${errorMsg}</td></tr>`;
                     document.getElementById('lblApplicableSummary').innerText = '0 eligible day(s)';
                     applicableDatesCache = [];
                     if (btnSubmit) btnSubmit.disabled = true;
@@ -2146,6 +2278,11 @@
 
         if (itemsToSubmit.length === 0) {
             showAppToast('Validation', 'Please select at least one day to regularize (uncheck Skip).', true);
+            return;
+        }
+
+        if (itemsToSubmit.length > maxWorkingDaysConfig) {
+            showAppToast('Validation', `You cannot regularize more than ${maxWorkingDaysConfig} working days entries.`, true);
             return;
         }
 

@@ -58,7 +58,7 @@ namespace qHRM.Areas.Attendance.Data
 
                 // Fallback to HrLvWfConfig for "Regularization"
                 var wfCfg = await _hrmContext.HrLvWfConfig.FirstOrDefaultAsync(w => w.WfType == "Regularization" && w.RecStat == 1);
-                int maxDays = 14;
+                int maxDays = 7;
                 bool allowFuture = false;
                 if (wfCfg != null && !string.IsNullOrWhiteSpace(wfCfg.PolicyRules))
                 {
@@ -85,7 +85,7 @@ namespace qHRM.Areas.Attendance.Data
             catch (Exception ex)
             {
                 _logger?.LogWarning(ex, "Could not load regularization configuration, using defaults.");
-                return new HrAtndcRegConfig { MaxDaysAllowed = 14, AllowFutureDates = false };
+                return new HrAtndcRegConfig { MaxDaysAllowed = 7, AllowFutureDates = false };
             }
         }
 
@@ -706,12 +706,50 @@ namespace qHRM.Areas.Attendance.Data
             public string MissingPeriodNote { get; set; }
         }
 
+        public static bool IsWorkingDay(DateTime date)
+        {
+            return date.DayOfWeek != DayOfWeek.Friday && date.DayOfWeek != DayOfWeek.Saturday;
+        }
+
+        public static int CountWorkingDays(DateTime start, DateTime end)
+        {
+            if (end < start) return 0;
+            int count = 0;
+            for (var d = start.Date; d <= end.Date; d = d.AddDays(1))
+            {
+                if (IsWorkingDay(d)) count++;
+            }
+            return count;
+        }
+
+        public static DateTime GetWorkingDaysBackwards(DateTime endDate, int workingDaysCount)
+        {
+            DateTime curr = endDate.Date;
+            int count = 0;
+            while (count < workingDaysCount)
+            {
+                if (IsWorkingDay(curr))
+                {
+                    count++;
+                    if (count == workingDaysCount)
+                    {
+                        return curr;
+                    }
+                }
+                curr = curr.AddDays(-1);
+            }
+            return curr;
+        }
+
         public async Task<List<RegularizationDateItemDto>> GetApplicableDatesForRegularizationAsync(
             int empSysId, string periodType, DateTime targetDate, DateTime? customEndDate = null)
         {
             var config = await GetConfigAsync();
             DateTime today = DateTime.Today;
-            DateTime minAllowedDate = today.AddDays(-config.MaxDaysAllowed);
+            DateTime yesterday = today.AddDays(-1);
+
+            // Permitted past window calculated as config.MaxDaysAllowed working days backwards from yesterday
+            DateTime minAllowedDate = GetWorkingDaysBackwards(yesterday, config.MaxDaysAllowed);
 
             DateTime fromDate;
             DateTime toDate;
@@ -742,14 +780,18 @@ namespace qHRM.Areas.Attendance.Data
                     break;
             }
 
-            // Cap to allowed window
-            if (!config.AllowFutureDates && toDate > today)
+            // Cap to allowed window: strictly do not allow today or future dates!
+            if (toDate > yesterday)
             {
-                toDate = today;
+                toDate = yesterday;
             }
 
             DateTime qFrom = fromDate.Date;
             DateTime qTo = toDate.Date;
+            if (qTo < qFrom)
+            {
+                return new List<RegularizationDateItemDto>();
+            }
 
             var shiftList = await _hrmContext.HrEmpAtndcSft
                 .Include(s => s.Sft)
@@ -767,20 +809,22 @@ namespace qHRM.Areas.Attendance.Data
 
             for (var d = fromDate.Date; d <= toDate.Date; d = d.AddDays(1))
             {
-                bool isWeekend = (d.DayOfWeek == DayOfWeek.Friday || d.DayOfWeek == DayOfWeek.Saturday);
-                // Prompt: "Only working days (Sunday to Thursday) should be available; weekends should be disabled."
+                // Strict policy: Never regularize today's attendance or future dates
+                if (d > yesterday)
+                {
+                    continue;
+                }
+
+                bool isWeekend = !IsWorkingDay(d);
                 if (isWeekend)
                 {
                     continue; // Skip weekends
                 }
 
-                bool isFuture = (d > today && !config.AllowFutureDates);
                 bool isOlderThanWindow = (d < minAllowedDate);
-
-                bool isEligible = !isFuture && !isOlderThanWindow;
+                bool isEligible = !isOlderThanWindow;
                 string reason = null;
-                if (isFuture) reason = "Future dates are not eligible for regularization.";
-                else if (isOlderThanWindow) reason = $"Date exceeds permitted {config.MaxDaysAllowed}-day window.";
+                if (isOlderThanWindow) reason = $"Date exceeds permitted {config.MaxDaysAllowed} working days window.";
 
                 shiftRecords.TryGetValue(d, out var sft);
 
