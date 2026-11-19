@@ -50,7 +50,7 @@
 
 <!--Template Column-->
 <script type="text/x-jsrender" id="_avatar">
-    <img class="img-profile rounded-circle" style="width: 35px; height: 45px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${PhotoName ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+    <img class="img-profile rounded-circle" style="width: 35px; height: 45px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${(typeof PhotoName !== 'undefined' && PhotoName) ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
 </script>
 
 <script id="itemTemplate" type="text/x-template">

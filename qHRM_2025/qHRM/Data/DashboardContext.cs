@@ -100,8 +100,7 @@ namespace qHRM.Data
                                     on nlty.NltyId equals empCnt.NltyId into nltyEmpCnts
                                 from nltyEmpCnt in nltyEmpCnts.DefaultIfEmpty()
                                 join osEmpCnt in (from emp in _hrmContext.HrEmpGenInfo
-                                                    join loc in _hrmContext.OrgLocation on emp.LocId equals loc.LocId
-                                                    where emp.CurrStat == 0 && loc.ParentId == 3
+                                                    where emp.CurrStat == 0 && emp.WrktypId == 2
                                                     group emp by emp.NltyId into g
                                                     select new NltyEmpCount { NltyId = g.Key, OsEmpCnt = g.Count() })
                                     on nlty.NltyId equals osEmpCnt.NltyId into nltyOsEmpCnts
@@ -128,8 +127,7 @@ namespace qHRM.Data
                                 from nltyEmpCnt in nltyEmpCnts.DefaultIfEmpty()
                                 join OsEmpCnt in (from nlty in _hrmContext.OrgNationality
                                                 join emp in _hrmContext.HrEmpGenInfo on nlty.NltyId equals emp.NltyId
-                                                join loc in _hrmContext.OrgLocation on emp.LocId equals loc.LocId
-                                                where emp.CurrStat == 0 && loc.ParentId == 3
+                                                where emp.CurrStat == 0 && emp.WrktypId == 2
                                                     group nlty by nlty.NltyTypId into g
                                                 select new NltyEmpCount { NltyId = g.Key, OsEmpCnt = g.Count() })
                                     on nltyTyp.NltyTypId equals OsEmpCnt.NltyId into nltyOsEmpCnts
