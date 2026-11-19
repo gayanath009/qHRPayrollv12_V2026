@@ -1196,7 +1196,7 @@ namespace qHRM.Areas.Leave.Controllers
             {
                 // Return full exception (including inner exceptions) to aid debugging in local/dev environment.
                 // NOTE: Remove or reduce verbosity before deploying to production.
-                return Json(new { success = false, message = ex.ToString() });
+                return Json(new { success = false, message = ex.Message });
             }
         }
 

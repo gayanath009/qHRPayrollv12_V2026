@@ -692,8 +692,8 @@ namespace qHRM.Areas.Leave.Data
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
             // 1. SICK LEAVE: Medical certificate attachment is mandatory
-            if (code == "LV_SICK" || name.Contains("Sick", StringComparison.OrdinalIgnoreCase) ||
-                (rules.TryGetValue("MedCertRequired", out var medCertEl) && medCertEl.GetBoolean()))
+            bool isMedCertRequired = rules.TryGetValue("MedCertRequired", out var medCertEl) && medCertEl.ValueKind == JsonValueKind.True;
+            if (code == "LV_SICK" || name.Contains("Sick", StringComparison.OrdinalIgnoreCase) || isMedCertRequired)
             {
                 if (leaveApp.DocId == null || leaveApp.DocId == 0)
                 {
@@ -703,10 +703,11 @@ namespace qHRM.Areas.Leave.Data
             }
 
             // 2. CASUAL LEAVE: Maximum 3 paid days per year
-            if (code == "LV_CSL" || name.Contains("Casual", StringComparison.OrdinalIgnoreCase) ||
-                rules.ContainsKey("AnnualEntitlement"))
+            if (code == "LV_CSL" || name.Contains("Casual", StringComparison.OrdinalIgnoreCase))
             {
-                int maxCasualDays = rules.TryGetValue("AnnualEntitlement", out var annualEl) ? annualEl.GetInt32() : 3;
+                int maxCasualDays = (rules.TryGetValue("AnnualEntitlement", out var annualEl)
+                    && annualEl.ValueKind == JsonValueKind.Number
+                    && annualEl.TryGetInt32(out int ae) && ae > 0) ? ae : 3;
                 var usedDays = await _hrmContext.HrLvRegister
                     .Where(l => l.EmpSysId == leaveApp.EmpSysId
                              && l.LvTypId  == leaveApp.LvTypId
@@ -725,7 +726,7 @@ namespace qHRM.Areas.Leave.Data
             }
 
             // 3. EMERGENCY LEAVE: Restricted to maximum 30 days while applying
-            if (code == "LV_EMG" || name.Contains("Emergency", StringComparison.OrdinalIgnoreCase))
+            if (code.StartsWith("LV_EMG", StringComparison.OrdinalIgnoreCase) || name.Contains("Emergency", StringComparison.OrdinalIgnoreCase))
             {
                 if (leaveApp.Days > 30)
                 {
@@ -735,8 +736,8 @@ namespace qHRM.Areas.Leave.Data
             }
 
             // 4. HAJJ LEAVE: Restricted to maximum 14 days, once in lifetime
-            if (code == "LV_HAJJ" || name.Contains("Hajj", StringComparison.OrdinalIgnoreCase) ||
-                (rules.TryGetValue("OnceInService", out var onceEl) && onceEl.GetBoolean()))
+            bool onceInService = rules.TryGetValue("OnceInService", out var onceEl) && onceEl.ValueKind == JsonValueKind.True;
+            if (code == "LV_HAJJ" || code == "LV_HAJ" || name.Contains("Hajj", StringComparison.OrdinalIgnoreCase) || onceInService)
             {
                 if (leaveApp.Days > 14)
                 {
@@ -757,8 +758,17 @@ namespace qHRM.Areas.Leave.Data
             }
 
             // 5. MATERNITY LEAVE: Restricted to female employees only
-            if (code.Contains("MAT", StringComparison.OrdinalIgnoreCase) || name.Contains("Maternity", StringComparison.OrdinalIgnoreCase) ||
-                rules.ContainsKey("GenderRequired"))
+            string genderReq = (rules.TryGetValue("GenderRequired", out var genderEl) && genderEl.ValueKind == JsonValueKind.String)
+                ? (genderEl.GetString()?.Trim() ?? "")
+                : "";
+            bool hasGenderRestriction = !string.IsNullOrEmpty(genderReq)
+                && !genderReq.Equals("All", StringComparison.OrdinalIgnoreCase)
+                && !genderReq.Equals("Any", StringComparison.OrdinalIgnoreCase);
+
+            if (code.Contains("MAT", StringComparison.OrdinalIgnoreCase)
+                || code.Equals("LV_MTN", StringComparison.OrdinalIgnoreCase)
+                || name.Contains("Maternity", StringComparison.OrdinalIgnoreCase)
+                || hasGenderRestriction)
             {
                 var emp = await _hrmContext.HrEmpGenInfo
                     .FirstOrDefaultAsync(e => e.EmpSysId == leaveApp.EmpSysId);
@@ -775,9 +785,10 @@ namespace qHRM.Areas.Leave.Data
                 }
 
                 // Service length check if configured
-                if (rules.TryGetValue("MinServiceYears", out var minSvcEl))
+                if (rules.TryGetValue("MinServiceYears", out var minSvcEl)
+                    && minSvcEl.ValueKind == JsonValueKind.Number
+                    && minSvcEl.TryGetInt32(out int minYears) && minYears > 0)
                 {
-                    int minYears = minSvcEl.GetInt32();
                     double yearsOfService = (DateTime.Today - emp.JoinedDate).TotalDays / 365.25;
                     if (yearsOfService < minYears)
                     {
