@@ -54,101 +54,131 @@ namespace qHRM.Area.Config
         }
 
         #endregion
+
+        /// <summary>
+        /// Creates a configured SmtpClient from the given SysConfig and decrypted password.
+        /// </summary>
+        public SmtpClient CreateSmtpClient(SysConfig sysConfig, string decryptedPwd)
+        {
+            ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
+            ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+
+            int port = sysConfig.Port > 0 ? sysConfig.Port : 587;
+            var client = new SmtpClient(sysConfig.Server, port)
+            {
+                Timeout = 30000,
+                DeliveryMethod = SmtpDeliveryMethod.Network
+            };
+
+            if (!string.IsNullOrEmpty(sysConfig.ServiceAcct) && !string.IsNullOrEmpty(decryptedPwd))
+            {
+                client.Credentials = new NetworkCredential(sysConfig.ServiceAcct, decryptedPwd);
+                client.UseDefaultCredentials = false;
+            }
+            else
+            {
+                client.UseDefaultCredentials = true;
+            }
+
+            if (port == 587 || port == 465)
+            {
+                client.EnableSsl = true;
+            }
+
+            return client;
+        }
+
+        /// <summary>
+        /// Resolves the sender email address and decrypted SMTP password from SysConfig.
+        /// </summary>
+        public (SysConfig Config, string FromEmail, string DecryptedPwd) GetResolvedEmailConfig(string overrideFromEmail = null)
+        {
+            SysConfig cfg = GetSysCongif().FirstOrDefault();
+            if (cfg == null) return (null, null, null);
+
+            string resolvedFrom = string.IsNullOrEmpty(overrideFromEmail) ? cfg.FromEmail : overrideFromEmail;
+            if (string.IsNullOrEmpty(resolvedFrom) && !string.IsNullOrEmpty(cfg.ServiceAcct))
+            {
+                resolvedFrom = cfg.ServiceAcct;
+            }
+
+            string decryptedPwd = (!string.IsNullOrEmpty(cfg.ServiceAcct) && !string.IsNullOrEmpty(cfg.ServiceAcctPwd))
+                ? qHRM.SharedSysFuncs.CryptoSecurityHelper.Decrypt(cfg.ServiceAcctPwd)
+                : null;
+
+            return (cfg, resolvedFrom?.Trim(), decryptedPwd);
+        }
+
+        /// <summary>
+        /// Sends an email using an existing SmtpClient session for high-throughput batch dispatch.
+        /// Returns 1 on success, 0 on failure (rethrows SmtpException/IOException if caller wants to reconnect).
+        /// </summary>
+        public async Task<int> SendWithClientAsync(SmtpClient client, SysConfig cfg, string fromEmail, string decryptedPwd, string toEmail, string subject, string message, string filepath, bool allowFallback = true)
+        {
+            if (string.IsNullOrWhiteSpace(toEmail) || cfg == null) return 0;
+            string cleanTo = toEmail.Trim();
+
+            try
+            {
+                MailAddress fromAddr = new MailAddress(fromEmail, "qHR System");
+                MailAddress toAddr = new MailAddress(cleanTo);
+                using (MailMessage msg = new MailMessage(fromAddr, toAddr))
+                {
+                    msg.Body = message;
+                    msg.Subject = subject;
+                    msg.IsBodyHtml = true;
+
+                    if (!string.IsNullOrEmpty(filepath) && System.IO.File.Exists(filepath))
+                    {
+                        msg.Attachments.Add(new Attachment(filepath));
+                    }
+
+                    await client.SendMailAsync(msg);
+                    Console.WriteLine($"[EMAIL SUCCESS] Email successfully sent to {cleanTo}");
+                    return 1;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[EMAIL ERROR] SmtpClient failed for {cleanTo}: {ex.Message}");
+                if (allowFallback && RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                {
+                    try
+                    {
+                        int psRes = await Task.Run(() => SendViaWindowsPowerShell(
+                            cfg.Server,
+                            cfg.Port > 0 ? cfg.Port : 587,
+                            cfg.ServiceAcct,
+                            decryptedPwd,
+                            fromEmail,
+                            cleanTo,
+                            subject,
+                            message,
+                            filepath));
+                        if (psRes == 1) return 1;
+                    }
+                    catch (Exception ex2)
+                    {
+                        Console.WriteLine($"[EMAIL FALLBACK ERROR] {ex2.Message}");
+                    }
+                }
+                return 0;
+            }
+        }
+
         public async Task<int> SendEmailNotificationAsync(string toEmail, string fromEmail, string subject, string message, string filepath)
         {
             if (string.IsNullOrWhiteSpace(toEmail)) return 0;
 
             try
             {
-                SysConfig _sysConfig = GetSysCongif().FirstOrDefault();
-                if (_sysConfig == null) return 0;
+                var (cfg, resolvedFrom, decryptedPwd) = GetResolvedEmailConfig(fromEmail);
+                if (cfg == null) return 0;
 
-                string resolvedFromEmail = string.IsNullOrEmpty(fromEmail) ? _sysConfig.FromEmail : fromEmail;
-                if (string.IsNullOrEmpty(resolvedFromEmail) && !string.IsNullOrEmpty(_sysConfig.ServiceAcct))
+                using (SmtpClient client = CreateSmtpClient(cfg, decryptedPwd))
                 {
-                    resolvedFromEmail = _sysConfig.ServiceAcct;
-                }
-
-                string decryptedPwd = (!string.IsNullOrEmpty(_sysConfig.ServiceAcct) && !string.IsNullOrEmpty(_sysConfig.ServiceAcctPwd))
-                    ? qHRM.SharedSysFuncs.CryptoSecurityHelper.Decrypt(_sysConfig.ServiceAcctPwd)
-                    : null;
-
-                // Ensure internal Exchange / self-signed TLS certificates pass validation
-                ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
-
-                // Standard SmtpClient dispatch (Supports Port 587/465 TLS and Port 25)
-                try
-                {
-                    MailAddress _from = new MailAddress(resolvedFromEmail, "qHR System");
-                    MailAddress _to = new MailAddress(toEmail);
-                    using (MailMessage msg = new MailMessage(_from, _to))
-                    {
-                        msg.Body = message;
-                        msg.Subject = subject;
-                        msg.IsBodyHtml = true;
-
-                        if (!string.IsNullOrEmpty(filepath) && System.IO.File.Exists(filepath))
-                        {
-                            msg.Attachments.Add(new Attachment(filepath));
-                        }
-
-                        using (SmtpClient _client = new SmtpClient(_sysConfig.Server, _sysConfig.Port > 0 ? _sysConfig.Port : 587))
-                        {
-                            _client.Timeout = 15000;
-                            if (!string.IsNullOrEmpty(_sysConfig.ServiceAcct) && !string.IsNullOrEmpty(decryptedPwd))
-                            {
-                                _client.Credentials = new NetworkCredential(_sysConfig.ServiceAcct, decryptedPwd);
-                                _client.UseDefaultCredentials = false;
-                            }
-                            else
-                            {
-                                _client.UseDefaultCredentials = true;
-                            }
-
-                            _client.DeliveryMethod = SmtpDeliveryMethod.Network;
-                            if (_sysConfig.Port == 587 || _sysConfig.Port == 465)
-                            {
-                                _client.EnableSsl = true;
-                            }
-
-                            Console.WriteLine($"[EMAIL ATTEMPT] Sending email to {toEmail} from {_from.Address} via {_sysConfig.Server}:{_sysConfig.Port} (SSL={_client.EnableSsl}, Auth={!string.IsNullOrEmpty(_sysConfig.ServiceAcct)})");
-                            await Task.Run(() => _client.Send(msg));
-                            Console.WriteLine($"[EMAIL SUCCESS] Email successfully sent to {toEmail}");
-                            return 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[EMAIL ERROR] Standard SmtpClient failed to send email to {toEmail}: {ex.Message}");
-                    // Fallback to Windows PowerShell dispatcher if on Windows
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                    {
-                        try
-                        {
-                            Console.WriteLine($"[EMAIL FALLBACK] Attempting Windows PowerShell dispatcher to {toEmail}...");
-                            int psRes = await Task.Run(() => SendViaWindowsPowerShell(
-                                _sysConfig.Server,
-                                _sysConfig.Port > 0 ? _sysConfig.Port : 587,
-                                _sysConfig.ServiceAcct,
-                                decryptedPwd,
-                                resolvedFromEmail,
-                                toEmail,
-                                subject,
-                                message,
-                                filepath));
-                            if (psRes == 1)
-                            {
-                                Console.WriteLine($"[EMAIL SUCCESS] Windows PowerShell fallback successfully delivered email to {toEmail}");
-                                return 1;
-                            }
-                        }
-                        catch (Exception ex2)
-                        {
-                            Console.WriteLine($"[EMAIL FALLBACK ERROR] {ex2.Message}");
-                        }
-                    }
-                    return 0; // Failed
+                    Console.WriteLine($"[EMAIL ATTEMPT] Sending email to {toEmail} from {resolvedFrom} via {cfg.Server}:{cfg.Port} (SSL={client.EnableSsl}, Auth={!string.IsNullOrEmpty(cfg.ServiceAcct)})");
+                    return await SendWithClientAsync(client, cfg, resolvedFrom, decryptedPwd, toEmail, subject, message, filepath, allowFallback: true);
                 }
             }
             catch (Exception ex)

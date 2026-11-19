@@ -235,6 +235,7 @@ namespace qHRM.Areas.Payroll.Controllers
             }
         }
 
+        [AcceptVerbs("GET", "POST")]
         public async Task<IActionResult> SendPaySlps(int efYr, int efMnt, string empIds)
         {
             try
@@ -245,9 +246,23 @@ namespace qHRM.Areas.Payroll.Controllers
                 {
                     return Json(new { ok = false, data = "error", message = "Payslip emailing is disabled until the Salary Process receives final approval." });
                 }
-                int n = await SendPaySlipLoop(efYr, efMnt, empIds); 
+
+                var summary = await SendPaySlipLoop(efYr, efMnt, empIds, entId);
                 var data = _payrollContext.GetSlrySlipSndMail("#", 0, efMnt, efYr);
-                return Json(new { ok = true, data = data, message = "ok" });
+                string msg = $"Sent: {summary.Sent}, Failed: {summary.Failed}" +
+                             (summary.NoEmail > 0 ? $", No Email: {summary.NoEmail}" : "") +
+                             (summary.NoAttachment > 0 ? $", Missing Slip: {summary.NoAttachment}" : "");
+
+                return Json(new
+                {
+                    ok = summary.Ok,
+                    data = data,
+                    sentCount = summary.Sent,
+                    failedCount = summary.Failed,
+                    noEmailCount = summary.NoEmail,
+                    noAttachmentCount = summary.NoAttachment,
+                    message = summary.Ok ? msg : (summary.ErrorMessage ?? "Email configuration error.")
+                });
             }
             catch (Exception ex)
             {
@@ -255,17 +270,34 @@ namespace qHRM.Areas.Payroll.Controllers
             }
         }
 
-        public async Task<int> SendPaySlipLoop(int efYr, int efMnt, string empIds)
+        public async Task<(bool Ok, int Sent, int Failed, int NoEmail, int NoAttachment, string ErrorMessage)> SendPaySlipLoop(int efYr, int efMnt, string empIds, int entId = 1)
         {
+            int sent = 0, failed = 0, noEmail = 0, noAttachment = 0;
+            System.Net.Mail.SmtpClient smtpClient = null;
+
             try
             {
-                NtfNotification ntf = new NtfNotification();
-                string _fromEmail = string.Empty, _toEmail = string.Empty;
-                string _sbjct = "Salary Slip - Month of " + new DateTime(efYr, efMnt, 1).ToString("MMMM") + " " + efYr.ToString();
+                var (cfg, resolvedFrom, decryptedPwd) = _sysConfig.GetResolvedEmailConfig();
+                if (cfg == null || string.IsNullOrWhiteSpace(resolvedFrom))
+                {
+                    return (false, 0, 0, 0, 0, "SMTP email configuration is missing in System Config.");
+                }
+
+                string monthName = new DateTime(efYr, efMnt, 1).ToString("MMMM");
+                string slryYrMnt = $"{monthName} {efYr}";
+                string _sbjct = $"Salary Slip - Month of {slryYrMnt}";
                 string folderName = $"{efYr}-{efMnt:D2}";
                 string folderDir = Path.Combine(_webHostEnvironment.WebRootPath, "attach", "empPaySlip", folderName);
+                if (!Directory.Exists(folderDir))
+                {
+                    Directory.CreateDirectory(folderDir);
+                }
 
                 int[] empSysIds = Array.ConvertAll(empIds.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries), int.Parse);
+                List<PrSalarySheetView> cachedSlips = null;
+
+                smtpClient = _sysConfig.CreateSmtpClient(cfg, decryptedPwd);
+                int batchCounter = 0;
 
                 foreach (var itm in empSysIds)
                 {
@@ -273,50 +305,85 @@ namespace qHRM.Areas.Payroll.Controllers
                     if (objEmp == null) continue;
 
                     var objJbAsg = _empContext.GetCurrentAssignment(itm);
+                    string _toEmail = objJbAsg?.OfcEmail?.Trim();
 
-                    // Look for PaySlip in wwwroot\attach\empPaySlip\{efYr}-{efMnt:D2}
                     string fileName = $"PaySlip_{objEmp.EmpId}_{folderName}.pdf";
                     string filePath = Path.Combine(folderDir, fileName);
                     if (!System.IO.File.Exists(filePath))
                     {
-                        // Fallback check in case file had unpadded name
                         string altFile = Path.Combine(folderDir, $"PaySlip_{objEmp.EmpId}_{efYr}-{efMnt}.pdf");
                         if (System.IO.File.Exists(altFile))
+                        {
                             filePath = altFile;
+                        }
+                        else
+                        {
+                            // Auto-generate missing payslip PDF on the fly
+                            cachedSlips ??= _payrollContext.GetSlryDtlByEmpSysIds(entId, "_paysheet", "", 0, efMnt, efYr)?.ToList() ?? new List<PrSalarySheetView>();
+                            var slip = cachedSlips.FirstOrDefault(s => s.Emp_Sys_Id == itm);
+                            if (slip != null)
+                            {
+                                string password = !string.IsNullOrWhiteSpace(objEmp.PmtId) ? objEmp.PmtId.Trim() : null;
+                                byte[] pdfBytes = PaySlipPdfReport.GeneratePaySlipPdf(new[] { slip }, _webHostEnvironment.WebRootPath, slryYrMnt, password);
+                                await System.IO.File.WriteAllBytesAsync(filePath, pdfBytes);
+                            }
+                        }
                     }
 
-                    _toEmail = objJbAsg?.OfcEmail;
-                    string _msg = "<font face=tahoma size=2>Dear " + objEmp.FirstName + ",</font></br></br><font face=tahoma size=2>Kindly find the attached Salary Slip for the month of " + new DateTime(efYr, efMnt, 1).ToString("MMMM") + " " + efYr + ".</br>You may use your Qatari ID number as the password to open the attached document.</font></br></br><font face=Verdana size=2><b>qHR System</b></font></br></br><font face=tahoma size=1>This is system generated email. Do not reply.</font>";
+                    string _msg = $"<font face=tahoma size=2>Dear {objEmp.FirstName},</font></br></br>" +
+                                  $"<font face=tahoma size=2>Kindly find the attached Salary Slip for the month of {slryYrMnt}.</br>" +
+                                  $"You may use your Qatari ID number as the password to open the attached document.</font></br></br>" +
+                                  $"<font face=Verdana size=2><b>qHR System</b></font></br></br>" +
+                                  $"<font face=tahoma size=1>This is system generated email. Do not reply.</font>";
 
-                    ntf.NtfTypRefId = 5;
-                    ntf.ReqId = 0;
-                    ntf.EmpSysId = itm;
-                    ntf.Subject = _sbjct;
-                    ntf.PushReadStat = false;
-                    ntf.IsActionTaken = false;
-                    ntf.IsActionTakenBy = 0;
-                    ntf.CrtDateTime = DateTime.Today;
-                    ntf.EftMnth = efMnt;
-                    ntf.EftYr = efYr;
-                    ntf.MsgId = 0;
-
-                    Console.WriteLine($"[PAYSLIP SEND] EmpSysId={itm}, EmpId={objEmp.EmpId}, Name={objEmp.FirstName}, ToEmail='{_toEmail}', FilePath='{filePath}', FileExists={System.IO.File.Exists(filePath)}");
+                    NtfNotification ntf = new NtfNotification
+                    {
+                        NtfTypRefId = 5,
+                        ReqId = 0,
+                        EmpSysId = itm,
+                        Subject = _sbjct,
+                        PushReadStat = false,
+                        IsActionTaken = false,
+                        IsActionTakenBy = 0,
+                        CrtDateTime = DateTime.Today,
+                        EftMnth = efMnt,
+                        EftYr = efYr,
+                        MsgId = 0
+                    };
 
                     if (string.IsNullOrWhiteSpace(_toEmail))
                     {
                         ntf.IsDelivered = 3; // No Email Address
-                        Console.WriteLine($"[PAYSLIP STATUS] EmpSysId={itm}: No Email Address");
+                        noEmail++;
                     }
                     else if (!System.IO.File.Exists(filePath))
                     {
                         ntf.IsDelivered = 2; // No Attachment Found
-                        Console.WriteLine($"[PAYSLIP STATUS] EmpSysId={itm}: Attachment Not Found ({filePath})");
+                        noAttachment++;
                     }
                     else
                     {
-                        int x = await _sysConfig.SendEmailNotificationAsync(_toEmail, _fromEmail, _sbjct, _msg, filePath);
-                        ntf.IsDelivered = x; // 1 = Delivered, 0 = Not Delivered
-                        Console.WriteLine($"[PAYSLIP STATUS] EmpSysId={itm}: Send result = {x} (1=Delivered, 0=Not Delivered)");
+                        // Rotate SMTP connection every 20 messages to avoid Exchange/O365 idle/session limits
+                        if (batchCounter > 0 && batchCounter % 20 == 0)
+                        {
+                            smtpClient?.Dispose();
+                            smtpClient = _sysConfig.CreateSmtpClient(cfg, decryptedPwd);
+                        }
+
+                        int x = await _sysConfig.SendWithClientAsync(smtpClient, cfg, resolvedFrom, decryptedPwd, _toEmail, _sbjct, _msg, filePath, allowFallback: false);
+                        if (x == 0)
+                        {
+                            // Recreate client and retry once (with fallback allowed) on transient failure
+                            smtpClient?.Dispose();
+                            await Task.Delay(400);
+                            smtpClient = _sysConfig.CreateSmtpClient(cfg, decryptedPwd);
+                            x = await _sysConfig.SendWithClientAsync(smtpClient, cfg, resolvedFrom, decryptedPwd, _toEmail, _sbjct, _msg, filePath, allowFallback: true);
+                        }
+
+                        ntf.IsDelivered = x;
+                        batchCounter++;
+                        if (x == 1) sent++;
+                        else failed++;
                     }
 
                     var objNtf = _notifyContext.GetSlrySlipEmailNotify(ntf);
@@ -328,11 +395,17 @@ namespace qHRM.Areas.Payroll.Controllers
                         _notifyContext.UpdateSlrySlipEmailNotify(objNtf);
                     }
                 }
-                return 1;
+
+                return (true, sent, failed, noEmail, noAttachment, null);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return 0;
+                Console.WriteLine($"[PAYSLIP BATCH ERROR]: {ex.Message}");
+                return (false, sent, failed, noEmail, noAttachment, ex.Message);
+            }
+            finally
+            {
+                smtpClient?.Dispose();
             }
         }
 
