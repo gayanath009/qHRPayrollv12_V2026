@@ -459,16 +459,50 @@
                         </div>
 
                         <!-- Card 2: Organizational Structure -->
+                        @{
+                            int orgTot = ViewBag.OrgTotalEmp != null ? (int)ViewBag.OrgTotalEmp : 0;
+                            int orgInHs = ViewBag.OrgInHouseEmp != null ? (int)ViewBag.OrgInHouseEmp : 0;
+                            int orgOutSrc = ViewBag.OrgOutSourceEmp != null ? (int)ViewBag.OrgOutSourceEmp : 0;
+                            double inPct = orgTot > 0 ? Math.Round((orgInHs * 100.0) / orgTot, 1) : 0;
+                            double outPct = orgTot > 0 ? Math.Round((orgOutSrc * 100.0) / orgTot, 1) : 0;
+                        }
                         <div class="col-12 col-sm-6 col-md-4 mb-3">
                             <div class="hr-compact-card hr-card-accent-blue">
                                 <div class="hr-card-header" title="Organizational Structure">
                                     <i class="fas fa-sitemap mr-1" style="color: #2563eb;"></i> Org Structure
                                 </div>
-                                <div class="hr-card-body">
-                                    <div class="hr-icon-badge" style="background: #eff6ff; color: #2563eb;">
-                                        <i class="fas fa-sitemap"></i>
+                                <div class="hr-card-body px-3 py-2 d-flex flex-column justify-content-center" style="gap: 8px;">
+                                    <div class="d-flex align-items-center justify-content-center" style="gap: 10px;">
+                                        <div class="hr-icon-badge mb-0" style="width: 36px; height: 36px; font-size: 0.95rem; background: #eff6ff; color: #2563eb;">
+                                            <i class="fas fa-users"></i>
+                                        </div>
+                                        <div class="text-left">
+                                            <div style="font-size: 1.25rem; font-weight: 800; color: #0f172a; line-height: 1.1;">@orgTot</div>
+                                            <div style="font-size: 0.68rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em;">Total Active Staff</div>
+                                        </div>
                                     </div>
-                                    <span class="badge badge-light border text-muted small mt-1">Company Tree</span>
+
+                                    <!-- Proportional Split Bar -->
+                                    <div style="width: 100%; height: 7px; background: #e2e8f0; border-radius: 999px; overflow: hidden; display: flex;" title="In-House: @inPct% | Out-Source: @outPct%">
+                                        <div style="width: @inPct%; background: linear-gradient(90deg, #540033, #831843); transition: width 0.4s ease;"></div>
+                                        <div style="width: @outPct%; background: linear-gradient(90deg, #0d9488, #14b8a6); transition: width 0.4s ease;"></div>
+                                    </div>
+
+                                    <!-- In-House vs Out-Source Pills -->
+                                    <div class="d-flex justify-content-between align-items-center w-100" style="gap: 6px;">
+                                        <div class="flex-fill text-center py-1 px-2" style="background: #fdf2f8; border: 1px solid #fbcfe8; border-radius: 8px;">
+                                            <div style="font-size: 0.65rem; font-weight: 700; color: #831843; text-transform: uppercase;">
+                                                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#540033;margin-right:3px;"></span>In-House
+                                            </div>
+                                            <div style="font-size: 0.92rem; font-weight: 800; color: #540033;">@orgInHs <span style="font-size: 0.68rem; font-weight: 600; color: #9d174d;">(@inPct%)</span></div>
+                                        </div>
+                                        <div class="flex-fill text-center py-1 px-2" style="background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 8px;">
+                                            <div style="font-size: 0.65rem; font-weight: 700; color: #0f766e; text-transform: uppercase;">
+                                                <span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#0d9488;margin-right:3px;"></span>Out-Source
+                                            </div>
+                                            <div style="font-size: 0.92rem; font-weight: 800; color: #0f766e;">@orgOutSrc <span style="font-size: 0.68rem; font-weight: 600; color: #0d9488;">(@outPct%)</span></div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="hr-card-footer d-flex justify-content-center">
                                     <a class="btn-brand-maroon-sm px-3 py-1" asp-area="Entity" asp-controller="OrgEmpCht" asp-action="Index" style="font-size: 0.76rem;">

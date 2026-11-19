@@ -145,6 +145,20 @@ namespace qHRM.Data
             return result;
         }
 
+        public (int Total, int InHouse, int OutSource) GetActiveWorkTypeCounts()
+        {
+            var counts = _hrmContext.HrEmpGenInfo
+                .Where(e => e.CurrStat == 0)
+                .GroupBy(e => e.WrktypId)
+                .Select(g => new { WrktypId = g.Key, Cnt = g.Count() })
+                .ToList();
+
+            int total = counts.Sum(x => x.Cnt);
+            int outSource = counts.Where(x => x.WrktypId == 2).Sum(x => x.Cnt);
+            int inHouse = total - outSource;
+            return (total, inHouse, outSource);
+        }
+
         public IEnumerable<DeptEmpSmry> GetDeptEmpSmry(int entId)
         {
             try

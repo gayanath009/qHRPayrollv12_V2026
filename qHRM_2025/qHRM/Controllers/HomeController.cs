@@ -315,6 +315,11 @@ namespace qHRM.Controllers
                         ViewBag.dsAllocated = nltyEmpFullSmry.AllocatedNltyEmpList;
                         ViewBag.dsActual = nltyEmpFullSmry.ActualNltyEmpList.OrderBy(o => o.StfRatio);
                         ViewBag.dsNltyEmpSmry = nltyEmpFullSmry.NltyEmpCntSmryList.OrderByDescending(o => o.ActlEmpCnt);
+
+                        var empCounts = _dashboardContext.GetActiveWorkTypeCounts();
+                        ViewBag.OrgTotalEmp = empCounts.Total;
+                        ViewBag.OrgInHouseEmp = empCounts.InHouse;
+                        ViewBag.OrgOutSourceEmp = empCounts.OutSource;
                     }
                     catch (Exception ex)
                     {
