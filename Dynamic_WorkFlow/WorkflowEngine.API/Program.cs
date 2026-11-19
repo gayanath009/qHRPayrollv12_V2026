@@ -112,6 +112,17 @@ using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<WorkflowEngine.Infrastructure.Persistence.WorkflowDbContext>();
         await context.Database.EnsureCreatedAsync();
+
+        // Ensure schema columns added after initial DB creation exist
+        await Microsoft.EntityFrameworkCore.RelationalDatabaseFacadeExtensions.ExecuteSqlRawAsync(context.Database, @"
+            IF COL_LENGTH('dbo.WorkflowDefinitions', 'AssociatedLeaveTypes') IS NULL
+                ALTER TABLE dbo.WorkflowDefinitions ADD AssociatedLeaveTypes nvarchar(max) NULL;
+            IF COL_LENGTH('dbo.WorkflowDefinitions', 'TargetWorkType') IS NULL
+                ALTER TABLE dbo.WorkflowDefinitions ADD TargetWorkType nvarchar(50) NULL CONSTRAINT DF_WorkflowDefinitions_TargetWorkType DEFAULT 'ALL' WITH VALUES;
+            IF COL_LENGTH('dbo.WorkflowDefinitions', 'WorkflowType') IS NULL
+                ALTER TABLE dbo.WorkflowDefinitions ADD WorkflowType nvarchar(100) NULL CONSTRAINT DF_WorkflowDefinitions_WorkflowType DEFAULT 'Leave Approval' WITH VALUES;
+        ");
+
         await WorkflowEngine.Infrastructure.Persistence.WorkflowDbContextSeed.SeedSampleDataAsync(context);
     }
     catch (Exception ex)
