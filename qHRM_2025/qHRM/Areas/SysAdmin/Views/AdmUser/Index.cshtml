@@ -224,21 +224,27 @@
 
 <!--Command Buttons-->
 <script type="text/x-jsrender" id="_edit">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${Usr_Id})">
-        <span class="glyphicon glyphicon-pencil"></span>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-edit" onclick="editFunc(${Usr_Id}); return false;" title="Edit">
+            <i class="fas fa-pen"></i>
+        </a>
+    </div>
 </script>
 
 <script type="text/x-jsrender" id="_pwd">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="pwdFunc(${Usr_Id})">
-        <span class="glyphicon glyphicon-asterisk"></span>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-edit" onclick="pwdFunc(${Usr_Id}); return false;" title="Reset Password">
+            <i class="fas fa-key"></i>
+        </a>
+    </div>
 </script>
 
 <script type="text/x-jsrender" id="_delete">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${Usr_Id})">
-        <span class="glyphicon glyphicon-trash"></span>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-delete" onclick="deleteFunc(${Usr_Id}); return false;" title="Delete">
+            <i class="fas fa-trash-alt"></i>
+        </a>
+    </div>
 </script>
 <!--Command Buttons-->
 <!--Open Partial Views-->

@@ -1,0 +1,186 @@
+@model DepartmentCostBreakdownReportVm
+@{
+    ViewData["Title"] = "Department & Cost-Center Cost Breakdown";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-sitemap mr-2"></i>Department &amp; Cost-Center Cost Breakdown</div>
+            <small class="text-muted">Payroll Operations &bull; Compare Department Payroll, Encashment &amp; Project Allowances (In-House vs. Outsource)</small>
+        </div>
+        <form method="get" class="form-inline" style="gap:0.4rem;">
+            <input type="number" name="year" value="@Model.Year" min="2020" max="2035" class="form-control form-control-sm" style="width:85px;" />
+            <input type="number" name="month" value="@Model.Month" min="1" max="12" class="form-control form-control-sm" style="width:70px;" />
+            <select name="staffCat" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Net Payroll</div>
+                <div id="kpiDeptNet" class="hr-kpi-val">@Model.TotalNetPayroll.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR for @Model.Month/@Model.Year</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Leave &amp; Ticket Encashment</div>
+                <div id="kpiDeptEnc" class="hr-kpi-val">@Model.TotalEncashment.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR settlement cost</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Project Allowances</div>
+                <div id="kpiDeptProj" class="hr-kpi-val">@Model.TotalProjectAllowance.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR active project allowances</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Combined Total Cost</div>
+                <div id="kpiDeptTot" class="hr-kpi-val">@Model.CombinedCost.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR total department cost</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Department Cost Distribution <small class="text-muted font-weight-normal">(Click a slice to drill down)</small></h6>
+            <button id="btnClearDeptCost" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearDeptCostFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-accumulationchart id="deptCostDonut" height="270px" pointClick="onDeptDonutClick" style="cursor:pointer;">
+                <e-accumulationchart-tooltipsettings enable="true" format="${point.x} : <b>QAR ${point.y}</b>"></e-accumulationchart-tooltipsettings>
+                <e-accumulation-series-collection>
+                    <e-accumulation-series dataSource="Model.DonutData" xName="Department" yName="TotalCost" pointColorMapping="Color" innerRadius="45%" name="Department Cost">
+                        <e-accumulationseries-datalabel visible="true" name="Department" position="Outside"></e-accumulationseries-datalabel>
+                    </e-accumulation-series>
+                </e-accumulation-series-collection>
+            </ejs-accumulationchart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Department Summary (@Model.DeptItems.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="deptCostGrid" dataSource="Model.DeptItems" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onDeptCostQueryCellInfo" toolbarClick="onDeptCostToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="10"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="Department" headerText="Department" width="170"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="105"></e-grid-column>
+                    <e-grid-column field="EmployeeCount" headerText="Staff" textAlign="Right" width="75"></e-grid-column>
+                    <e-grid-column field="PayrollGross" headerText="Net Payroll" format="N0" textAlign="Right" width="120"></e-grid-column>
+                    <e-grid-column field="EncashmentCost" headerText="Encashment" format="N0" textAlign="Right" width="115"></e-grid-column>
+                    <e-grid-column field="ProjectAllowance" headerText="Proj. Allowance" format="N0" textAlign="Right" width="125"></e-grid-column>
+                    <e-grid-column field="TotalCost" headerText="Total Cost (QAR)" format="N0" textAlign="Right" width="130"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="empCostTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Employee Cost Drill-Down (@Model.EmpItems.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="empCostGrid" dataSource="Model.EmpItems" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onDeptCostQueryCellInfo" toolbarClick="onEmpCostToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="12"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="90"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="170"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="160"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="100"></e-grid-column>
+                    <e-grid-column field="PayrollNet" headerText="Net Payroll" format="N0" textAlign="Right" width="115"></e-grid-column>
+                    <e-grid-column field="EncashmentCost" headerText="Encashment" format="N0" textAlign="Right" width="110"></e-grid-column>
+                    <e-grid-column field="ProjectAllowance" headerText="Proj. Allowance" format="N0" textAlign="Right" width="120"></e-grid-column>
+                    <e-grid-column field="TotalCost" headerText="Total Cost" format="N0" textAlign="Right" width="115"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var donutData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DonutData));
+    var allEmpCostItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.EmpItems));
+    var costDeptColorMap = {};
+    for (var i = 0; i < donutData.length; i++) costDeptColorMap[donutData[i].Department] = donutData[i].Color;
+    var selectedCostDept = null;
+
+    function onDeptCostToolbarClick(args) {
+        if (args.item.id === 'deptCostGrid_pdfexport') {
+            exportReportGridPdf('deptCostGrid', 'Department_Cost_Center_Breakdown.pdf', 'Department & Cost-Center Cost Breakdown (@Model.Month/@Model.Year)');
+        }
+    }
+
+    function onEmpCostToolbarClick(args) {
+        if (args.item.id === 'empCostGrid_pdfexport') {
+            exportReportGridPdf('empCostGrid', 'Employee_Cost_Center_Drilldown.pdf', 'Employee Cost Drill-Down (@Model.Month/@Model.Year)');
+        }
+    }
+
+    function onDeptCostQueryCellInfo(args) {
+        if (args.column.field === 'Department' && args.data && costDeptColorMap[args.data.Department]) {
+            args.cell.style.backgroundColor = costDeptColorMap[args.data.Department];
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onDeptDonutClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedCostDept === clicked) { clearDeptCostFilter(); return; }
+        selectedCostDept = clicked;
+        applyDeptCostSelection(allEmpCostItems.filter(function (x) { return x.Department === clicked; }), clicked);
+    }
+
+    function clearDeptCostFilter() {
+        selectedCostDept = null;
+        applyDeptCostSelection(allEmpCostItems, null);
+    }
+
+    function applyDeptCostSelection(rows, deptLabel) {
+        var grid = document.getElementById('empCostGrid').ej2_instances[0];
+        grid.dataSource = rows; grid.refresh();
+
+        var net = 0, enc = 0, proj = 0, tot = 0;
+        for (var i = 0; i < rows.length; i++) {
+            net += Number(rows[i].PayrollNet || 0);
+            enc += Number(rows[i].EncashmentCost || 0);
+            proj += Number(rows[i].ProjectAllowance || 0);
+            tot += Number(rows[i].TotalCost || 0);
+        }
+        document.getElementById('kpiDeptNet').innerText = Math.round(net).toLocaleString();
+        document.getElementById('kpiDeptEnc').innerText = Math.round(enc).toLocaleString();
+        document.getElementById('kpiDeptProj').innerText = Math.round(proj).toLocaleString();
+        document.getElementById('kpiDeptTot').innerText = Math.round(tot).toLocaleString();
+        document.getElementById('empCostTitle').innerText = deptLabel ? ('Employee Cost Drill-Down - ' + deptLabel + ' (' + rows.length + ')') : ('Employee Cost Drill-Down (' + rows.length + ')');
+        document.getElementById('btnClearDeptCost').style.display = deptLabel ? 'inline-block' : 'none';
+    }
+</script>

@@ -28,9 +28,9 @@ public static class WorkflowDbContextSeed
         {
             company = new Company
             {
-                Name = "Antigravity Global Qatar",
+                Name = "QCS",
                 Code = "AGG-QA",
-                Description = "Headquarters in Qatar"
+                Description = "Qatar Computer Services"
             };
             await context.Companies.AddAsync(company);
             await context.SaveChangesAsync();

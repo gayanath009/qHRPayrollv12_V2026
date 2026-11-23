@@ -341,6 +341,10 @@ namespace qHR
                    name: "Config",
                    areaName: "Config",
                    pattern: "Config/{controller=SysConfig}/{action=Index}/{id?}");
+                endpoints.MapAreaControllerRoute(
+                    name: "Reports",
+                    areaName: "Reports",
+                    pattern: "Reports/{controller=HrOperations}/{action=DocumentExpiry}/{id?}");
                 // ── Leave Workflow Integration API endpoints ──────────────────
                 // Webhook callback from Dynamic Workflow Engine
                 endpoints.MapControllerRoute(

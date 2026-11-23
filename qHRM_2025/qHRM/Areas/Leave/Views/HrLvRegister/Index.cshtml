@@ -543,14 +543,18 @@
     </a>
 </script>
 <script type="text/x-template" id="_edit">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${LvId})" title="Edit">
-        <i class="fas fa-pencil-alt"></i>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-edit" onclick="editFunc(${LvId}); return false;" title="Edit">
+            <i class="fas fa-pen"></i>
+        </a>
+    </div>
 </script>
 <script type="text/x-template" id="_delete">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${LvId})" title="Delete">
-        <i class="fas fa-trash"></i>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-delete" onclick="deleteFunc(${LvId}); return false;" title="Delete">
+            <i class="fas fa-trash-alt"></i>
+        </a>
+    </div>
 </script>
 
 <!-- Workflow Status Badge Template -->

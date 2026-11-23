@@ -1,0 +1,155 @@
+@model EncashmentForecastReportVm
+@{
+    ViewData["Title"] = "Annual Leave & Air Ticket Encashment Forecast";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-plane-departure mr-2"></i>Annual Leave &amp; Air Ticket Encashment Forecast</div>
+            <small class="text-muted">Payroll Operations &bull; 12-month forward anniversary liability (1st-Year Ticket-Only vs. 2+ Year Leave &amp; Ticket)</small>
+        </div>
+        <form method="get" class="form-inline" style="gap:0.4rem;">
+            <select name="staffCat" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">12-Month Forecast</div>
+                <div id="kpiFcTotal" class="hr-kpi-val">@Model.TotalForecastAmount.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR total projected liability</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">1st-Year (Ticket Only)</div>
+                <div id="kpiFcFirst" class="hr-kpi-val">@Model.FirstYearTicketAmount.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR air ticket only</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">2+ Year (Leave + Ticket)</div>
+                <div id="kpiFcMulti" class="hr-kpi-val">@Model.MultiYearLeaveTicketAmount.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR leave salary &amp; ticket</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Eligible Anniversaries</div>
+                <div id="kpiFcCount" class="hr-kpi-val">@Model.TotalEligibleEmployees</div>
+                <div class="hr-kpi-sub">Next 12 months</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">12-Month Forward Encashment Liability (QAR) <small class="text-muted font-weight-normal">(Click a month bar to filter grid)</small></h6>
+            <button id="btnClearFcFilter" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearFcFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="fcChart" height="260px" pointClick="onFcChartClick" style="cursor:pointer;">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.MonthlyChart" xName="MonthLabel" yName="FirstYearTicketAmount" name="1st Year (Ticket Only)" type="StackingColumn" fill="#C7D8FA"></e-series>
+                    <e-series dataSource="Model.MonthlyChart" xName="MonthLabel" yName="MultiYearAmount" name="2+ Years (Leave &amp; Ticket)" type="StackingColumn" fill="#BDECD6"></e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="fcGridTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Upcoming Encashment Schedule (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="fcGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onFcQueryCellInfo" toolbarClick="onFcToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="90"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="165"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="145"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="95"></e-grid-column>
+                    <e-grid-column field="AnniversaryDateStr" headerText="Anniversary" width="110"></e-grid-column>
+                    <e-grid-column field="CompletedYears" headerText="Years" textAlign="Right" width="70"></e-grid-column>
+                    <e-grid-column field="EntitlementRule" headerText="Entitlement Rule" width="165"></e-grid-column>
+                    <e-grid-column field="EstLeaveSalary" headerText="Leave Salary" format="N0" textAlign="Right" width="105"></e-grid-column>
+                    <e-grid-column field="EstAirTicket" headerText="Air Ticket" format="N0" textAlign="Right" width="95"></e-grid-column>
+                    <e-grid-column field="TotalForecast" headerText="Total (QAR)" format="N0" textAlign="Right" width="105"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var allFcItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items));
+    var selectedFcMonth = null;
+
+    function onFcToolbarClick(args) {
+        if (args.item.id === 'fcGrid_pdfexport') {
+            exportReportGridPdf('fcGrid', 'Leave_And_Ticket_Encashment_Forecast_12M.pdf', 'Annual Leave & Air Ticket Encashment 12-Month Forecast');
+        }
+    }
+
+    function onFcQueryCellInfo(args) {
+        if (args.column.field === 'EntitlementRule' && args.data) {
+            args.cell.style.backgroundColor = args.data.CompletedYears === 1 ? '#C7D8FA' : '#BDECD6';
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onFcChartClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedFcMonth === clicked) { clearFcFilter(); return; }
+        selectedFcMonth = clicked;
+        applyFcSelection(allFcItems.filter(function (x) { return x.AnniversaryMonth === clicked; }), clicked);
+    }
+
+    function clearFcFilter() {
+        selectedFcMonth = null;
+        applyFcSelection(allFcItems, null);
+    }
+
+    function applyFcSelection(rows, monthLabel) {
+        var grid = document.getElementById('fcGrid').ej2_instances[0];
+        grid.dataSource = rows; grid.refresh();
+
+        var tot = 0, first = 0, multi = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var v = Number(rows[i].TotalForecast || 0);
+            tot += v;
+            if (rows[i].CompletedYears === 1) first += v; else multi += v;
+        }
+        document.getElementById('kpiFcTotal').innerText = Math.round(tot).toLocaleString();
+        document.getElementById('kpiFcFirst').innerText = Math.round(first).toLocaleString();
+        document.getElementById('kpiFcMulti').innerText = Math.round(multi).toLocaleString();
+        document.getElementById('kpiFcCount').innerText = rows.length;
+        document.getElementById('fcGridTitle').innerText = monthLabel ? ('Upcoming Encashment Schedule - ' + monthLabel + ' (' + rows.length + ')') : ('Upcoming Encashment Schedule (' + rows.length + ')');
+        document.getElementById('btnClearFcFilter').style.display = monthLabel ? 'inline-block' : 'none';
+    }
+</script>

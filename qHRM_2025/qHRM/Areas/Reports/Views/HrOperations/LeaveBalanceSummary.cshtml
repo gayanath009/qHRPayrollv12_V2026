@@ -1,0 +1,150 @@
+@model LeaveBalanceSummaryReportVm
+@{
+    ViewData["Title"] = "Leave Balance Summary";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-calendar-check mr-2"></i>Leave Balance Summary</div>
+            <small class="text-muted">HR Operations &bull; Leave type-wise individual booked/allocated and remaining leave balances for @Model.Year</small>
+        </div>
+        <form method="get" class="form-inline" style="gap:0.4rem;">
+            <input type="number" name="year" value="@Model.Year" min="2020" max="2035" class="form-control form-control-sm" style="width:90px;" />
+            <select name="staffCat" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <select name="status" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StatusFilter == "ALL")">Active &amp; Exited</option>
+                <option value="ACTIVE" selected="@(Model.StatusFilter == "ACTIVE")">Active Only</option>
+                <option value="EXITED" selected="@(Model.StatusFilter == "EXITED")">Exited Only</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Annual Opening Balance</div>
+                <div class="hr-kpi-val">@Model.TotalAnnualOpening.ToString("N0")</div>
+                <div class="hr-kpi-sub">Total annual allocated days</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Annual Booked</div>
+                <div class="hr-kpi-val">@Model.TotalAnnualBooked.ToString("N0")</div>
+                <div class="hr-kpi-sub">Annual leave days taken</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Sick Leave Booked</div>
+                <div class="hr-kpi-val">@Model.TotalSickBooked.ToString("N0")</div>
+                <div class="hr-kpi-sub">Sick leave days taken</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Casual Leave Booked</div>
+                <div class="hr-kpi-val">@Model.TotalCasualBooked.ToString("N0")</div>
+                <div class="hr-kpi-sub">Casual leave days taken</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Booked vs. Remaining Balance by Leave Type</h6>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="leaveTypeChart" height="240px">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.TypeChartData" xName="LeaveType" yName="Booked" name="Booked" type="Column" fill="#F8C4C0"></e-series>
+                    <e-series dataSource="Model.TypeChartData" xName="LeaveType" yName="Balance" name="Balance" type="Column" fill="#BDECD6"></e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Leave Type-Wise Individual Balances (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="leaveBalGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" gridLines="Both" rowHeight="48" queryCellInfo="onBalQueryCellInfo" toolbarClick="onBalToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="20"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="FullName" headerText="Employee" template="#empBalTpl" width="175"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="120"></e-grid-column>
+                    <e-grid-column field="OpeningBalance" headerText="Opening" format="N0" textAlign="Center" width="75"></e-grid-column>
+                    <e-grid-column headerText="Booked/Allocated" textAlign="Center" columns="@(new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Annual", HeaderText = "Annual", Width = "58", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Casual", HeaderText = "Casual", Width = "58", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Sick", HeaderText = "Sick", Width = "55", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Emergency", HeaderText = "Emerg.", Width = "65", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Maternity", HeaderText = "Mat.", Width = "55", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "BA_Hajj", HeaderText = "Hajj", Width = "50", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center }
+                    })"></e-grid-column>
+                    <e-grid-column headerText="Balance" textAlign="Center" columns="@(new List<Syncfusion.EJ2.Grids.GridColumn>() {
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Annual", HeaderText = "Annual", Width = "55", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Casual", HeaderText = "Casual", Width = "55", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Sick", HeaderText = "Sick", Width = "50", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Emergency", HeaderText = "Emerg.", Width = "60", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Maternity", HeaderText = "Mat.", Width = "55", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center },
+                        new Syncfusion.EJ2.Grids.GridColumn { Field = "Bal_Hajj", HeaderText = "Hajj", Width = "50", Format = "N0", TextAlign = Syncfusion.EJ2.Grids.TextAlign.Center }
+                    })"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script id="empBalTpl" type="text/x-template">
+    <div class="d-flex align-items-center" style="gap:8px; line-height:1.2;">
+        <img class="rounded-circle" style="width:32px; height:32px; object-fit:cover; border:1px solid #e5e7eb;" src="@Url.Content("~/attach/empImages/")${PhotoName}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+        <div>
+            <div style="font-weight:600; color:#111827; font-size:12.5px;">${EmpId} ${FullName}</div>
+            ${if(ExitDateText)}<div style="font-size:11px; color:#6b7280;">${ExitDateText}</div>${/if}
+        </div>
+    </div>
+</script>
+
+<script>
+    function onBalToolbarClick(args) {
+        if (args.item.id === 'leaveBalGrid_pdfexport') {
+            exportReportGridPdf('leaveBalGrid', 'Leave_Balance_Summary_@(Model.Year).pdf', 'Leave Balance Summary (@Model.Year)');
+        }
+    }
+
+    function onBalQueryCellInfo(args) {
+        if (!args.column || !args.column.field) return;
+        var f = args.column.field;
+        if (f.indexOf('BA_') === 0) {
+            args.cell.style.backgroundColor = '#FDF2F2';
+            args.cell.style.color = '#1e293b';
+        } else if (f.indexOf('Bal_') === 0) {
+            args.cell.style.backgroundColor = '#EFFBF4';
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+</script>

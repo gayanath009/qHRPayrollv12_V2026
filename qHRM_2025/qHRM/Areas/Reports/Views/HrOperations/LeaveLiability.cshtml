@@ -1,0 +1,164 @@
+@model LeaveLiabilityReportVm
+@{
+    ViewData["Title"] = "Leave Utilization & Liability";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-umbrella-beach mr-2"></i>Leave Utilization &amp; Liability Report</div>
+            <small class="text-muted">HR Operations &bull; Annual leave opening balances, booked utilization, remaining days, and financial liability</small>
+        </div>
+        <form method="get" class="form-inline">
+            <input type="number" name="year" value="@Model.Year" min="2020" max="2035" class="form-control form-control-sm mr-2" style="width:90px;" />
+            <select name="staffCat" class="form-control form-control-sm mr-2">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Opening Annual Days</div>
+                <div id="kpiOpeningDays" class="hr-kpi-val">@Model.TotalOpeningDays.ToString("N1")</div>
+                <div class="hr-kpi-sub">Total opening balance</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Booked Days</div>
+                <div id="kpiBookedDays" class="hr-kpi-val">@Model.TotalBookedDays.ToString("N1")</div>
+                <div class="hr-kpi-sub">Utilized leave days</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Remaining Days</div>
+                <div id="kpiRemainingDays" class="hr-kpi-val">@Model.TotalRemainingDays.ToString("N1")</div>
+                <div class="hr-kpi-sub">Outstanding leave days</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Est. Liability (QAR)</div>
+                <div id="kpiLiabilityAmt" class="hr-kpi-val">@Model.TotalLiabilityAmount.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR. Financial Liability</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Top 10 Departments by Leave Liability (QAR) <small class="text-muted font-weight-normal">(Click a bar to filter grid)</small></h6>
+            <button id="btnClearLeaveFilter" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearLeaveFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="leaveLiabChart" height="260px" pointClick="onLeaveChartPointClick" style="cursor:pointer;">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true" format="${point.x} : <b>QAR ${point.y}</b>"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.DeptChartData" xName="Department" yName="LiabilityAmount" pointColorMapping="Color" name="Est. Liability (QAR)" type="Column">
+                        <e-series-marker><e-series-datalabel visible="true" position="Top"></e-series-datalabel></e-series-marker>
+                    </e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="leaveGridTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Employee Leave Balances &amp; Liability (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="leaveLiabGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onLeaveQueryCellInfo" toolbarClick="onLeaveToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="80"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="150"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="135"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="85"></e-grid-column>
+                    <e-grid-column field="OpeningDays" headerText="Opening" format="N1" textAlign="Right" width="80"></e-grid-column>
+                    <e-grid-column field="BookedDays" headerText="Booked" format="N1" textAlign="Right" width="75"></e-grid-column>
+                    <e-grid-column field="RemainingDays" headerText="Remaining" format="N1" textAlign="Right" width="85"></e-grid-column>
+                    <e-grid-column field="ApprovedTakenInYear" headerText="Reg. Taken" textAlign="Right" width="80"></e-grid-column>
+                    <e-grid-column field="DailyRate" headerText="Daily Rate" format="N2" textAlign="Right" width="90"></e-grid-column>
+                    <e-grid-column field="EstimatedLiability" headerText="Liability (QAR)" format="N2" textAlign="Right" width="110"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var deptChartData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.DeptChartData));
+    var allLeaveItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items));
+    var deptColorMap = {};
+    for (var i = 0; i < deptChartData.length; i++) {
+        deptColorMap[deptChartData[i].Department] = deptChartData[i].Color;
+    }
+    var selectedDept = null;
+
+    function onLeaveToolbarClick(args) {
+        if (args.item.id === 'leaveLiabGrid_pdfexport') {
+            exportReportGridPdf('leaveLiabGrid', 'Leave_Utilization_And_Liability_@(Model.Year).pdf', 'Leave Utilization & Liability Report (@Model.Year)');
+        }
+    }
+
+    function onLeaveQueryCellInfo(args) {
+        if (args.column.field === 'Department' && args.data && deptColorMap[args.data.Department]) {
+            args.cell.style.backgroundColor = deptColorMap[args.data.Department];
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onLeaveChartPointClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedDept === clicked) { clearLeaveFilter(); return; }
+        selectedDept = clicked;
+        applyLeaveSelection(allLeaveItems.filter(function (x) { return x.Department === clicked; }), clicked);
+    }
+
+    function clearLeaveFilter() {
+        selectedDept = null;
+        applyLeaveSelection(allLeaveItems, null);
+    }
+
+    function applyLeaveSelection(rows, deptLabel) {
+        var grid = document.getElementById('leaveLiabGrid').ej2_instances[0];
+        grid.dataSource = rows;
+        grid.refresh();
+
+        var opening = 0, booked = 0, remaining = 0, liability = 0;
+        for (var i = 0; i < rows.length; i++) {
+            opening += Number(rows[i].OpeningDays || 0);
+            booked += Number(rows[i].BookedDays || 0);
+            remaining += Number(rows[i].RemainingDays || 0);
+            liability += Number(rows[i].EstimatedLiability || 0);
+        }
+        document.getElementById('kpiOpeningDays').innerText = opening.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        document.getElementById('kpiBookedDays').innerText = booked.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        document.getElementById('kpiRemainingDays').innerText = remaining.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+        document.getElementById('kpiLiabilityAmt').innerText = Math.round(liability).toLocaleString();
+        document.getElementById('leaveGridTitle').innerText = deptLabel ? ('Employee Leave Balances & Liability - ' + deptLabel + ' (' + rows.length + ')') : ('Employee Leave Balances & Liability (' + rows.length + ')');
+        document.getElementById('btnClearLeaveFilter').style.display = deptLabel ? 'inline-block' : 'none';
+    }
+</script>

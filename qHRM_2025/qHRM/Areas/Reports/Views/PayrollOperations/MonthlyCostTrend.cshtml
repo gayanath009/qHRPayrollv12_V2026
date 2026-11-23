@@ -1,0 +1,115 @@
+@model MonthlyCostTrendReportVm
+@{
+    ViewData["Title"] = "Monthly Payroll Cost Trend & Variance";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-chart-line mr-2"></i>Monthly Payroll Cost Trend &amp; Variance</div>
+            <small class="text-muted">Payroll Operations &bull; 12-month Gross, Allowances, Overtime, Deductions, Net Payout &amp; MoM Variance</small>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Latest Net Payout</div>
+                <div class="hr-kpi-val">@Model.LatestNetPayout.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR &bull; MoM: @(Model.NetMomPct >= 0 ? "+" : "")@Model.NetMomPct.ToString("N1")%</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Latest Gross Salary</div>
+                <div class="hr-kpi-val">@Model.LatestGross.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR &bull; MoM: @(Model.GrossMomPct >= 0 ? "+" : "")@Model.GrossMomPct.ToString("N1")%</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Latest Overtime</div>
+                <div class="hr-kpi-val">@Model.LatestOvertime.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR &bull; MoM: @(Model.OtMomPct >= 0 ? "+" : "")@Model.OtMomPct.ToString("N1")%</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Latest Deductions</div>
+                <div class="hr-kpi-val">@Model.LatestDeductions.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR &bull; MoM: @(Model.DedMomPct >= 0 ? "+" : "")@Model.DedMomPct.ToString("N1")%</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">12-Month Payroll Cost Trend (QAR)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="costTrendChart" height="280px">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.Months" xName="MonthLabel" yName="Gross" name="Gross" type="Column" fill="#C7D8FA"></e-series>
+                    <e-series dataSource="Model.Months" xName="MonthLabel" yName="Allowances" name="Allowances" type="Column" fill="#BDECD6"></e-series>
+                    <e-series dataSource="Model.Months" xName="MonthLabel" yName="Overtime" name="Overtime" type="Column" fill="#FDE6A8"></e-series>
+                    <e-series dataSource="Model.Months" xName="MonthLabel" yName="Deductions" name="Deductions" type="Column" fill="#F8C4C0"></e-series>
+                    <e-series dataSource="Model.Months" xName="MonthLabel" yName="NetPayout" name="Net Payout" type="Line" width="3" fill="#550033">
+                        <e-series-marker visible="true" width="8" height="8"></e-series-marker>
+                    </e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Monthly Payroll Breakdown (@Model.Months.Count Months)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="costTrendGrid" dataSource="Model.Months" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onTrendQueryCellInfo" toolbarClick="onTrendToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="12"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="MonthLabel" headerText="Month" width="110"></e-grid-column>
+                    <e-grid-column field="Headcount" headerText="Staff" textAlign="Right" width="75"></e-grid-column>
+                    <e-grid-column field="Basic" headerText="Basic" format="N0" textAlign="Right" width="105"></e-grid-column>
+                    <e-grid-column field="Allowances" headerText="Allowances" format="N0" textAlign="Right" width="110"></e-grid-column>
+                    <e-grid-column field="Overtime" headerText="Overtime" format="N0" textAlign="Right" width="100"></e-grid-column>
+                    <e-grid-column field="Gross" headerText="Gross" format="N0" textAlign="Right" width="110"></e-grid-column>
+                    <e-grid-column field="Deductions" headerText="Deductions" format="N0" textAlign="Right" width="105"></e-grid-column>
+                    <e-grid-column field="NetPayout" headerText="Net Payout" format="N0" textAlign="Right" width="115"></e-grid-column>
+                    <e-grid-column field="MomVariancePct" headerText="MoM %" format="N1" textAlign="Right" width="85"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    function onTrendToolbarClick(args) {
+        if (args.item.id === 'costTrendGrid_pdfexport') {
+            exportReportGridPdf('costTrendGrid', 'Monthly_Payroll_Cost_Trend_Variance.pdf', 'Monthly Payroll Cost Trend & Variance Report');
+        }
+    }
+
+    function onTrendQueryCellInfo(args) {
+        if (!args.column || !args.data) return;
+        if (args.column.field === 'NetPayout') { args.cell.style.backgroundColor = '#F3C6DC'; args.cell.style.color = '#1e293b'; args.cell.style.fontWeight = '600'; }
+        else if (args.column.field === 'Deductions') { args.cell.style.backgroundColor = '#F8C4C0'; args.cell.style.color = '#1e293b'; }
+        else if (args.column.field === 'Overtime') { args.cell.style.backgroundColor = '#FDE6A8'; args.cell.style.color = '#1e293b'; }
+    }
+</script>

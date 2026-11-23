@@ -775,7 +775,16 @@
                                             <td class="text-center">
                                                 <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
-                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N0")</td>
+                                            <td class="text-right tkt-value-cell">
+                                                @if ((emp.Department ?? "").IndexOf("Management", StringComparison.OrdinalIgnoreCase) >= 0)
+                                                {
+                                                    <input type="number" min="0" step="1" value="@Math.Round(emp.AirTicketValue, 0)" class="form-control form-control-sm tkt-value-input text-right" style="width:90px; display:inline-block;" onchange="onTktValueChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
+                                                }
+                                                else
+                                                {
+                                                    @emp.AirTicketValue.ToString("N0")
+                                                }
+                                            </td>
                                             <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N0")</td>
                                             <td class="small remarks-cell">@emp.Remarks</td>
                                         </tr>
@@ -844,7 +853,16 @@
                                             <td class="text-center">
                                                 <input type="number" min="0" max="4" value="@emp.TktCount" class="form-control form-control-sm tkt-input" onchange="onTktCountChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
                                             </td>
-                                            <td class="text-right tkt-value-cell">@emp.AirTicketValue.ToString("N0")</td>
+                                            <td class="text-right tkt-value-cell">
+                                                @if ((emp.Department ?? "").IndexOf("Management", StringComparison.OrdinalIgnoreCase) >= 0)
+                                                {
+                                                    <input type="number" min="0" step="1" value="@Math.Round(emp.AirTicketValue, 0)" class="form-control form-control-sm tkt-value-input text-right" style="width:90px; display:inline-block;" onchange="onTktValueChanged(this);" @(isCompleted || emp.IsExcluded ? "disabled" : "") />
+                                                }
+                                                else
+                                                {
+                                                    @emp.AirTicketValue.ToString("N0")
+                                                }
+                                            </td>
                                             <td class="text-right font-weight-bold total-settle-cell">@emp.TotalSettlement.ToString("N0")</td>
                                             <td class="small remarks-cell">@emp.Remarks</td>
                                         </tr>
@@ -934,6 +952,28 @@
         recalcTotals();
     }
 
+    function getRowTktValue(tr) {
+        var valInput = tr.find('.tkt-value-input');
+        if (valInput.length > 0) {
+            return Math.round(parseFloat(valInput.val()) || 0);
+        }
+        var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
+        var tktPrice = parseFloat(tr.data('tktprice')) || 0;
+        return Math.round(tktCount * tktPrice);
+    }
+
+    function updateRowRemarks(tr, netDays, tktCount, tktValue) {
+        var remarks = "-";
+        if (netDays > 0 && tktCount > 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + " Days Leave Salary & Air Fare Encashment (self & family)";
+        } else if (netDays > 0 && tktCount <= 1) {
+            remarks = (netDays < 10 ? "0" + netDays : netDays) + (netDays > 1 ? " Days" : " Day") + " Leave Salary & Air Fare Encashment";
+        } else if (netDays === 0 && tktValue > 0) {
+            remarks = "Air Fare Encashment";
+        }
+        tr.find('.remarks-cell').text(remarks);
+    }
+
     function onNetDaysChanged(input) {
         var tr = $(input).closest('tr');
         var netDays = parseInt($(input).val());
@@ -947,23 +987,11 @@
         tr.find('.leave-salary-cell').text(leaveSalary > 0 ? leaveSalary.toLocaleString('en-US', { maximumFractionDigits: 0 }) : "-");
 
         var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
-        var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-        var tktValue = Math.round(tktCount * tktPrice);
+        var tktValue = getRowTktValue(tr);
         var settlement = Math.round(leaveSalary + tktValue);
 
         tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
-
-        // Remarks update
-        var remarks = "-";
-        if (netDays > 0 && tktCount > 1) {
-            remarks = (netDays < 10 ? "0" + netDays : netDays) + " Days Leave Salary & Air Fare Encashment (self & family)";
-        } else if (netDays > 0 && tktCount <= 1) {
-            remarks = (netDays < 10 ? "0" + netDays : netDays) + (netDays > 1 ? " Days" : " Day") + " Leave Salary & Air Fare Encashment";
-        } else if (netDays === 0 && tktValue > 0) {
-            remarks = "Air Fare Encashment";
-        }
-        tr.find('.remarks-cell').text(remarks);
-
+        updateRowRemarks(tr, netDays, tktCount, tktValue);
         recalcTotals();
     }
 
@@ -980,20 +1008,32 @@
         var tktValue = Math.round(tktCount * tktPrice);
         var settlement = Math.round(leaveSalary + tktValue);
 
-        tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { maximumFractionDigits: 0 }));
-        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
-
-        // Remarks update
-        var remarks = "-";
-        if (netDays > 0 && tktCount > 1) {
-            remarks = (netDays < 10 ? "0" + netDays : netDays) + " Days Leave Salary & Air Fare Encashment (self & family)";
-        } else if (netDays > 0 && tktCount <= 1) {
-            remarks = (netDays < 10 ? "0" + netDays : netDays) + (netDays > 1 ? " Days" : " Day") + " Leave Salary & Air Fare Encashment";
-        } else if (netDays === 0 && tktValue > 0) {
-            remarks = "Air Fare Encashment";
+        var valInput = tr.find('.tkt-value-input');
+        if (valInput.length > 0) {
+            valInput.val(tktValue);
+        } else {
+            tr.find('.tkt-value-cell').text(tktValue.toLocaleString('en-US', { maximumFractionDigits: 0 }));
         }
-        tr.find('.remarks-cell').text(remarks);
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        updateRowRemarks(tr, netDays, tktCount, tktValue);
+        recalcTotals();
+    }
 
+    function onTktValueChanged(input) {
+        var tr = $(input).closest('tr');
+        var tktValue = Math.round(parseFloat($(input).val()) || 0);
+        if (tktValue < 0) { tktValue = 0; $(input).val(0); }
+
+        var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
+        if (tktCount > 0) {
+            tr.data('tktprice', tktValue / tktCount);
+        }
+        var leaveSalary = Math.round(parseFloat(tr.data('leavesalary')) || 0);
+        var netDays = parseInt(tr.find('.netdays-input').val()) || 0;
+        var settlement = Math.round(leaveSalary + tktValue);
+
+        tr.find('.total-settle-cell').text(settlement.toLocaleString('en-US', { maximumFractionDigits: 0 }));
+        updateRowRemarks(tr, netDays, tktCount, tktValue);
         recalcTotals();
     }
 
@@ -1011,9 +1051,7 @@
             activeCount++;
             var cat = tr.data('cat');
             var leaveSalary = Math.round(parseFloat(tr.data('leavesalary')) || 0);
-            var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
-            var tktPrice = parseFloat(tr.data('tktprice')) || 0;
-            var tktValue = Math.round(tktCount * tktPrice);
+            var tktValue = getRowTktValue(tr);
             var settlement = Math.round(leaveSalary + tktValue);
 
             if (cat === 'INTERNAL') {
@@ -1055,7 +1093,7 @@
             var tktCount = parseInt(tr.find('.tkt-input').val()) || 0;
             var tktPrice = parseFloat(tr.data('tktprice')) || 0;
             var leaveSalary = Math.round(parseFloat(tr.data('leavesalary')) || 0);
-            var tktValue = Math.round(tktCount * tktPrice);
+            var tktValue = getRowTktValue(tr);
             var settlement = Math.round(leaveSalary + tktValue);
 
             items.push({

@@ -1,0 +1,172 @@
+@model WorkflowSlaReportVm
+@{
+    ViewData["Title"] = "Workflow Bottleneck & SLA Monitor";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-tasks mr-2"></i>Workflow Bottleneck &amp; SLA Monitor</div>
+            <small class="text-muted">HR Operations &bull; Track pending approval aging, SLA breaches (&gt;48 hours), and average turnaround time</small>
+        </div>
+        <form method="get" class="form-inline">
+            <select name="module" class="form-control form-control-sm mr-2">
+                <option value="ALL" selected="@(Model.Module == "ALL")">All Modules</option>
+                <option value="Leave" selected="@(Model.Module == "Leave")">Leave</option>
+                <option value="Regularization" selected="@(Model.Module == "Regularization")">Regularization</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Pending Requests</div>
+                <div id="kpiSlaPending" class="hr-kpi-val">@Model.TotalPending</div>
+                <div class="hr-kpi-sub">Awaiting workflow action</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">SLA Breaches (&gt;48h)</div>
+                <div id="kpiSlaBreach" class="hr-kpi-val">@Model.PendingOver48h</div>
+                <div class="hr-kpi-sub">Overdue &gt; 48 hours</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Avg Turnaround (Hrs)</div>
+                <div id="kpiSlaAvgHrs" class="hr-kpi-val">@Model.AvgTurnaroundHours.ToString("N1")</div>
+                <div class="hr-kpi-sub">Completed request average</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Completed Requests</div>
+                <div id="kpiSlaCompleted" class="hr-kpi-val">@Model.TotalProcessed</div>
+                <div class="hr-kpi-sub">Processed workflows</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Pending Request Aging Buckets <small class="text-muted font-weight-normal">(Click a bar to filter grid)</small></h6>
+            <button id="btnClearSlaFilter" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearSlaFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="wfSlaChart" height="250px" pointClick="onSlaChartPointClick" style="cursor:pointer;">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.AgingChartData" xName="Bucket" yName="LeaveCount" name="Leave" type="StackingColumn" fill="#F3C6DC">
+                        <e-series-marker><e-series-datalabel visible="true"></e-series-datalabel></e-series-marker>
+                    </e-series>
+                    <e-series dataSource="Model.AgingChartData" xName="Bucket" yName="RegularizationCount" name="Regularization" type="StackingColumn" fill="#C7D8FA">
+                        <e-series-marker><e-series-datalabel visible="true"></e-series-datalabel></e-series-marker>
+                    </e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="slaGridTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Workflow SLA Details (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="wfSlaGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onSlaQueryCellInfo" toolbarClick="onSlaToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="Module" headerText="Module" width="115"></e-grid-column>
+                    <e-grid-column field="Reference" headerText="Ref #" width="135"></e-grid-column>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="95"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="165"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="140"></e-grid-column>
+                    <e-grid-column field="RequestType" headerText="Request" width="180"></e-grid-column>
+                    <e-grid-column field="SubmittedAtStr" headerText="Submitted" width="140"></e-grid-column>
+                    <e-grid-column field="AgingOrTurnaroundHours" headerText="Hours" format="N1" textAlign="Right" width="85"></e-grid-column>
+                    <e-grid-column field="WfStatus" headerText="Status" width="120"></e-grid-column>
+                    <e-grid-column field="SlaState" headerText="SLA State" width="135"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var allSlaItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items));
+    var selectedBucket = null;
+
+    function getAgingBucket(h) {
+        if (h <= 24) return '0-24 Hours';
+        if (h <= 48) return '24-48 Hours';
+        if (h <= 168) return '2-7 Days';
+        return '>7 Days';
+    }
+
+    function onSlaToolbarClick(args) {
+        if (args.item.id === 'wfSlaGrid_pdfexport') {
+            exportReportGridPdf('wfSlaGrid', 'Workflow_Bottleneck_And_SLA_Monitor.pdf', 'Workflow Bottleneck & SLA Monitor Report');
+        }
+    }
+
+    function onSlaQueryCellInfo(args) {
+        if (args.column.field === 'Module' && args.data) {
+            args.cell.style.backgroundColor = args.data.Module === 'Leave' ? '#F3C6DC' : '#C7D8FA';
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onSlaChartPointClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedBucket === clicked) { clearSlaFilter(); return; }
+        selectedBucket = clicked;
+        applySlaSelection(allSlaItems.filter(function (x) {
+            return x.SlaState !== 'Completed' && getAgingBucket(Number(x.AgingOrTurnaroundHours || 0)) === clicked;
+        }), clicked);
+    }
+
+    function clearSlaFilter() {
+        selectedBucket = null;
+        applySlaSelection(allSlaItems, null);
+    }
+
+    function applySlaSelection(rows, bucketLabel) {
+        var grid = document.getElementById('wfSlaGrid').ej2_instances[0];
+        grid.dataSource = rows;
+        grid.refresh();
+
+        var pending = 0, breach = 0, completed = 0, turnaroundSum = 0, turnaroundCnt = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var r = rows[i];
+            var hrs = Number(r.AgingOrTurnaroundHours || 0);
+            if (r.SlaState === 'Completed') { completed++; if (hrs > 0) { turnaroundSum += hrs; turnaroundCnt++; } }
+            else { pending++; if (hrs > 48) breach++; }
+        }
+        var avg = turnaroundCnt > 0 ? (turnaroundSum / turnaroundCnt) : 0;
+
+        document.getElementById('kpiSlaPending').innerText = pending;
+        document.getElementById('kpiSlaBreach').innerText = breach;
+        document.getElementById('kpiSlaAvgHrs').innerText = avg.toFixed(1);
+        document.getElementById('kpiSlaCompleted').innerText = completed;
+        document.getElementById('slaGridTitle').innerText = bucketLabel ? ('Workflow SLA Details - ' + bucketLabel + ' (' + rows.length + ')') : ('Workflow SLA Details (' + rows.length + ')');
+        document.getElementById('btnClearSlaFilter').style.display = bucketLabel ? 'inline-block' : 'none';
+    }
+</script>

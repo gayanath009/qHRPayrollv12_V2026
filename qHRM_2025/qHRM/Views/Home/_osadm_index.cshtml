@@ -829,13 +829,22 @@
             $("#btnModeLast7").addClass("active");
             $("#btnModeFull").removeClass("active");
             $("#attnScrollNotice").html('<i class="fas fa-calendar-week mr-1"></i> Showing last 7 days of cycle. Switch to "Full Cycle" to view all dates.');
+            updateAttendanceKpiCards(currentViewMode);
+            renderAttendanceRows(cachedAttendanceDays);
         } else {
             $("#btnModeFull").addClass("active");
             $("#btnModeLast7").removeClass("active");
-            $("#attnScrollNotice").html('<i class="fas fa-arrows-alt-v mr-1"></i> Showing full cycle dates. Scroll up/down to inspect past dates.');
+            $("#attnScrollNotice").html('<i class="fas fa-arrows-alt-v mr-1"></i> Showing full 30-day cycle dates. Scroll up/down to inspect past dates.');
+            if (currentCycleOffset === 0 && (!cachedAttendanceDays || cachedAttendanceDays.length < 28)) {
+                var t = new Date();
+                var f = new Date(t.getFullYear(), t.getMonth(), t.getDate() - 29);
+                var fmt = function (d) { return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); };
+                loadAttendanceCycleData(fmt(f), fmt(t));
+                return;
+            }
+            updateAttendanceKpiCards(currentViewMode);
+            renderAttendanceRows(cachedAttendanceDays);
         }
-        updateAttendanceKpiCards(currentViewMode);
-        renderAttendanceRows(cachedAttendanceDays);
     }
 
     function updateAttendanceKpiCards(mode) {

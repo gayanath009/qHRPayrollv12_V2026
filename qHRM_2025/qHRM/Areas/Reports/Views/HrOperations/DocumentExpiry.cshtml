@@ -1,0 +1,171 @@
+@model DocumentExpiryReportVm
+@{
+    ViewData["Title"] = "Document & Visa Expiry Tracker";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-id-card mr-2"></i>Document &amp; Visa Expiry Tracker</div>
+            <small class="text-muted">HR Operations &bull; Track expired and upcoming QID/Visa, Passport, Driving License, and Health Card expirations</small>
+        </div>
+        <form method="get" class="form-inline">
+            <select name="staffCat" class="form-control form-control-sm mr-2">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <select name="days" class="form-control form-control-sm mr-2">
+                <option value="30" selected="@(Model.HorizonDays == 30)">Next 30 Days</option>
+                <option value="60" selected="@(Model.HorizonDays == 60)">Next 60 Days</option>
+                <option value="90" selected="@(Model.HorizonDays == 90)">Next 90 Days</option>
+                <option value="180" selected="@(Model.HorizonDays == 180)">Next 180 Days</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Expired</div>
+                <div id="kpiExpired" class="hr-kpi-val">@Model.ExpiredCount</div>
+                <div class="hr-kpi-sub">Immediate renewal required</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Expiring 0&ndash;30 Days</div>
+                <div id="kpi30" class="hr-kpi-val">@Model.Expiring30Count</div>
+                <div class="hr-kpi-sub">Due within 30 days</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Expiring 31&ndash;60 Days</div>
+                <div id="kpi60" class="hr-kpi-val">@Model.Expiring60Count</div>
+                <div class="hr-kpi-sub">Upcoming 31&ndash;60 days</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Expiring 61&ndash;@(Model.HorizonDays > 60 ? Model.HorizonDays : 90) Days</div>
+                <div id="kpi90" class="hr-kpi-val">@Model.Expiring90Count</div>
+                <div class="hr-kpi-sub">Longer horizon</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Expiry Breakdown by Document Type <small class="text-muted font-weight-normal">(Click a bar to filter grid)</small></h6>
+            <button id="btnClearDocFilter" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearDocFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="docExpiryChart" height="260px" pointClick="onDocChartPointClick" style="cursor:pointer;">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true" format="${point.x} : <b>${point.y}</b>"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.ChartData" xName="DocType" yName="TotalCount" pointColorMapping="Color" name="Documents" type="Column">
+                        <e-series-marker>
+                            <e-series-datalabel visible="true" position="Top"></e-series-datalabel>
+                        </e-series-marker>
+                    </e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="docGridTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Document Expiry Details (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="docExpiryGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onDocQueryCellInfo" toolbarClick="onDocToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="100"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="180"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="160"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="110"></e-grid-column>
+                    <e-grid-column field="DocType" headerText="Document" width="140"></e-grid-column>
+                    <e-grid-column field="ExpiryDateStr" headerText="Expiry Date" width="125"></e-grid-column>
+                    <e-grid-column field="DaysRemaining" headerText="Days Left" textAlign="Right" width="100"></e-grid-column>
+                    <e-grid-column field="Urgency" headerText="Status" width="120"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var docColorMap = {
+        'QID / Visa': '#F3C6DC',
+        'Passport': '#C7D8FA',
+        'Driving License': '#BDECD6',
+        'Health Card': '#FDE6A8'
+    };
+    var allDocItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items));
+    var selectedDocType = null;
+
+    function onDocToolbarClick(args) {
+        if (args.item.id === 'docExpiryGrid_pdfexport') {
+            exportReportGridPdf('docExpiryGrid', 'Document_And_Visa_Expiry_Tracker.pdf', 'Document & Visa Expiry Tracker Report');
+        }
+    }
+
+    function onDocQueryCellInfo(args) {
+        if (args.column.field === 'DocType' && args.data && docColorMap[args.data.DocType]) {
+            args.cell.style.backgroundColor = docColorMap[args.data.DocType];
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onDocChartPointClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedDocType === clicked) { clearDocFilter(); return; }
+        selectedDocType = clicked;
+        applyDocSelection(allDocItems.filter(function (x) { return x.DocType === clicked; }), clicked);
+    }
+
+    function clearDocFilter() {
+        selectedDocType = null;
+        applyDocSelection(allDocItems, null);
+    }
+
+    function applyDocSelection(rows, docTypeLabel) {
+        var grid = document.getElementById('docExpiryGrid').ej2_instances[0];
+        grid.dataSource = rows;
+        grid.refresh();
+
+        var expired = 0, d30 = 0, d60 = 0, d90 = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var rem = rows[i].DaysRemaining;
+            if (rem < 0) expired++;
+            else if (rem <= 30) d30++;
+            else if (rem <= 60) d60++;
+            else d90++;
+        }
+        document.getElementById('kpiExpired').innerText = expired;
+        document.getElementById('kpi30').innerText = d30;
+        document.getElementById('kpi60').innerText = d60;
+        document.getElementById('kpi90').innerText = d90;
+        document.getElementById('docGridTitle').innerText = docTypeLabel ? ('Document Expiry Details - ' + docTypeLabel + ' (' + rows.length + ')') : ('Document Expiry Details (' + rows.length + ')');
+        document.getElementById('btnClearDocFilter').style.display = docTypeLabel ? 'inline-block' : 'none';
+    }
+</script>

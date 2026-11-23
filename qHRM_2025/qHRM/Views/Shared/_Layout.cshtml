@@ -38,6 +38,52 @@
     <link href="~/css/select2-bootstrap4.min.css" rel="stylesheet" />
     <!-- Core jQuery in head so partial views and body scripts can use $ without ReferenceError -->
     <style>
+        /* Shared Grid Action Buttons (matching Employee/HrEmpGenInfo) */
+        .org-actions-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .org-action-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            text-decoration: none !important;
+            cursor: pointer;
+            font-size: 0.75rem;
+            padding: 0;
+            outline: none;
+        }
+        .org-action-edit {
+            background: #fdf2f8;
+            color: #540033;
+            border-color: #fbcfe8;
+        }
+        .org-action-edit:hover {
+            background: #540033;
+            color: #ffffff !important;
+            border-color: #540033;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(84, 0, 51, 0.25);
+        }
+        .org-action-delete {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fecaca;
+        }
+        .org-action-delete:hover {
+            background: #dc2626;
+            color: #ffffff !important;
+            border-color: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25);
+        }
         /* Global Stacking Context: Sidebar & Flyout Menus ALWAYS stack above Page Content */
         #accordionSidebar, .sidebar {
             position: relative !important;
@@ -171,6 +217,21 @@
                 bool hasLeavePrivs = (LV_REG != null || LV_PEND_AP != null || (LV_APP_Q != null && isAllowedAdminGrp) || LV_WF_CFG != null || LV_WF_DLG != null);
                 bool hasPayrollPrivs = (STF_LN != null || SLRY_STRUC != null || PRJ_ALWNC != null || SLRY_EXCLD != null || AD_HOC_TYP != null || AD_HOC_TR != null || PR_INCTV != null || SLRY_PRC != null || SLRY_SHT != null || (ZH_CVT != null && isAllowedAdminGrp) || AIR_TKT != null || STF_LV_TKT != null || SLRY_APP != null || ENCSH_APP != null);
                 bool hasSysAdminPrivs = (SY_ADM != null || SY_PRV != null || SY_USR != null);
+
+                // Reports Privileges
+                string RPT_DOCEXP = @HttpContextAccessor.HttpContext.Session.GetString("RPT_DOCEXP");
+                string RPT_LVBALS = @HttpContextAccessor.HttpContext.Session.GetString("RPT_LVBALS");
+                string RPT_ATNAUD = @HttpContextAccessor.HttpContext.Session.GetString("RPT_ATNAUD");
+                string RPT_LVLIAB = @HttpContextAccessor.HttpContext.Session.GetString("RPT_LVLIAB");
+                string RPT_PRBANN = @HttpContextAccessor.HttpContext.Session.GetString("RPT_PRBANN");
+                string RPT_WFSLA  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_WFSLA");
+                string RPT_PRCST  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_PRCST");
+                string RPT_DPTCST = @HttpContextAccessor.HttpContext.Session.GetString("RPT_DPTCST");
+                string RPT_ENCFC  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_ENCFC");
+                string RPT_DPTTUR = @HttpContextAccessor.HttpContext.Session.GetString("RPT_DPTTUR");
+                bool hasHrOpsReports = (RPT_DOCEXP != null || RPT_LVBALS != null || RPT_ATNAUD != null || RPT_LVLIAB != null || RPT_PRBANN != null || RPT_WFSLA != null);
+                bool hasPayrollOpsReports = (RPT_PRCST != null || RPT_DPTCST != null || RPT_ENCFC != null || RPT_DPTTUR != null);
+                bool hasReportsPrivs = (hasHrOpsReports || hasPayrollOpsReports);
 
                 // Settings Privileges
                 bool hasSettingsGeneralPrivs = (ADM_ORG != null || ADM_Entity != null || ADM_DEPT != null || ADM_LOC != null || ADM_CNTRY != null || ADM_NLTY != null || ADM_HLDY != null);
@@ -381,6 +442,39 @@
                                 @if (ZH_CVT != null && isAllowedAdminGrp)
                                 {
                                     <a class="collapse-item" asp-area="Payroll" asp-controller="HrPrZohoConvert" asp-action="Index">Convert Zoho File</a>
+                                }
+                            </div>
+                        </div>
+                    </li>
+                }
+
+                <!-- Nav Item - Reports Collapse Menu -->
+                @if (hasReportsPrivs)
+                {
+                    <li class="nav-item">
+                        <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseReports" aria-expanded="true" aria-controls="collapseReports">
+                            <i class="fas fa-fw fa-chart-bar"></i>
+                            <span>Reports</span>
+                        </a>
+                        <div id="collapseReports" class="collapse" aria-labelledby="headingReports" data-parent="#accordionSidebar">
+                            <div class="bg-white py-2 collapse-inner rounded">
+                                @if (hasHrOpsReports)
+                                {
+                                    <h6 class="collapse-header">HR Operations</h6>
+                                    @if (RPT_DOCEXP != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="DocumentExpiry">Document &amp; Visa Expiry</a> }
+                                    @if (RPT_LVBALS != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="LeaveBalanceSummary">Leave Balance Summary</a> }
+                                    @if (RPT_ATNAUD != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="AttendanceAudit">Attendance &amp; Reg. Audit</a> }
+                                    @if (RPT_LVLIAB != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="LeaveLiability">Leave Utilization &amp; Liability</a> }
+                                    @if (RPT_PRBANN != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="AnniversaryProbation">Probation &amp; Anniversary</a> }
+                                    @if (RPT_WFSLA != null) { <a class="collapse-item" asp-area="Reports" asp-controller="HrOperations" asp-action="WorkflowSla">Workflow Bottleneck &amp; SLA</a> }
+                                }
+                                @if (hasPayrollOpsReports)
+                                {
+                                    <h6 class="collapse-header">Payroll Operations</h6>
+                                    @if (RPT_PRCST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="MonthlyCostTrend">Monthly Cost Trend</a> }
+                                    @if (RPT_DPTCST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="DepartmentCostBreakdown">Dept. Cost Breakdown</a> }
+                                    @if (RPT_ENCFC != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="EncashmentForecast">Encashment Forecast</a> }
+                                    @if (RPT_DPTTUR != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="DepartmentTurnover">Department Turnover</a> }
                                 }
                             </div>
                         </div>
@@ -937,6 +1031,58 @@
                 method: 'GET',
                 success: function (data) {
                     $("#notification").hide();
+                }
+            });
+        }
+
+        function exportReportGridPdf(gridId, fileName, title) {
+            var grid = document.getElementById(gridId).ej2_instances[0];
+            var targetWidth = 1110;
+            var leafCols = [];
+            function collectLeafCols(cols) {
+                for (var i = 0; i < cols.length; i++) {
+                    if (cols[i].columns && cols[i].columns.length > 0) {
+                        collectLeafCols(cols[i].columns);
+                    } else if (cols[i].visible !== false) {
+                        leafCols.push(cols[i]);
+                    }
+                }
+            }
+            collectLeafCols(grid.columns);
+            var origWidths = [];
+            var totalW = 0;
+            for (var i = 0; i < leafCols.length; i++) {
+                var w = parseFloat(leafCols[i].width) || 100;
+                origWidths.push(leafCols[i].width);
+                totalW += w;
+            }
+            if (totalW > 0) {
+                for (var i = 0; i < leafCols.length; i++) {
+                    var w = parseFloat(leafCols[i].width) || 100;
+                    leafCols[i].width = Math.floor((w / totalW) * targetWidth);
+                }
+            }
+            var restoreHandler = function () {
+                for (var i = 0; i < leafCols.length; i++) {
+                    leafCols[i].width = origWidths[i];
+                }
+                grid.removeEventListener('pdfExportComplete', restoreHandler);
+            };
+            grid.addEventListener('pdfExportComplete', restoreHandler);
+            grid.pdfExport({
+                fileName: fileName,
+                pageOrientation: 'Landscape',
+                pageSize: 'A3',
+                theme: { header: { fontSize: 8.5 }, record: { fontSize: 8 } },
+                header: {
+                    fromTop: 0,
+                    height: 50,
+                    contents: [{
+                        type: 'Text',
+                        value: title,
+                        position: { x: 0, y: 15 },
+                        style: { textBrushColor: '#550033', fontSize: 16, bold: true }
+                    }]
                 }
             });
         }

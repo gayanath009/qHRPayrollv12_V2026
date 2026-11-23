@@ -204,14 +204,18 @@
 
 <!--Command Buttons-->
 <script type="text/x-jsrender" id="_edit">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="editFunc(${GrpId})">
-        <span class="glyphicon glyphicon-pencil"></span>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-edit" onclick="editFunc(${GrpId}); return false;" title="Edit">
+            <i class="fas fa-pen"></i>
+        </a>
+    </div>
 </script>
 <script type="text/x-jsrender" id="_delete">
-    <a href="#" class="btn btn-sm btn-primary btn-block" onclick="deleteFunc(${GrpId})">
-        <span class="glyphicon glyphicon-trash"></span>
-    </a>
+    <div class="org-actions-wrapper">
+        <a href="#" class="org-action-btn org-action-delete" onclick="deleteFunc(${GrpId}); return false;" title="Delete">
+            <i class="fas fa-trash-alt"></i>
+        </a>
+    </div>
 </script>
 <!--Command Buttons-->
 <!--Open Partial Views-->

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.EntityFrameworkCore;
 using qHRM.Areas.Payroll.Models;
 using qHRM.Areas.SysAdmin.Data;
@@ -3479,7 +3479,6 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
             DateTime cutoffOneYearAgo = cutoffEnd.AddYears(-1);
 
             var savedEmpIds = _hrmContext.HrPrStaffLvTktEncash
-                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
                 .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .Select(x => x.EmpSysId)
                 .ToList();
@@ -3533,7 +3532,6 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 .ToDictionary(x => x.CntryId, x => x.Price);
 
             var savedRecords = _hrmContext.HrPrStaffLvTktEncash
-                .Where(x => x.PrcYear == year && x.PrcMonth == month && x.RecStat == 1)
                 .Where(x => x.PrcYear == year && x.PrcMonth == month && (x.RecStat == 1 || x.RecStat == 2))
                 .ToDictionary(x => x.EmpSysId, x => x);
 
@@ -3583,11 +3581,17 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     vacReturnDate = vr;
                 }
 
+                bool isFirstYear = emp.JoinedDate.AddYears(2) > cutoffEnd;
+
                 int applicableDays = 0;
                 if (saved != null)
                 {
                     applicableDays = saved.ApplicableDays;
                     vacReturnDate = saved.VacationReturnDate;
+                }
+                else if (isFirstYear)
+                {
+                    applicableDays = 0;
                 }
                 else if (vacReturnDate.HasValue)
                 {
@@ -3599,19 +3603,19 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     applicableDays = 365;
                 }
 
-                decimal eligibleDays = saved != null ? saved.EligibleLeaveDays : Math.Round((decimal)applicableDays * 30.0m / 365.0m, 5);
+                decimal eligibleDays = saved != null ? saved.EligibleLeaveDays : (isFirstYear ? 0m : Math.Round((decimal)applicableDays * 30.0m / 365.0m, 5));
 
                 decimal paidLeave = 0;
                 if (saved != null)
                 {
                     paidLeave = saved.PaidLeaveDays;
                 }
-                else if (leaveBooked.TryGetValue(emp.EmpSysId, out var pb))
+                else if (!isFirstYear && leaveBooked.TryGetValue(emp.EmpSysId, out var pb))
                 {
                     paidLeave = pb;
                 }
 
-                int netLeaveDays = saved != null ? saved.NetLeaveDays : Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero));
+                int netLeaveDays = saved != null ? saved.NetLeaveDays : (isFirstYear ? 0 : Math.Max(0, (int)Math.Round(eligibleDays, MidpointRounding.AwayFromZero) - (int)Math.Round(paidLeave, MidpointRounding.AwayFromZero)));
 
                 decimal monthlySalary;
                 decimal dailySalary;
@@ -3743,7 +3747,7 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                 {
                     rec.TotalLeaveSalary = Math.Round((rec.MonthlySalary / 30.0m) * rec.NetLeaveDays, 0, MidpointRounding.AwayFromZero);
                 }
-                rec.AirTicketValue = Math.Round(rec.TktCount * rec.TktPrice, 0, MidpointRounding.AwayFromZero);
+                rec.AirTicketValue = Math.Round(rec.AirTicketValue, 0, MidpointRounding.AwayFromZero);
                 rec.TotalSettlement = Math.Round(rec.TotalLeaveSalary + rec.AirTicketValue, 0, MidpointRounding.AwayFromZero);
 
                 if (existing != null)
@@ -3772,7 +3776,6 @@ ORDER BY ISNULL(e.Srt_Ord, 9999), e.Emp_Id";
                     rec.PrcStat = 2; // Confirmed
                     rec.CrtBy = userId;
                     rec.CrtDateTime = DateTime.Now;
-                    rec.RecStat = 1;
                     rec.RecStat = rec.RecStat == 0 ? (short)1 : rec.RecStat;
                     _hrmContext.HrPrStaffLvTktEncash.Add(rec);
                 }

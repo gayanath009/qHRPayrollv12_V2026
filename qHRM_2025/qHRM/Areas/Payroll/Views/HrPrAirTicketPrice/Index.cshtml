@@ -76,13 +76,19 @@
 </div>
 
 <script id="_actionTemplate" type="text/x-template">
-    <div>
-        <button class="btn btn-sm btn-outline-info" onclick="editFunc(${TktPriceId});" title="Edit">
-            <i class="fas fa-pen"></i>
-        </button>
-        <button class="btn btn-sm btn-outline-danger ml-1" onclick="deleteFunc(${TktPriceId});" title="Delete">
-            <i class="fas fa-trash"></i>
-        </button>
+    <div class="org-actions-wrapper">
+        @if (ViewBag.RecEdit == null || ViewBag.RecEdit == true)
+        {
+            <button type="button" class="org-action-btn org-action-edit" onclick="editFunc(${TktPriceId});" title="Edit">
+                <i class="fas fa-pen"></i>
+            </button>
+        }
+        @if (ViewBag.RecDelete == null || ViewBag.RecDelete == true)
+        {
+            <button type="button" class="org-action-btn org-action-delete" onclick="deleteFunc(${TktPriceId});" title="Delete">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        }
     </div>
 </script>
 

@@ -1,0 +1,200 @@
+@model AttendanceAuditReportVm
+@{
+    ViewData["Title"] = "Attendance & Regularization Audit";
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-orange { border-top: 3px solid #e67e22; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-user-clock mr-2"></i>Attendance &amp; Regularization Audit</div>
+            <small class="text-muted">HR Operations &bull; Audit regularization requests, reason categories, and approval statuses</small>
+        </div>
+        <form id="attnAuditFilterForm" method="get" class="form-inline flex-wrap" style="gap: 0.35rem;">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="shiftAuditCycle(-1)">
+                <i class="fas fa-chevron-left"></i> Prev Cycle
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" style="color:#550033; border-color:#550033;" onclick="resetAuditToCurrentCycle()">
+                Current Cycle
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary mr-2" onclick="shiftAuditCycle(1)">
+                Next Cycle <i class="fas fa-chevron-right"></i>
+            </button>
+            <input type="date" id="attnFromDate" name="fromDate" value="@Model.FromDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            <input type="date" id="attnToDate" name="toDate" value="@Model.ToDate.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            <select name="staffCat" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Total Requests</div>
+                <div id="kpiTotalReq" class="hr-kpi-val">@Model.TotalRequests</div>
+                <div class="hr-kpi-sub">Selected cycle requests</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Approved</div>
+                <div id="kpiApprovedReq" class="hr-kpi-val">@Model.ApprovedCount</div>
+                <div class="hr-kpi-sub">Approved regularizations</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Pending</div>
+                <div id="kpiPendingReq" class="hr-kpi-val">@Model.PendingCount</div>
+                <div class="hr-kpi-sub">Awaiting approval</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-orange">
+                <div class="hr-kpi-lbl">Approved Reg. Hours</div>
+                <div id="kpiRegHours" class="hr-kpi-val">@Model.TotalRegularizedHours.ToString("N2")</div>
+                <div class="hr-kpi-sub">Total regularized hours</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3">
+        <div class="card-header py-2 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Requests by Reason Category <small class="text-muted font-weight-normal">(Click a bar to filter grid)</small></h6>
+            <button id="btnClearAttnFilter" type="button" class="btn btn-xs btn-outline-secondary" style="display:none;" onclick="clearAttnFilter()"><i class="fas fa-times mr-1"></i>Show All</button>
+        </div>
+        <div class="card-body">
+            <ejs-chart id="attnAuditChart" height="260px" pointClick="onAttnChartPointClick" style="cursor:pointer;">
+                <e-chart-primaryxaxis valueType="Category"></e-chart-primaryxaxis>
+                <e-chart-tooltipsettings enable="true"></e-chart-tooltipsettings>
+                <e-series-collection>
+                    <e-series dataSource="Model.ReasonChartData" xName="ReasonCategory" yName="Approved" name="Approved" type="StackingColumn" fill="#BDECD6"></e-series>
+                    <e-series dataSource="Model.ReasonChartData" xName="ReasonCategory" yName="Pending" name="Pending" type="StackingColumn" fill="#FDE6A8"></e-series>
+                    <e-series dataSource="Model.ReasonChartData" xName="ReasonCategory" yName="Rejected" name="Rejected/Cancelled" type="StackingColumn" fill="#F8C4C0"></e-series>
+                </e-series-collection>
+            </ejs-chart>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 id="attnGridTitle" class="m-0 font-weight-bold" style="color:#550033 !important;">Regularization Audit Log (@Model.Items.Count)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="attnAuditGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowPdfExport="true" queryCellInfo="onAttnQueryCellInfo" toolbarClick="onAttnToolbarClick" toolbar="@(new List<string>() { "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="ReqNo" headerText="Req No" width="140"></e-grid-column>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="95"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="170"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="145"></e-grid-column>
+                    <e-grid-column field="AttendanceDateStr" headerText="Date" width="115"></e-grid-column>
+                    <e-grid-column field="ActualInOut" headerText="Actual In/Out" width="120"></e-grid-column>
+                    <e-grid-column field="RequestedInOut" headerText="Requested In/Out" width="130"></e-grid-column>
+                    <e-grid-column field="TotalHoursStr" headerText="Hours &amp; Mins" textAlign="Right" width="105"></e-grid-column>
+                    <e-grid-column field="ReasonCategory" headerText="Reason" width="155"></e-grid-column>
+                    <e-grid-column field="WfStatus" headerText="Status" width="120"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    var allAttnItems = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Items));
+    var selectedReason = null;
+
+    function fmtYMD(d) {
+        var y = d.getFullYear();
+        var m = ('0' + (d.getMonth() + 1)).slice(-2);
+        var day = ('0' + d.getDate()).slice(-2);
+        return y + '-' + m + '-' + day;
+    }
+
+    function shiftAuditCycle(delta) {
+        var toVal = document.getElementById('attnToDate').value;
+        var base = toVal ? new Date(toVal + 'T00:00:00') : new Date();
+        var targetEnd = new Date(base.getFullYear(), base.getMonth() + delta, 20);
+        var targetStart = new Date(targetEnd.getFullYear(), targetEnd.getMonth() - 1, 21);
+        document.getElementById('attnFromDate').value = fmtYMD(targetStart);
+        document.getElementById('attnToDate').value = fmtYMD(targetEnd);
+        document.getElementById('attnAuditFilterForm').submit();
+    }
+
+    function resetAuditToCurrentCycle() {
+        var today = new Date();
+        var targetEnd = today.getDate() >= 21
+            ? new Date(today.getFullYear(), today.getMonth() + 1, 20)
+            : new Date(today.getFullYear(), today.getMonth(), 20);
+        var targetStart = new Date(targetEnd.getFullYear(), targetEnd.getMonth() - 1, 21);
+        document.getElementById('attnFromDate').value = fmtYMD(targetStart);
+        document.getElementById('attnToDate').value = fmtYMD(targetEnd);
+        document.getElementById('attnAuditFilterForm').submit();
+    }
+
+    function onAttnToolbarClick(args) {
+        if (args.item.id === 'attnAuditGrid_pdfexport') {
+            exportReportGridPdf('attnAuditGrid', 'Attendance_And_Regularization_Audit.pdf', 'Attendance & Regularization Audit Report');
+        }
+    }
+
+    function onAttnQueryCellInfo(args) {
+        if (args.column.field === 'WfStatus' && args.data) {
+            var st = args.data.WfStatus;
+            var bg = st === 'Approved' ? '#BDECD6'
+                : (st === 'Pending' || st === 'PendingManager' || st === 'PendingHR') ? '#FDE6A8'
+                : '#F8C4C0';
+            args.cell.style.backgroundColor = bg;
+            args.cell.style.color = '#1e293b';
+            args.cell.style.fontWeight = '600';
+        }
+    }
+
+    function onAttnChartPointClick(args) {
+        if (!args || !args.point || !args.point.x) return;
+        var clicked = args.point.x;
+        if (selectedReason === clicked) { clearAttnFilter(); return; }
+        selectedReason = clicked;
+        applyAttnSelection(allAttnItems.filter(function (x) { return x.ReasonCategory === clicked; }), clicked);
+    }
+
+    function clearAttnFilter() {
+        selectedReason = null;
+        applyAttnSelection(allAttnItems, null);
+    }
+
+    function applyAttnSelection(rows, reasonLabel) {
+        var grid = document.getElementById('attnAuditGrid').ej2_instances[0];
+        grid.dataSource = rows;
+        grid.refresh();
+
+        var approved = 0, pending = 0, hours = 0;
+        for (var i = 0; i < rows.length; i++) {
+            var st = rows[i].WfStatus;
+            if (st === 'Approved') { approved++; hours += Number(rows[i].TotalHours || 0); }
+            else if (st === 'Pending' || st === 'PendingManager' || st === 'PendingHR') pending++;
+        }
+        document.getElementById('kpiTotalReq').innerText = rows.length;
+        document.getElementById('kpiApprovedReq').innerText = approved;
+        document.getElementById('kpiPendingReq').innerText = pending;
+        document.getElementById('kpiRegHours').innerText = hours.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        document.getElementById('attnGridTitle').innerText = reasonLabel ? ('Regularization Audit Log - ' + reasonLabel + ' (' + rows.length + ')') : ('Regularization Audit Log (' + rows.length + ')');
+        document.getElementById('btnClearAttnFilter').style.display = reasonLabel ? 'inline-block' : 'none';
+    }
+</script>
