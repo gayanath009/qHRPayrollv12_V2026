@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using qHRM.Areas.Employee.Data;
@@ -42,6 +42,10 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_SPR_DTL") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                if (id <= 0)
+                    id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", id);
                 ViewBag.DataSource = _employeeContext.GetSponsorsByEmpSysId(id).ToList();
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));

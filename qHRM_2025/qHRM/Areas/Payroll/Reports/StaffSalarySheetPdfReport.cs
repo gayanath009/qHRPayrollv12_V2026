@@ -239,6 +239,7 @@ namespace qHRM.Areas.Payroll.Reports
                 }
 
                 // Data Rows & Totals Accumulators
+                decimal totAbsent = 0;
                 decimal totBasic = 0;
                 decimal totHousing = 0;
                 decimal totTrans = 0;
@@ -283,6 +284,7 @@ namespace qHRM.Areas.Payroll.Reports
                     decimal cash = emp.PmtMod == 0 ? (gross - totalDeduct) : (emp.CshAmt > 0 ? Math.Round(emp.CshAmt, 0, MidpointRounding.AwayFromZero) : 0);
 
                     // Accumulate totals
+                    totAbsent += emp.AbFct;
                     totBasic += basic;
                     totHousing += housing;
                     totTrans += trans;
@@ -348,8 +350,8 @@ namespace qHRM.Areas.Payroll.Reports
                 }
                 totRow.Cells[0].Value = "";
                 totRow.Cells[1].Value = "";
-                totRow.Cells[2].Value = "";
-                totRow.Cells[3].Value = "";
+                totRow.Cells[2].Value = "Total"; totRow.Cells[2].StringFormat = fmtLeft;
+                totRow.Cells[3].Value = totAbsent > 0 ? (totAbsent % 1 == 0 ? totAbsent.ToString("0") : totAbsent.ToString("0.##")) : "0"; totRow.Cells[3].StringFormat = fmtCenterCell;
                 totRow.Cells[4].Value = FormatNumber(totBasic);
                 totRow.Cells[5].Value = FormatNumber(totHousing);
                 totRow.Cells[6].Value = FormatNumber(totTrans);
@@ -387,8 +389,8 @@ namespace qHRM.Areas.Payroll.Reports
                 float boxX = tableTotalWidth - boxW;
                 float rowH = 14f;
 
-                // Ensure enough space for summary box (3 rows) + words (~20pt) + margins
-                if (curY + (rowH * 3) + 30f > lastPage.GetClientSize().Height)
+                // Ensure enough space for summary box (3 rows) + words (~28pt) + signatures (~80pt)
+                if (curY + (rowH * 3) + 108f > lastPage.GetClientSize().Height)
                 {
                     lastPage = document.Pages.Add();
                     g = lastPage.Graphics;
@@ -430,6 +432,37 @@ namespace qHRM.Areas.Payroll.Reports
                     amountInWords = $"Qatari Riyal {FormatNumber(grandTotalNet)}";
                 }
                 g.DrawString(amountInWords, fontWords, PdfBrushes.Black, new RectangleF(0, curY, printableWidth, 16f), formatCenter);
+
+                // Signatories Section (Centered across page and towards the end of the document)
+                float wordsBottom = curY + 16f;
+                float clientH = lastPage.GetClientSize().Height;
+                float sigY = Math.Max(wordsBottom + 55f, Math.Min(wordsBottom + 110f, clientH - 28f));
+
+                float sigColWidth = 176f;
+                float sigGap = 18f;
+                float sigLineWidth = 150f;
+                float totalSigWidth = (4f * sigColWidth) + (3f * sigGap);
+                float startSigX = (printableWidth - totalSigWidth) / 2f;
+
+                string[] sigTitles = new[]
+                {
+                    "HR Manager",
+                    "Head of Finance",
+                    "Chief Executive Officer",
+                    "Managing Director/Authorized Signatory"
+                };
+                PdfFont fontSig = new PdfStandardFont(PdfFontFamily.Helvetica, 8.0f, PdfFontStyle.Bold | PdfFontStyle.Underline);
+                PdfPen penDash = new PdfPen(new PdfColor(0, 0, 0), 0.85f) { DashStyle = PdfDashStyle.Dash };
+
+                for (int i = 0; i < sigTitles.Length; i++)
+                {
+                    float colX = startSigX + i * (sigColWidth + sigGap);
+                    float lineX = colX + (sigColWidth - sigLineWidth) / 2f;
+
+                    g.DrawLine(penDash, lineX, sigY, lineX + sigLineWidth, sigY);
+                    RectangleF sigTextRect = new RectangleF(colX - 8f, sigY + 5f, sigColWidth + 16f, 18f);
+                    g.DrawString(sigTitles[i], fontSig, PdfBrushes.Black, sigTextRect, formatCenter);
+                }
 
                 byte[] bytes;
                 using (MemoryStream ms = new MemoryStream())

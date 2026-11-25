@@ -272,6 +272,25 @@ namespace qHRM.Areas.SysAdmin.Data
             public string GpName { get; set; }
         }
 
+        public List<SysDshbrd> GetDashboards()
+        {
+            try
+            {
+                return _hrmContext.SysDshbrd
+                    .AsNoTracking()
+                    .Where(d => d.RecStat == 1)
+                    .ToList()
+                    .GroupBy(d => (d.DshbrdName ?? "").Trim(), StringComparer.OrdinalIgnoreCase)
+                    .Select(g => g.OrderBy(d => d.DshbrdId).First())
+                    .OrderBy(d => d.DshbrdId)
+                    .ToList();
+            }
+            catch
+            {
+                return new List<SysDshbrd>();
+            }
+        }
+
         public List<AdmUserGroup> GetAdmUserGroups(string feild, int grpId)
         {
             try

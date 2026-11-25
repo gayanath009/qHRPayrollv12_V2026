@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using qHRM.Areas.Payroll.Data;
 using qHRM.Areas.Reports.Models;
 using qHRM.Models;
 
@@ -17,10 +18,12 @@ namespace qHRM.Areas.Reports.Controllers
     public class PayrollOperationsController : Controller
     {
         private readonly qHRMasterContext _context;
+        private readonly PayrollContext _payrollContext;
 
-        public PayrollOperationsController(qHRMasterContext context)
+        public PayrollOperationsController(qHRMasterContext context, PayrollContext payrollContext)
         {
             _context = context;
+            _payrollContext = payrollContext;
         }
 
         private async Task<Dictionary<int, (string DeptName, string StaffCat)>> GetJobInfoMapAsync()
@@ -541,6 +544,184 @@ namespace qHRM.Areas.Reports.Controllers
                 TurnoverRatePct = avgTotHead > 0 ? Math.Round((totExits / avgTotHead) * 100m, 1) : 0m,
                 DeptSummaries = deptSummaries,
                 ExitDetails = exitDetails.OrderByDescending(x => x.ExitDate).ToList()
+            };
+
+            return View(vm);
+        }
+
+        // a. Payroll Process History Report
+        public async Task<IActionResult> PayrollProcessHist(int? year, int? month, string staffCat = "ALL")
+        {
+            if (!HasPriv("RPT_PRHIST")) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+            string cat = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
+            var allHdrs = await _context.HrPrSlryPrcHdr
+                .OrderByDescending(h => h.EftYear)
+                .ThenByDescending(h => h.EftMonth)
+                .ToListAsync();
+
+            var latestHdr = allHdrs.FirstOrDefault();
+            int y = year ?? latestHdr?.EftYear ?? DateTime.Now.Year;
+            int m = month ?? latestHdr?.EftMonth ?? DateTime.Now.Month;
+
+            var hdr = allHdrs.FirstOrDefault(h => h.EftYear == y && h.EftMonth == m);
+            var availableYears = allHdrs.Select(h => h.EftYear).Distinct().OrderByDescending(x => x).ToList();
+            if (!availableYears.Contains(y)) availableYears.Add(y);
+            availableYears = availableYears.OrderByDescending(x => x).ToList();
+
+            string statusText = "Not Processed";
+            if (hdr != null)
+            {
+                if (!string.IsNullOrWhiteSpace(hdr.WfStat))
+                    statusText = hdr.WfStat;
+                else
+                    statusText = hdr.PrcStat == 3 ? "Completed" : (hdr.PrcStat == 2 ? "Verified" : "Draft");
+            }
+
+            var items = new List<PayrollProcessHistoryItemVm>();
+            if (hdr != null)
+            {
+                int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+                if (entId <= 0) entId = 1;
+
+                var salDtl = _payrollContext.GetSalaryDtl(entId, "_passive", hdr.PrcId, m, y)
+                    ?.Where(x => x != null && x.Emp_Sys_Id > 0)
+                    .ToList();
+
+                if (salDtl == null || !salDtl.Any())
+                {
+                    salDtl = _payrollContext.GetSalaryDtlDirect(entId, y, m)
+                        ?.Where(x => x != null && x.Emp_Sys_Id > 0)
+                        .ToList();
+                }
+
+                if (salDtl != null)
+                {
+                    foreach (var r in salDtl)
+                    {
+                        string dept = string.IsNullOrWhiteSpace(r.Department) ? "General" : r.Department;
+                        string empCat = ResolveStaffCategory(r.WrktypId, dept);
+                        if (cat != "ALL" && !string.Equals(cat, empCat, StringComparison.OrdinalIgnoreCase)) continue;
+
+                        decimal allowances = r.GrossSalary - r.BasicSalary - r.Overtime;
+                        items.Add(new PayrollProcessHistoryItemVm
+                        {
+                            EmpId = r.Emp_Id,
+                            FullName = r.Full_Name,
+                            Department = dept,
+                            StaffCategory = empCat,
+                            Basic = Math.Round(r.BasicSalary, 2),
+                            Allowances = Math.Round(allowances, 2),
+                            Overtime = Math.Round(r.Overtime, 2),
+                            GrossSalary = Math.Round(r.GrossSalary, 2),
+                            Deductions = Math.Round(r.TotalDeductions, 2),
+                            NetSalary = Math.Round(r.NtSlry, 2)
+                        });
+                    }
+                }
+            }
+
+            items = items.OrderBy(x => x.Department).ThenBy(x => x.FullName).ToList();
+
+            var vm = new PayrollProcessHistoryReportVm
+            {
+                Year = y,
+                Month = m,
+                StaffCat = cat,
+                ProcessStatus = statusText,
+                EmployeeCount = items.Count,
+                TotalBasic = items.Sum(x => x.Basic),
+                TotalAllowances = items.Sum(x => x.Allowances),
+                TotalOvertime = items.Sum(x => x.Overtime),
+                TotalGross = items.Sum(x => x.GrossSalary),
+                TotalDeductions = items.Sum(x => x.Deductions),
+                TotalNetPayout = items.Sum(x => x.NetSalary),
+                AvailableYears = availableYears,
+                Items = items
+            };
+
+            return View(vm);
+        }
+
+        // b. Leave Encashment History Report
+        public async Task<IActionResult> EncashmentHistory(int? year, int? month, string staffCat = "ALL")
+        {
+            if (!HasPriv("RPT_ENCHST")) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+            string cat = string.IsNullOrWhiteSpace(staffCat) ? "ALL" : staffCat.ToUpper();
+            var allHdrs = await _context.HrPrStaffLvTktEncashHdr
+                .OrderByDescending(h => h.PrcYear)
+                .ThenByDescending(h => h.PrcMonth)
+                .ToListAsync();
+
+            var latestHdr = allHdrs.FirstOrDefault();
+            int y = year ?? latestHdr?.PrcYear ?? DateTime.Now.Year;
+            int m = month ?? latestHdr?.PrcMonth ?? DateTime.Now.Month;
+
+            var hdr = allHdrs.FirstOrDefault(h => h.PrcYear == y && h.PrcMonth == m);
+            var availableYears = allHdrs.Select(h => h.PrcYear).Distinct().OrderByDescending(x => x).ToList();
+            if (!availableYears.Contains(y)) availableYears.Add(y);
+            availableYears = availableYears.OrderByDescending(x => x).ToList();
+
+            string statusText = "Not Processed";
+            if (hdr != null)
+            {
+                statusText = hdr.PrcStat == 3 ? "Approved (Completed)" : (hdr.WfStat ?? "Verified");
+            }
+
+            var jobMap = await GetJobInfoMapAsync();
+            var emps = await _context.HrEmpGenInfo
+                .Select(e => new { e.EmpSysId, e.EmpId, e.FirstName, e.MdlName, e.LastName, e.WrktypId })
+                .ToDictionaryAsync(e => e.EmpSysId);
+
+            var rawRows = await _context.HrPrStaffLvTktEncash
+                .Where(e => e.PrcYear == y && e.PrcMonth == m && e.RecStat == 1)
+                .OrderBy(e => e.StaffCategory)
+                .ThenBy(e => e.JoinedDate)
+                .ToListAsync();
+
+            var items = new List<EncashmentHistoryItemVm>();
+            foreach (var r in rawRows)
+            {
+                if (!emps.TryGetValue(r.EmpSysId, out var emp)) continue;
+                string dept = jobMap.TryGetValue(r.EmpSysId, out var jb) ? jb.DeptName : "General";
+                string empCat = !string.IsNullOrWhiteSpace(r.StaffCategory) ? r.StaffCategory.ToUpper() : ResolveStaffCategory(emp.WrktypId, dept);
+                if (cat != "ALL" && !string.Equals(cat, empCat, StringComparison.OrdinalIgnoreCase)) continue;
+
+                string fullName = string.Join(" ", new[] { emp.FirstName, emp.MdlName, emp.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)));
+                items.Add(new EncashmentHistoryItemVm
+                {
+                    EmpId = emp.EmpId,
+                    FullName = fullName,
+                    Department = dept,
+                    StaffCategory = empCat,
+                    JoinedDate = r.JoinedDate,
+                    NextResetDate = r.NextResetDate,
+                    ApplicableDays = r.ApplicableDays,
+                    EligibleLeaveDays = r.EligibleLeaveDays,
+                    PaidLeaveDays = r.PaidLeaveDays,
+                    NetLeaveDays = r.NetLeaveDays,
+                    MonthlySalary = r.MonthlySalary,
+                    TotalLeaveSalary = r.TotalLeaveSalary,
+                    TktCount = r.TktCount,
+                    AirTicketValue = r.AirTicketValue,
+                    TotalSettlement = r.TotalSettlement,
+                    Remarks = r.Remarks ?? "-"
+                });
+            }
+
+            var vm = new EncashmentHistoryReportVm
+            {
+                Year = y,
+                Month = m,
+                StaffCat = cat,
+                WorkflowStatus = statusText,
+                EmployeeCount = items.Count,
+                TotalLeaveSalary = items.Sum(x => x.TotalLeaveSalary),
+                TotalAirTicket = items.Sum(x => x.AirTicketValue),
+                TotalSettlement = items.Sum(x => x.TotalSettlement),
+                AvailableYears = availableYears,
+                Items = items
             };
 
             return View(vm);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -20,8 +20,8 @@ namespace qHRM.Areas.Employee.Models
         [Display(Name = "Sort Order")]
         public int EmpSrtOrd { get; set; }
 
-        [Display(Name = "New Sort Order, Note, Maximum 6 Digits only")]
-        [Range(0,999999)]
+        [Display(Name = "New Sort Order, Note, Maximum 7 Digits only")]
+        [Range(0, 9999999)]
         public int ex_EmpSrtOrd { get; set; }
 
         public int DeptId { get; set; }

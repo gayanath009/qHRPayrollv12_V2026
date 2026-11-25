@@ -162,7 +162,7 @@ namespace QCSEF.Controllers
                 if (genInfo.HlthCrdExpDate == null)
                     genInfo.HlthCrdExpDate = Convert.ToDateTime("01/01/1900");
 
-                genInfo.SrtOrd = 1000;
+                genInfo.SrtOrd = _employeeContext.GetNextSrtOrdForNewEmployee();
 
                 genInfo.AdId = genInfo.EmpId;
                 genInfo.Password = genInfo.EmpId;

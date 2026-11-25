@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using qHRM.Extensions.Alerts;
@@ -28,7 +28,7 @@ namespace qHRM.Areas.SysAdmin.Controllers
                 //No Access Granted
                 if (HttpContext.Session.GetString("SY_ADM") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-                ViewBag.DataSource = _sysAdminContext.GetAdmUserGroups("_all", 0).ToList();
+                ViewBag.DataSource = _sysAdminContext.GetAdmUserGroups("_all", 0).OrderBy(x => x.Name).ToList();
                 return View();
             }
             catch (Exception ex)
@@ -59,6 +59,8 @@ namespace qHRM.Areas.SysAdmin.Controllers
         {
             try
             {
+                if (usrGrp.DshbrdId <= 0) usrGrp.DshbrdId = 1;
+                ViewBag.Dashboards = _sysAdminContext.GetDashboards();
                 return PartialView("_UserGroup_Create", usrGrp);
             }
             catch (Exception ex)
@@ -77,7 +79,10 @@ namespace qHRM.Areas.SysAdmin.Controllers
             {
                 usrGrp.RecStat = 1;
                 usrGrp.CrtDateTime = DateTime.Today;
-                usrGrp.DshbrdId = 1;
+                if (usrGrp.DshbrdId <= 0)
+                {
+                    usrGrp.DshbrdId = 1;
+                }
                 var _result = _sysAdminContext.InsertAdmUserGroup(usrGrp);
                 if (_result == 1)
                     return RedirectToAction("Index", "AdmUserGroup").WithSuccess("QCS", "Record Added Successfully");
@@ -98,6 +103,7 @@ namespace qHRM.Areas.SysAdmin.Controllers
             {
                 var oUsrGrp = _sysAdminContext.GetAdmUserGroups("_all", 0).Where(x => x.GrpId == id).FirstOrDefault();
                 oUsrGrp.exName = oUsrGrp.Name;
+                ViewBag.Dashboards = _sysAdminContext.GetDashboards();
                 return PartialView("_UserGroup_Edit", oUsrGrp);
             }
             catch (Exception ex)

@@ -1,4 +1,4 @@
-﻿@model qHRM.Areas.SysAdmin.Models.AdmUserGroup
+@model qHRM.Areas.SysAdmin.Models.AdmUserGroup
 <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
 @using (Html.BeginForm("Create", "AdmUserGroup"))
@@ -18,6 +18,12 @@
             <label asp-for="Desc" class="control-label"></label>
             <input asp-for="Desc" class="form-control form-control-sm" />
             <span asp-validation-for="Desc" class="text-danger"></span>
+        </div>
+        <div class="form-group">
+            <label class="control-label">Dashboard</label>
+            <select asp-for="DshbrdId" class="form-control form-control-sm"
+                    asp-items="@(new SelectList(ViewBag.Dashboards ?? new List<qHRM.Areas.SysAdmin.Models.SysDshbrd>(), "DshbrdId", "DshbrdName", Model.DshbrdId))">
+            </select>
         </div>
         <div class="form-check">
             <input type="checkbox" asp-for="ShwAlEmp" class="form-check-input" id="chkShwAlEmp">

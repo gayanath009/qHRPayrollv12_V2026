@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,6 +49,11 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_DOC_SMR") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+                if (Id <= 0)
+                    Id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", Id);
 
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
@@ -142,7 +147,7 @@ namespace qHRM.Areas.Employee.Controllers
                 }
                 catch (Exception)
                 {
-                    return RedirectToAction("Index", "HrEmpDependent", new { @Id = _empSysId }).WithWarning("QCS", "Adding Record got failed");
+                    return RedirectToAction("Index", "HrEmpDocument", new { @Id = _empSysId }).WithWarning("QCS", "Adding Record got failed");
                 }
             }
             catch
@@ -208,11 +213,15 @@ namespace qHRM.Areas.Employee.Controllers
                             //--Delete Existing File-----------------------------------------------------------------------------//
                             try
                             {
-                                var exfilename = _hostingEnv.WebRootPath + @"\attach\empDocs\" + $@"\{hrEmp.ex_DocName}";
-                                System.IO.File.Delete(exfilename);
+                                if (!string.IsNullOrEmpty(hrEmp.ex_DocName))
+                                {
+                                    var exfilename = Path.Combine(_hostingEnv.WebRootPath, "attach", "empDocs", hrEmp.ex_DocName);
+                                    if (System.IO.File.Exists(exfilename))
+                                        System.IO.File.Delete(exfilename);
+                                }
                             }
                             catch
-                            { throw; }
+                            { }
                             
                         }
                     }

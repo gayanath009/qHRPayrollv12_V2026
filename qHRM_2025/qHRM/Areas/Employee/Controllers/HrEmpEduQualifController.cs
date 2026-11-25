@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,6 +45,10 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_EDU_CLF") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                if (Id <= 0)
+                    Id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", Id);
                 var list = _employeeContext.GetQualficationEmpSysId(Id).ToList();
                 ViewBag.DataSource = list;
 

@@ -136,16 +136,18 @@ namespace qHRM.Areas.Attendance.Data
         // =====================================================================
         public async Task<(bool CanViewAll, bool CanViewSubordinates, List<int> AllowedEmpSysIds)> GetAccessRightsAsync(int currentEmpSysId, int userGrpId)
         {
-            // Administrator / Top Management (GrpId: 1, 2, 7, etc.) or groups configured with Show All Employees (ShwAlEmp)
+            // Administrator / Top Management (GrpId: 1, 2, 7, etc.) or non-BU-Head groups configured with Show All Employees (ShwAlEmp)
             var userGroup = await _hrmContext.AdmUserGroup.FirstOrDefaultAsync(g => g.GrpId == userGrpId && g.RecStat == 1);
-            if (userGrpId == 1 || userGrpId == 2 || userGrpId == 7 || (userGroup != null && userGroup.ShwAlEmp))
+            bool isBuHeadGroup = userGrpId == 11 || userGrpId == 14
+                || (userGroup != null && (userGroup.DshbrdId == 2 || (userGroup.Name != null && userGroup.Name.Contains("BU Head"))));
+            if (userGrpId == 1 || userGrpId == 2 || userGrpId == 7 || (userGroup != null && userGroup.ShwAlEmp && !isBuHeadGroup))
             {
                 return (true, true, new List<int>()); // Empty list indicates all
             }
 
-            // BU Heads (GrpId: 11) or users with subordinates
+            // BU Heads (GrpId: 11 / 14) or users with subordinates
             var subordinates = _empContext.GetEmpSbrdnts(currentEmpSysId).ToList();
-            bool isBuHead = (userGrpId == 11) || subordinates.Any();
+            bool isBuHead = isBuHeadGroup || subordinates.Any();
 
             if (isBuHead)
             {

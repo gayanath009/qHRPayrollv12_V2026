@@ -497,7 +497,7 @@ namespace qHRM.Areas.Payroll.Reports
                 float boxX = tableTotalWidth - boxW;
                 float rowH = 14f;
 
-                if (curY + (rowH * 3) + 30f > lastPage.GetClientSize().Height)
+                if (curY + (rowH * 3) + 108f > lastPage.GetClientSize().Height)
                 {
                     lastPage = document.Pages.Add();
                     g = lastPage.Graphics;
@@ -539,6 +539,37 @@ namespace qHRM.Areas.Payroll.Reports
                     amountInWords = $"Qatari Riyal {FormatNumber(grandTotalNet)}";
                 }
                 g.DrawString(amountInWords, fontWords, PdfBrushes.Black, new RectangleF(0, curY, printableWidth, 16f), formatCenter);
+
+                // Signatories Section (Centered across page and towards the end of the document)
+                float wordsBottom = curY + 16f;
+                float clientH = lastPage.GetClientSize().Height;
+                float sigY = Math.Max(wordsBottom + 55f, Math.Min(wordsBottom + 110f, clientH - 28f));
+
+                float sigColWidth = 176f;
+                float sigGap = 18f;
+                float sigLineWidth = 150f;
+                float totalSigWidth = (4f * sigColWidth) + (3f * sigGap);
+                float startSigX = (printableWidth - totalSigWidth) / 2f;
+
+                string[] sigTitles = new[]
+                {
+                    "HR Manager",
+                    "Head of Finance",
+                    "Chief Executive Officer",
+                    "Managing Director/Authorized Signatory"
+                };
+                PdfFont fontSig = new PdfStandardFont(PdfFontFamily.Helvetica, 8.0f, PdfFontStyle.Bold | PdfFontStyle.Underline);
+                PdfPen penDash = new PdfPen(new PdfColor(0, 0, 0), 0.85f) { DashStyle = PdfDashStyle.Dash };
+
+                for (int i = 0; i < sigTitles.Length; i++)
+                {
+                    float colX = startSigX + i * (sigColWidth + sigGap);
+                    float lineX = colX + (sigColWidth - sigLineWidth) / 2f;
+
+                    g.DrawLine(penDash, lineX, sigY, lineX + sigLineWidth, sigY);
+                    RectangleF sigTextRect = new RectangleF(colX - 8f, sigY + 5f, sigColWidth + 16f, 18f);
+                    g.DrawString(sigTitles[i], fontSig, PdfBrushes.Black, sigTextRect, formatCenter);
+                }
 
                 byte[] bytes;
                 using (MemoryStream ms = new MemoryStream())

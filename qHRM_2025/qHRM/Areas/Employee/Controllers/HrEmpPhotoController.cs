@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,7 +25,6 @@ namespace qHRM.Areas.Employee.Controllers
         private readonly DbCommitContext<HrEmpPhoto> _dbCommitContext;
         private IHostingEnvironment _hostingEnv;
         private readonly AdmUserGrpPrvContext _prvContext;
-        private static int PhtId;
 
         
         public HrEmpPhotoController(EmployeeContext employeeContext,
@@ -47,9 +46,13 @@ namespace qHRM.Areas.Employee.Controllers
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_PHT_DTL") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
+                if (Id <= 0)
+                    Id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", Id);
+
                 var list = _employeeContext.GetPhotosByEmpSysId(Id).ToList();
                 ViewBag.DataSource = list;
-                PhtId = list.Count + 1;
 
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
@@ -112,7 +115,9 @@ namespace qHRM.Areas.Employee.Controllers
 
                             _ext = Path.GetExtension(filename);
                             _cusFilename = Guid.NewGuid().ToString() + _ext;
-                            filename = _hostingEnv.WebRootPath + @"\attach\empImages\" + $@"\{_cusFilename}";
+                            var folderPath = Path.Combine(_hostingEnv.WebRootPath, "attach", "empImages");
+                            Directory.CreateDirectory(folderPath);
+                            filename = Path.Combine(folderPath, _cusFilename);
                             using (FileStream fs = System.IO.File.Create(filename))
                             {
                                 file.CopyTo(fs);
@@ -129,8 +134,9 @@ namespace qHRM.Areas.Employee.Controllers
                         return RedirectToAction("Index", "HrEmpPhoto", new { @Id = _empSysId }).WithWarning("QCS", "File failed to upload - " + ex.Message);
                     }
 
+                    var existingPhotos = _employeeContext.GetPhotosByEmpSysId(_empSysId).ToList();
                     hrEmpDpnd.EmpSysId = _empSysId;
-                    hrEmpDpnd.PhtId = PhtId;
+                    hrEmpDpnd.PhtId = existingPhotos.Any() ? existingPhotos.Max(x => x.PhtId) + 1 : 1;
                     hrEmpDpnd.Photo = new byte[] { 0 };
                     int _result = _dbCommitContext.commitChanges(LogEventTypes.INS, hrEmpDpnd, (int)HttpContext.Session.GetInt32("userEmpSysId"));
                     if (_result == 1)
@@ -140,7 +146,7 @@ namespace qHRM.Areas.Employee.Controllers
                 }
                 catch (Exception)
                 {
-                    return RedirectToAction("Index", "HrEmpDependent", new { @Id = _empSysId }).WithWarning("QCS", "Adding Record got failed");
+                    return RedirectToAction("Index", "HrEmpPhoto", new { @Id = _empSysId }).WithWarning("QCS", "Adding Record got failed");
                 }
             }
             catch
@@ -265,9 +271,16 @@ namespace qHRM.Areas.Employee.Controllers
             try
             {
                 var hrEmpPhotoEx = _employeeContext.GetPhotoByPhotoId(hrEmpPhoto.EmpSysId, hrEmpPhoto.PhtId).FirstOrDefault();
+                if (hrEmpPhotoEx == null)
+                    return RedirectToAction("Index", "HrEmpPhoto", new { @Id = _empSysId }).WithWarning("QCS", "Photo record not found.");
+
                 //--Delete Existing File-----------------------------------------------------------------------------//
-                var exfilename = _hostingEnv.WebRootPath + @"\attach\empImages\" + $@"\{hrEmpPhotoEx.PhotoName}";
-                    System.IO.File.Delete(exfilename);
+                if (!string.IsNullOrEmpty(hrEmpPhotoEx.PhotoName))
+                {
+                    var exfilename = Path.Combine(_hostingEnv.WebRootPath, "attach", "empImages", hrEmpPhotoEx.PhotoName);
+                    if (System.IO.File.Exists(exfilename))
+                        System.IO.File.Delete(exfilename);
+                }
 
                 var _result = _employeeContext.DeleteEmpPhoto(hrEmpPhotoEx);
                 if (_result == 1)

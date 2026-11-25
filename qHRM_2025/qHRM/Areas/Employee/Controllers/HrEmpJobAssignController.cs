@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using qHRM.Extensions.Alerts;
@@ -35,15 +35,17 @@ namespace qHRM.Areas.Employee.Controllers
         }
 
         // GET: HrEmpJobAssigns
-        public ActionResult Index(int empSysId)
+        public ActionResult Index(int id, int empSysId)
         {
             try
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_JB_ASG") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-                empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId")); //TODO Replace with getting selected employee from the Session
-                _empSysId = empSysId;
+                int resolvedEmpSysId = id > 0 ? id : (empSysId > 0 ? empSysId : Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId")));
+                if (resolvedEmpSysId > 0)
+                    HttpContext.Session.SetInt32("EmpSysId", resolvedEmpSysId);
+                _empSysId = resolvedEmpSysId;
                 HrEmpGenInfo genInfo = _employeeContext.GetEmpGenInfoByEmpSysId(_empSysId);
                 if (genInfo != null)
                 {

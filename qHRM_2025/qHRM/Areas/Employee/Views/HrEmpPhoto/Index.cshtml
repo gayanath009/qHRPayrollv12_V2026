@@ -35,7 +35,7 @@
                             <e-grid-filterSettings type="CheckBox"></e-grid-filterSettings>
                             <e-grid-pagesettings pageCount=5></e-grid-pagesettings>
                             <e-grid-columns>
-                                <e-grid-column field="" headerText=" " width="75" template="#_avatar"></e-grid-column>
+                                <e-grid-column field="" headerText="Photo" width="110" template="#_avatar"></e-grid-column>
                                 <e-grid-column field="Note" headerText="Note" width="100"></e-grid-column>
                                 <e-grid-column field="CrtDateTime" headerText="Created Date" width="100"></e-grid-column>                                
                                 @if (ViewBag.RecDelete == true)
@@ -106,7 +106,7 @@
 
 <!--Command Buttons-->
 <script type="text/x-jsrender" id="_avatar">
-    <img style="width: 85px; height: 100px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${PhotoName ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+    <img style="width: 85px; height: 100px; object-fit: cover; border-radius: 6px; border: 1px solid #e2e8f0;" src="@Url.Content("~/attach/empImages/${PhotoName}")" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
 </script>
 <script type="text/x-jsrender" id="_download">
     <a href="/attach/depndDocs/${DocName}" target="_blank" class="btn btn-sm btn-outline-primary btn-block">
@@ -169,6 +169,8 @@
     var daterangepicker;
     function loadFormattings() {
         var grid = document.getElementsByClassName('e-grid')[0].ej2_instances[0];
-        this.columns[2].format = { type: 'date', format: 'dd/MM/yyyy' };
+        if (grid && grid.columns && grid.columns[2]) {
+            grid.columns[2].format = { type: 'date', format: 'dd/MM/yyyy' };
+        }
     }
     </script>

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -44,6 +44,11 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_BNK_DTL") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+                if (id <= 0)
+                    id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", id);
 
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
@@ -98,18 +103,18 @@ namespace qHRM.Areas.Employee.Controllers
                         bankAcct.EmpSysId = Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId"));
                         int _result = _dbCommitContext.commitChanges(LogEventTypes.INS, bankAcct, (int)HttpContext.Session.GetInt32("userEmpSysId"));
                         if (_result == 1)
-                            return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Added Successfully");
+                            return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Added Successfully");
                         else                            
-                        return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Adding Record got failed");
+                        return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Adding Record got failed");
                     }
                     catch (Exception)                    {
                         
-                        return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Adding Record got failed");
+                        return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Adding Record got failed");
                     }
                 }
                 else
                 {
-                     return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId });
+                     return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId });
                 }
 
             }
@@ -147,19 +152,19 @@ namespace qHRM.Areas.Employee.Controllers
                         bankAcct.EmpSysId = Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId"));
                         var _result = _dbCommitContext.commitChanges(LogEventTypes.UPD, bankAcct, (int)HttpContext.Session.GetInt32("userEmpSysId"));
                         if (_result == 1)
-                            return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Updated Successfully");
+                            return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Updated Successfully");
                         else
-                            return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Updating Record got failed");
+                            return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Updating Record got failed");
                     }
                     catch (Exception)
                     {
                         
-                        return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Updating Record got failed");
+                        return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Updating Record got failed");
                     }
                 }
                 else
                 {
-                    return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId });
+                    return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId });
                 }
 
             }
@@ -197,14 +202,14 @@ namespace qHRM.Areas.Employee.Controllers
                 bankAcct.EmpSysId = Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId"));                
                 var _result = _dbCommitContext.commitChanges(LogEventTypes.DEL, bankAcct, (int)HttpContext.Session.GetInt32("userEmpSysId"));
                 if (_result == 1)
-                    return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Deleted Successfully");
+                    return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithSuccess("QCS", "Record Deleted Successfully");
                 else
-                    return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Deleting Record got failed");
+                    return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Deleting Record got failed");
                 
             }
             catch 
             {
-                return RedirectToAction("Index", "HrEmpBankAcct", new { @empSysId = bankAcct.EmpSysId }).WithWarning("QCS", "Deleting Record got failed");
+                return RedirectToAction("Index", "HrEmpBankAcct", new { @id = bankAcct.EmpSysId }).WithWarning("QCS", "Deleting Record got failed");
             }
         }
 
@@ -261,7 +266,7 @@ namespace qHRM.Areas.Employee.Controllers
             }
             else
             {
-                var defaultAcct = _employeeContext.GetAccountsByEmpSysId(empSysId).Where(x => x.SlryAcct == true && x.ex_AcctNo != exAcct).ToList();
+                var defaultAcct = _employeeContext.GetAccountsByEmpSysId(empSysId).Where(x => x.SlryAcct == true && x.AcctNo != exAcct).ToList();
                 if (defaultAcct.Count == 0)
                 {
                     return Json(true);

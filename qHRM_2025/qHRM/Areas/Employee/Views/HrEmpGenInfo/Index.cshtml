@@ -310,7 +310,14 @@
 
 <!-- JSRENDER TEMPLATES -->
 <script type="text/x-jsrender" id="_avatar">
-    <img class="img-profile rounded-circle" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e2e8f0;" src="@Url.Content("~/attach/empImages/${PhotoName}")" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+    <img class="img-profile rounded-circle emp-avatar-hover"
+         data-name="${FullName}"
+         data-empid="${EmpId}"
+         onmouseenter="showEmpAvatarPreview(this)"
+         onmouseleave="hideEmpAvatarPreview()"
+         style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e2e8f0; cursor: pointer;"
+         src="@Url.Content("~/attach/empImages/${PhotoName}")"
+         onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
 </script>
 
 <script id="itemTemplate" type="text/x-template">
@@ -342,8 +349,53 @@
     </button>
 </script>
 
+<!-- Avatar Hover Preview Dialog -->
+<div id="empAvatarPreview" style="display:none; position:fixed; z-index:9999; pointer-events:none; background:#ffffff; border:1px solid #e2e8f0; border-radius:12px; padding:10px; box-shadow:0 12px 32px rgba(15,23,42,0.22); text-align:center; width:190px;">
+    <img id="empAvatarPreviewImg" src="" alt="Employee Photo" style="width:168px; height:190px; object-fit:cover; border-radius:8px; border:1px solid #f1f5f9;" />
+    <div id="empAvatarPreviewName" style="margin-top:8px; font-size:12px; font-weight:700; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;"></div>
+    <div id="empAvatarPreviewId" style="font-size:11px; color:#540033; font-weight:600;"></div>
+</div>
+
 <!-- Scripts -->
 <script>
+    function showEmpAvatarPreview(imgEl) {
+        var box = document.getElementById('empAvatarPreview');
+        if (!box) return;
+        if (box.parentNode !== document.body) {
+            document.body.appendChild(box);
+        }
+        var img = document.getElementById('empAvatarPreviewImg');
+        var nameEl = document.getElementById('empAvatarPreviewName');
+        var idEl = document.getElementById('empAvatarPreviewId');
+
+        img.src = imgEl.getAttribute('src') || '';
+        nameEl.textContent = imgEl.getAttribute('data-name') || '';
+        var empId = imgEl.getAttribute('data-empid') || '';
+        idEl.textContent = empId ? ('ID: ' + empId) : '';
+
+        var rect = imgEl.getBoundingClientRect();
+        var top = rect.top - 10;
+        var left = rect.right + 12;
+
+        if (top + 250 > window.innerHeight) {
+            top = Math.max(10, window.innerHeight - 260);
+        }
+        if (left + 200 > window.innerWidth) {
+            left = Math.max(10, rect.left - 202);
+        }
+
+        box.style.top = top + 'px';
+        box.style.left = left + 'px';
+        box.style.display = 'block';
+    }
+
+    function hideEmpAvatarPreview() {
+        var box = document.getElementById('empAvatarPreview');
+        if (box) {
+            box.style.display = 'none';
+        }
+    }
+
     var deleteFunc = function (id) {
         var url = "/Employee/HrEmpGenInfo/HrEmpGenInfo_DeleteGet?id=" + id;
         $("#deleteModalBody").load(url, function () {

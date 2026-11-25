@@ -32,8 +32,38 @@ namespace qHRM.Areas.Payroll.Controllers
 
         public async Task<IActionResult> Index(int? year, int? month)
         {
-            int pYear = year ?? 2026;
-            int pMonth = month ?? 10;
+            int pYear;
+            int pMonth;
+
+            if (!year.HasValue || !month.HasValue)
+            {
+                var pendingHdr = await _hrmContext.HrPrStaffLvTktEncashHdr
+                    .Where(h => h.WfStat == "PendingLevel1" || h.WfStat == "PendingFinal")
+                    .OrderByDescending(h => h.PrcYear)
+                    .ThenByDescending(h => h.PrcMonth)
+                    .FirstOrDefaultAsync();
+
+                var targetHdr = pendingHdr ?? await _hrmContext.HrPrStaffLvTktEncashHdr
+                    .OrderByDescending(h => h.PrcYear)
+                    .ThenByDescending(h => h.PrcMonth)
+                    .FirstOrDefaultAsync();
+
+                if (targetHdr != null)
+                {
+                    pYear = targetHdr.PrcYear;
+                    pMonth = targetHdr.PrcMonth;
+                }
+                else
+                {
+                    pYear = DateTime.Now.Year;
+                    pMonth = DateTime.Now.Month;
+                }
+            }
+            else
+            {
+                pYear = year.Value;
+                pMonth = month.Value;
+            }
             int userEmpSysId = HttpContext.Session.GetInt32("userEmpSysId") ?? 0;
             int userGrpId = HttpContext.Session.GetInt32("userGrpId") ?? 0;
 

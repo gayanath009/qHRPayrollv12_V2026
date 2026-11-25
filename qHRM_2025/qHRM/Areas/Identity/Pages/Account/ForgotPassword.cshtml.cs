@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
@@ -67,6 +67,11 @@ namespace qHRM.Areas.Identity.Pages.Account
             }
 
             var inputRaw = Input.Email?.Trim();
+            if (!string.IsNullOrWhiteSpace(inputRaw) && inputRaw.EndsWith("@qcs-qatar.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(string.Empty, "Password reset is not allowed for @qcs-qatar.com email accounts.");
+                return Page();
+            }
             if (string.IsNullOrWhiteSpace(inputRaw))
             {
                 ModelState.AddModelError(string.Empty, "Please enter your email or username.");
@@ -168,6 +173,11 @@ namespace qHRM.Areas.Identity.Pages.Account
                     var encodedCode = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
 
                     var targetEmail = !string.IsNullOrWhiteSpace(user.Email) ? user.Email : inputRaw;
+                    if (targetEmail.Trim().EndsWith("@qcs-qatar.com", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ModelState.AddModelError(string.Empty, "Password reset is not allowed for @qcs-qatar.com email accounts.");
+                        return Page();
+                    }
 
                     var callbackUrl = Url.Page(
                         "/Account/ResetPassword",
@@ -297,6 +307,8 @@ bool emailSent = false;
                 else
                 {
                     _logger.LogWarning("Password reset requested for unknown user/email: {Input}", inputRaw);
+                    ModelState.AddModelError(string.Empty, "Invalid Email");
+                    return Page();
                 }
             }
             catch (Exception ex)

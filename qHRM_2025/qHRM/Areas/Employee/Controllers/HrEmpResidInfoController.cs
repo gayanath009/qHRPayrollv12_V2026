@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Mvc;
@@ -43,6 +43,10 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_RES_DTL") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+                if (Id <= 0)
+                    Id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", Id);
                 var list = _employeeContext.GetResidanceByEmpSysId(Id).ToList();
                 ViewBag.DataSource = list;
 
@@ -204,16 +208,15 @@ namespace qHRM.Areas.Employee.Controllers
 
         public IActionResult ValidateDateRange([Bind(Prefix = "InDate")] DateTime? stDate, [Bind(Prefix = "OutDate")] DateTime? endDate, [Bind(Prefix = "IsToDate")] bool? isToDate)
         {
-            if (isToDate == null || isToDate == false)
-            {             
-
-                if (endDate > stDate)
-                {
-                    return Json(true);
-                }
+            if (isToDate == true)
+            {
+                return Json(true);
+            }
+            if (endDate > stDate)
+            {
+                return Json(true);
             }
             return Json(false);
-
         }
     }
 }

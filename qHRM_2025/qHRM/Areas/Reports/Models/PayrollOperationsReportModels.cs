@@ -146,4 +146,71 @@ namespace qHRM.Areas.Reports.Models
         public string ExitDateStr => ExitDate.ToString("dd-MMM-yyyy");
         public decimal TenureYears { get; set; }
     }
+
+    public class PayrollProcessHistoryReportVm
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string StaffCat { get; set; } = "ALL";
+        public string ProcessStatus { get; set; } = "Not Processed";
+        public int EmployeeCount { get; set; }
+        public decimal TotalBasic { get; set; }
+        public decimal TotalAllowances { get; set; }
+        public decimal TotalOvertime { get; set; }
+        public decimal TotalGross { get; set; }
+        public decimal TotalDeductions { get; set; }
+        public decimal TotalNetPayout { get; set; }
+        public List<int> AvailableYears { get; set; } = new List<int>();
+        public List<PayrollProcessHistoryItemVm> Items { get; set; } = new List<PayrollProcessHistoryItemVm>();
+    }
+
+    public class PayrollProcessHistoryItemVm
+    {
+        public string EmpId { get; set; }
+        public string FullName { get; set; }
+        public string Department { get; set; }
+        public string StaffCategory { get; set; }
+        public decimal Basic { get; set; }
+        public decimal Allowances { get; set; }
+        public decimal Overtime { get; set; }
+        public decimal GrossSalary { get; set; }
+        public decimal Deductions { get; set; }
+        public decimal NetSalary { get; set; }
+    }
+
+    public class EncashmentHistoryReportVm
+    {
+        public int Year { get; set; }
+        public int Month { get; set; }
+        public string StaffCat { get; set; } = "ALL";
+        public string WorkflowStatus { get; set; } = "Not Processed";
+        public int EmployeeCount { get; set; }
+        public decimal TotalLeaveSalary { get; set; }
+        public decimal TotalAirTicket { get; set; }
+        public decimal TotalSettlement { get; set; }
+        public List<int> AvailableYears { get; set; } = new List<int>();
+        public List<EncashmentHistoryItemVm> Items { get; set; } = new List<EncashmentHistoryItemVm>();
+    }
+
+    public class EncashmentHistoryItemVm
+    {
+        public string EmpId { get; set; }
+        public string FullName { get; set; }
+        public string Department { get; set; }
+        public string StaffCategory { get; set; }
+        public DateTime JoinedDate { get; set; }
+        public string JoinedDateStr => JoinedDate.ToString("dd-MMM-yyyy");
+        public DateTime NextResetDate { get; set; }
+        public string NextResetDateStr => NextResetDate.ToString("dd-MMM-yyyy");
+        public int ApplicableDays { get; set; }
+        public decimal EligibleLeaveDays { get; set; }
+        public decimal PaidLeaveDays { get; set; }
+        public int NetLeaveDays { get; set; }
+        public decimal MonthlySalary { get; set; }
+        public decimal TotalLeaveSalary { get; set; }
+        public int TktCount { get; set; }
+        public decimal AirTicketValue { get; set; }
+        public decimal TotalSettlement { get; set; }
+        public string Remarks { get; set; }
+    }
 }

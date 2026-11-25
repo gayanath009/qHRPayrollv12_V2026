@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -37,12 +37,15 @@ namespace qHRM.Areas.Employee.Controllers
         }
 
         // GET: HrEmpProbations
-        public ActionResult Index(int empSysId)
+        public ActionResult Index(int id, int empSysId)
         {
             //No Access Granted
             if (HttpContext.Session.GetString("EM_PRB_PRD") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
 
-            empSysId = Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId"));
+            int resolvedEmpSysId = id > 0 ? id : (empSysId > 0 ? empSysId : Convert.ToInt32(HttpContext.Session.GetInt32("EmpSysId")));
+            if (resolvedEmpSysId > 0)
+                HttpContext.Session.SetInt32("EmpSysId", resolvedEmpSysId);
+            empSysId = resolvedEmpSysId;
             HrEmpGenInfo genInfo = _employeeContext.GetEmpGenInfoByEmpSysId(empSysId);
             if (genInfo != null)
             {
@@ -53,6 +56,7 @@ namespace qHRM.Areas.Employee.Controllers
                 ViewBag.EmpName = genInfo.FirstName + " " + genInfo.LastName;
                 var recList = _employeeContext.GetAllProbation(empSysId);
                 ViewBag.DataSource = recList;
+                ViewBag.ActiveProbId = recList.FirstOrDefault(x => x.WkStat == 1)?.ProbId ?? 0;
 
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));

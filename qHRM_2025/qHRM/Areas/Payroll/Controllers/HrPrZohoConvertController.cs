@@ -135,8 +135,8 @@ namespace qHRM.Areas.Payroll.Controllers
                     return RedirectToAction(nameof(Index)).WithWarning("Zoho Import", "The uploaded sheet does not contain any data rows.");
                 }
 
-                // Load DB Employees for fallback metadata (Designation, Department, InHouse status)
-                var dbEmployees = LoadDbEmployees();
+                // Load DB Employees & Departments for fallback metadata and Department/Employee sort order
+                var dbEmployees = LoadDbEmployees(out var dbDepartments);
 
                 // Dynamic Column Mapping from DataTable Column Names
                 var colMap = BuildColumnMapping(table.Columns);
@@ -150,9 +150,9 @@ namespace qHRM.Areas.Payroll.Controllers
                 int sNo = 1;
 
                 // Check if Period column gives month & year
-                if (colMap.TryGetValue("period", out int periodColIdx) && table.Rows.Count > 0)
+                if (colMap.TryGetValue("period", out var periodCols) && periodCols.Count > 0 && table.Rows.Count > 0)
                 {
-                    string periodVal = table.Rows[0][periodColIdx]?.ToString()?.Trim() ?? "";
+                    string periodVal = table.Rows[0][periodCols[0]]?.ToString()?.Trim() ?? "";
                     if (!string.IsNullOrEmpty(periodVal))
                     {
                         ParsePeriod(periodVal, ref selectedYear, ref selectedMonth);
@@ -176,9 +176,9 @@ namespace qHRM.Areas.Payroll.Controllers
 
                     // InHouse detection from Excel
                     bool? excelInHouse = null;
-                    if (colMap.TryGetValue("inhouse", out int inhouseIdx))
+                    if (colMap.TryGetValue("inhouse", out var inhouseCols) && inhouseCols.Count > 0)
                     {
-                        string val = row[inhouseIdx]?.ToString()?.Trim() ?? "";
+                        string val = row[inhouseCols[0]]?.ToString()?.Trim() ?? "";
                         if (!string.IsNullOrEmpty(val))
                         {
                             string low = val.ToLowerInvariant();
@@ -198,56 +198,92 @@ namespace qHRM.Areas.Payroll.Controllers
 
                     bool inHouse = excelInHouse ?? false; // Default to Outsourced if still unresolved
 
-                    // Allowances & Components
+                    // Fixed Allowances & Components (Arrear columns are strictly excluded from fixed components)
                     decimal basic = GetDecimalVal(row, colMap, "basic");
                     decimal housing = GetDecimalVal(row, colMap, "housing");
                     decimal trans = GetDecimalVal(row, colMap, "transport");
                     decimal posit = GetDecimalVal(row, colMap, "position");
                     decimal mobile = GetDecimalVal(row, colMap, "mobile");
                     decimal proj = GetDecimalVal(row, colMap, "project");
+                    decimal medical = GetDecimalVal(row, colMap, "medical");
+                    decimal special = GetDecimalVal(row, colMap, "special");
                     decimal otherAlw = GetDecimalVal(row, colMap, "otheralw");
                     decimal fixedAlw = GetDecimalVal(row, colMap, "fixedalw");
                     decimal totalOtherAlw = otherAlw + fixedAlw;
 
-                    decimal totalFixed = GetDecimalVal(row, colMap, "totalfixed");
-                    if (totalFixed <= 0)
+                    decimal computedFixed = basic + housing + trans + posit + mobile + proj + medical + special + totalOtherAlw;
+                    if (HasColumn(colMap, "totalfixed"))
                     {
-                        totalFixed = basic + housing + trans + posit + mobile + proj + totalOtherAlw;
+                        decimal excelFixed = GetDecimalVal(row, colMap, "totalfixed");
+                        if (excelFixed != computedFixed && (excelFixed > 0 || computedFixed > 0))
+                        {
+                            // Capture any unmapped fixed allowance column into Other Allowance so Fixed Monthly Earnings reconciles
+                            totalOtherAlw += (excelFixed - computedFixed);
+                            computedFixed = excelFixed;
+                        }
                     }
+                    decimal totalFixed = computedFixed;
 
+                    // Variable / Arrear / Additional Earnings
                     decimal incent = GetDecimalVal(row, colMap, "incentive");
                     decimal ot = GetDecimalVal(row, colMap, "ot");
-                    decimal otherPmt = GetDecimalVal(row, colMap, "otherpmt");
+                    decimal bonus = GetDecimalVal(row, colMap, "bonus");
+                    decimal otherPmt = GetDecimalVal(row, colMap, "otherpmt") + bonus;
 
-                    decimal gross = GetDecimalVal(row, colMap, "gross");
-                    if (gross <= 0)
+                    decimal computedGross = totalFixed + incent + ot + otherPmt;
+                    decimal gross;
+                    if (HasColumn(colMap, "gross"))
                     {
-                        gross = totalFixed + incent + ot + otherPmt;
+                        gross = GetDecimalVal(row, colMap, "gross");
+                        if (gross != computedGross)
+                        {
+                            otherPmt += (gross - computedGross);
+                        }
+                    }
+                    else if (HasColumn(colMap, "totalearnings"))
+                    {
+                        gross = GetDecimalVal(row, colMap, "totalearnings");
+                        if (gross != computedGross)
+                        {
+                            otherPmt += (gross - computedGross);
+                        }
+                    }
+                    else
+                    {
+                        gross = computedGross;
                     }
 
-                    // Deductions
+                    // Deductions (Loss Of Pay days are mapped to Absent, never to NoPayAmt)
                     decimal slAdv = GetDecimalVal(row, colMap, "sladv");
+                    decimal stfLoan = GetDecimalVal(row, colMap, "stfloan");
                     decimal noPay = GetDecimalVal(row, colMap, "nopay");
                     decimal otherDeduct = GetDecimalVal(row, colMap, "otherdeduct");
-                    decimal totalDeduct = GetDecimalVal(row, colMap, "totaldeduct");
-                    if (totalDeduct <= 0)
+                    decimal computedDeduct = slAdv + stfLoan + noPay + otherDeduct;
+                    decimal totalDeduct;
+                    if (HasColumn(colMap, "totaldeduct"))
                     {
-                        totalDeduct = slAdv + noPay + otherDeduct;
+                        totalDeduct = GetDecimalVal(row, colMap, "totaldeduct");
+                        if (totalDeduct != computedDeduct)
+                        {
+                            otherDeduct += (totalDeduct - computedDeduct);
+                        }
+                    }
+                    else
+                    {
+                        totalDeduct = computedDeduct;
                     }
 
                     // Net Salary
-                    decimal net = GetDecimalVal(row, colMap, "net");
-                    if (net <= 0)
-                    {
-                        net = gross - totalDeduct;
-                    }
+                    decimal net = HasColumn(colMap, "net")
+                        ? GetDecimalVal(row, colMap, "net")
+                        : (gross - totalDeduct);
 
                     // Payment Mode (Bank Transfer vs Cash)
                     decimal bankAmt = 0;
                     decimal cashAmt = 0;
                     int pmtMod = 1; // 1 = Bank, 0 = Cash
 
-                    if (colMap.TryGetValue("bankamt", out int bnkIdx) && colMap.TryGetValue("cashamt", out int cshIdx))
+                    if (HasColumn(colMap, "bankamt") && HasColumn(colMap, "cashamt"))
                     {
                         bankAmt = GetDecimalVal(row, colMap, "bankamt");
                         cashAmt = GetDecimalVal(row, colMap, "cashamt");
@@ -289,12 +325,15 @@ namespace qHRM.Areas.Payroll.Controllers
                         PstnAlwnc = posit,
                         MobAlwnc = mobile,
                         ProjAlwnc = proj,
+                        MedAlwnc = medical,
+                        SpcAlwnc = special,
                         OthrAlwnc = totalOtherAlw,
                         IncntvAmt = incent,
                         OtAmt = ot,
                         OthrPmt = otherPmt,
                         GrsSlry = gross,
                         SlryAdv = slAdv,
+                        StfLnPmt = stfLoan,
                         NoPayAmt = noPay,
                         OthrRcvryAmt = otherDeduct,
                         TotDctAmt = totalDeduct,
@@ -314,6 +353,44 @@ namespace qHRM.Areas.Payroll.Controllers
                 if (employees.Count == 0)
                 {
                     return RedirectToAction(nameof(Index)).WithWarning("Zoho Import", "No valid employee rows were found in the uploaded file.");
+                }
+
+                // Normalize Department names & sort orders across all rows so DepartmentSalarySheetPdfReport groups cleanly
+                foreach (var deptGrp in employees.GroupBy(
+                    e => string.IsNullOrWhiteSpace(e.DeptName) ? "Other Department" : e.DeptName.Trim(),
+                    StringComparer.OrdinalIgnoreCase))
+                {
+                    string grpKey = deptGrp.Key;
+                    string canonName;
+                    int canonDeptId;
+                    int canonSrtOrd;
+
+                    if (dbDepartments.TryGetValue(grpKey, out var dbDept))
+                    {
+                        canonName = dbDept.NameEng;
+                        canonDeptId = dbDept.DeptId;
+                        canonSrtOrd = dbDept.SrtOrd > 0 ? dbDept.SrtOrd : 999;
+                    }
+                    else
+                    {
+                        canonName = deptGrp.First().DeptName?.Trim();
+                        if (string.IsNullOrWhiteSpace(canonName)) canonName = "Other Department";
+                        canonDeptId = 0;
+
+                        // Derive department sort order from matching DB employees in this group if available
+                        var matchedOrders = deptGrp
+                            .Select(e => dbEmployees.TryGetValue(e.EmpId ?? "", out var dbe) ? dbe.DeptSrtOrd : 999)
+                            .Where(ord => ord > 0 && ord < 999)
+                            .ToList();
+                        canonSrtOrd = matchedOrders.Count > 0 ? matchedOrders.Min() : 999;
+                    }
+
+                    foreach (var emp in deptGrp)
+                    {
+                        emp.DeptName = canonName;
+                        emp.DeptId = canonDeptId;
+                        emp.DeptSrtOrd = canonSrtOrd;
+                    }
                 }
 
                 var model = new ZohoConvertViewModel
@@ -423,6 +500,63 @@ namespace qHRM.Areas.Payroll.Controllers
             return File(pdfBytes, "application/pdf");
         }
 
+        [HttpGet]
+        public IActionResult PrintDepartmentBreakdown(int sctn = 2)
+        {
+            if (!HasAccess())
+            {
+                return Unauthorized();
+            }
+
+            string key = GetSessionKey();
+            if (!_sessionDataCache.TryGetValue(key, out var model) || model == null || model.Employees.Count == 0)
+            {
+                return RedirectToAction(nameof(Index)).WithWarning("Zoho Report", "Please upload and process an Excel file before generating reports.");
+            }
+
+            int entId = HttpContext.Session.GetInt32("userEntId") ?? 1;
+            var cmp = _organizationContext.GetEntityByEntId(entId);
+            string compName = cmp?.NameEng ?? "Qatar Computer Services WLL";
+
+            var dbEmployees = LoadDbEmployees(out _);
+
+            IEnumerable<PrSlryShtVw> filtered;
+            if (sctn == 0)
+            {
+                filtered = model.Employees.Where(e => e.InHouse);
+            }
+            else if (sctn == 1)
+            {
+                filtered = model.Employees.Where(e => !e.InHouse);
+            }
+            else
+            {
+                filtered = model.Employees;
+            }
+
+            // Order employees within each department by Employee Sort Order (Srt_Ord) then Excel row order
+            var displayEmployees = filtered
+                .OrderBy(e => e.DeptSrtOrd > 0 ? e.DeptSrtOrd : 999)
+                .ThenBy(e => e.DeptName ?? "")
+                .ThenBy(e => dbEmployees.TryGetValue(e.EmpId ?? "", out var dbe) && dbe.EmpSrtOrd > 0 ? dbe.EmpSrtOrd : int.MaxValue)
+                .ThenBy(e => e.Index)
+                .ToList();
+
+            byte[] pdfBytes = DepartmentSalarySheetPdfReport.GenerateReport(
+                compName,
+                model.Year,
+                model.Month,
+                displayEmployees,
+                model.InternalStaffNet,
+                model.OutsourcedStaffNet,
+                sctn,
+                _webHostEnvironment.WebRootPath);
+
+            string sctnName = sctn == 0 ? "InHouse" : (sctn == 1 ? "Outsourced" : "AllStaff");
+            Response.Headers["Content-Disposition"] = $"inline; filename=DepartmentSalarySheet_{sctnName}_{model.Year}_{model.Month}.pdf";
+            return File(pdfBytes, "application/pdf");
+        }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult Clear()
@@ -440,9 +574,35 @@ namespace qHRM.Areas.Payroll.Controllers
             return Regex.Replace(s.ToLowerInvariant(), @"[^a-z0-9]", "");
         }
 
-        private static Dictionary<string, int> BuildColumnMapping(DataColumnCollection columns)
+        private static void AddColOnce(Dictionary<string, List<int>> map, string key, int colIdx)
         {
-            var map = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+            if (!map.ContainsKey(key))
+            {
+                map[key] = new List<int> { colIdx };
+            }
+        }
+
+        private static void AddColMulti(Dictionary<string, List<int>> map, string key, int colIdx)
+        {
+            if (!map.TryGetValue(key, out var list))
+            {
+                list = new List<int>();
+                map[key] = list;
+            }
+            if (!list.Contains(colIdx))
+            {
+                list.Add(colIdx);
+            }
+        }
+
+        private static bool HasColumn(Dictionary<string, List<int>> map, string key)
+        {
+            return map.TryGetValue(key, out var list) && list != null && list.Count > 0;
+        }
+
+        private static Dictionary<string, List<int>> BuildColumnMapping(DataColumnCollection columns)
+        {
+            var map = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
 
             for (int c = 0; c < columns.Count; c++)
             {
@@ -450,173 +610,228 @@ namespace qHRM.Areas.Payroll.Controllers
                 string norm = Normalize(raw);
                 if (string.IsNullOrEmpty(norm)) continue;
 
-                // Employee Code / Number
-                if (norm.Contains("employeenumber") || norm.Contains("employeeno") || norm == "empno" || norm == "code" || norm == "empid")
+                // 1. Employee Code / Number
+                if (norm == "employeeno" || norm == "employeenumber" || norm == "empno" || norm == "empid" || norm == "code" || norm == "employeecode")
                 {
-                    if (!map.ContainsKey("empid")) map["empid"] = c;
+                    AddColOnce(map, "empid", c);
                 }
-                // Employee Name
-                else if (norm.Contains("employeename") || norm == "empname" || norm == "fullname" || norm == "name")
+                // 2. Employee Name (strictly exclude Account Holder Name / Bank Name)
+                else if (norm == "employeename" || norm == "empname" || norm == "fullname" || norm == "name")
                 {
-                    if (!map.ContainsKey("fullname")) map["fullname"] = c;
+                    AddColOnce(map, "fullname", c);
                 }
-                // Designation
-                else if (norm.Contains("designation") || norm == "desig" || norm == "jobtitle")
+                // 3. Designation
+                else if (norm == "designation" || norm == "desig" || norm == "jobtitle")
                 {
-                    if (!map.ContainsKey("designation")) map["designation"] = c;
+                    AddColOnce(map, "designation", c);
                 }
-                // Department
-                else if (norm.Contains("department") || norm == "dept")
+                // 4. Department
+                else if (norm == "department" || norm == "dept" || norm == "departmentname")
                 {
-                    if (!map.ContainsKey("department")) map["department"] = c;
+                    AddColOnce(map, "department", c);
                 }
-                // InHouse / Outsourced Tag
-                else if (norm.Contains("inhouse") || norm.Contains("outsourced") || norm.Contains("stafftype"))
+                // 5. InHouse / Outsourced Tag
+                else if (norm.Contains("inhouse") || norm.Contains("outsourced") || norm == "stafftype")
                 {
-                    if (!map.ContainsKey("inhouse")) map["inhouse"] = c;
+                    AddColOnce(map, "inhouse", c);
                 }
-                // Period
-                else if (norm.Contains("period"))
+                // 6. Period
+                else if (norm == "period" || norm == "payperiod" || norm == "salaryperiod")
                 {
-                    if (!map.ContainsKey("period")) map["period"] = c;
+                    AddColOnce(map, "period", c);
                 }
-                // Payment Mode
-                else if (norm.Contains("paymentmode") || norm.Contains("paymode"))
+                // 7. Payment Mode
+                else if (norm == "paymentmode" || norm == "paymode")
                 {
-                    if (!map.ContainsKey("paymode")) map["paymode"] = c;
+                    AddColOnce(map, "paymode", c);
                 }
-                // Basic
-                else if (norm == "basic" || norm.Contains("basicsalary"))
+                // 8. Absent / Loss Of Pay Days (NEVER map Loss Of Pay days to NoPay deduction!)
+                else if (norm == "lossofpay" || norm == "lossofpaydays" || norm == "lop" || norm == "lopdays"
+                      || norm == "absent" || norm == "absentdays" || norm == "abfct")
                 {
-                    if (!map.ContainsKey("basic")) map["basic"] = c;
+                    AddColMulti(map, "absent", c);
                 }
-                // HRA / Housing
-                else if (norm == "hra" || norm.Contains("housing"))
+                // 9. Skip non-monetary day count columns (e.g. Base Days, New Joinee Arrear Days, Effective Paid Days)
+                else if (norm == "basedays" || norm == "effectivepaiddays" || norm == "paiddays"
+                      || norm == "workingdays" || norm.EndsWith("arreardays"))
                 {
-                    if (!map.ContainsKey("housing")) map["housing"] = c;
+                    continue;
                 }
-                // Transport Allowance
-                else if (norm.Contains("transport") || norm.Contains("trans"))
+                // 10. Monetary Arrear columns (Basic Arrear, HRA Arrear, Transport Allowance Arrear, Mobile Allowance Arrear, etc.)
+                //     Must be checked BEFORE fixed allowance names so arrears sum into Other Payment (OthrPmt)!
+                else if (norm.Contains("arrear") && !norm.Contains("day"))
                 {
-                    if (!map.ContainsKey("transport")) map["transport"] = c;
+                    AddColMulti(map, "otherpmt", c);
                 }
-                // Position Allowance
-                else if (norm.Contains("position") || norm.Contains("posit"))
+                // 11. Basic Salary
+                else if (norm == "basic" || norm == "basicsalary" || norm == "basicpay")
                 {
-                    if (!map.ContainsKey("position")) map["position"] = c;
+                    AddColOnce(map, "basic", c);
                 }
-                // Mobile Allowance
-                else if (norm.Contains("mobile") || norm.Contains("mob"))
+                // 12. HRA / Housing Allowance
+                else if (norm == "hra" || norm == "housing" || norm == "housingallowance" || norm == "hrallowance" || norm == "houserentallowance")
                 {
-                    if (!map.ContainsKey("mobile")) map["mobile"] = c;
+                    AddColOnce(map, "housing", c);
                 }
-                // Project Allowance
-                else if (norm.Contains("project") || norm.Contains("proj"))
+                // 13. Transport Allowance
+                else if (norm == "tra" || norm == "transport" || norm == "transportallowance" || norm == "transportation" || norm == "transportationallowance" || norm == "trans")
                 {
-                    if (!map.ContainsKey("project")) map["project"] = c;
+                    AddColOnce(map, "transport", c);
                 }
-                // Fixed Allowance
-                else if (norm.Contains("fixedallowance") || norm.Contains("fixedalw"))
+                // 14. Position Allowance
+                else if (norm == "position" || norm == "positionallowance" || norm == "posit")
                 {
-                    if (!map.ContainsKey("fixedalw")) map["fixedalw"] = c;
+                    AddColOnce(map, "position", c);
                 }
-                // Other Allowance
-                else if (norm.Contains("otherallowance") || norm.Contains("otheralw"))
+                // 15. Mobile Allowance
+                else if (norm == "mobile" || norm == "mobileallowance" || norm == "mob")
                 {
-                    if (!map.ContainsKey("otheralw")) map["otheralw"] = c;
+                    AddColOnce(map, "mobile", c);
                 }
-                // Fixed Salary Total
-                else if (norm.Contains("totalfixedsalary") || norm.Contains("fixedmonthlyearnings") || norm == "fixedsalary")
+                // 16. Project Allowance
+                else if (norm == "project" || norm == "projectallowance" || norm == "proj")
                 {
-                    if (!map.ContainsKey("totalfixed")) map["totalfixed"] = c;
+                    AddColOnce(map, "project", c);
                 }
-                // Incentive
-                else if (norm.Contains("incentive") || norm.Contains("incent"))
+                // 17. Medical Allowance
+                else if (norm == "medical" || norm == "medicalallowance" || norm == "medallowance")
                 {
-                    if (!map.ContainsKey("incentive")) map["incentive"] = c;
+                    AddColOnce(map, "medical", c);
                 }
-                // Overtime
-                else if (norm.Contains("overtime") || norm == "ot" || norm.Contains("otamt") || norm.Contains("otamount"))
+                // 18. Special Allowance
+                else if (norm == "special" || norm == "specialallowance" || norm == "spcallowance")
                 {
-                    if (!map.ContainsKey("ot")) map["ot"] = c;
+                    AddColOnce(map, "special", c);
                 }
-                // Other Payments
-                else if (norm.Contains("otherpayment") || norm.Contains("otherpmt"))
+                // 19. Fixed Allowance
+                else if (norm == "fixedallowance" || norm == "fixedalw")
                 {
-                    if (!map.ContainsKey("otherpmt")) map["otherpmt"] = c;
+                    AddColMulti(map, "fixedalw", c);
                 }
-                // Gross Pay / Salary
-                else if (norm.Contains("grosspay") || norm.Contains("grosssalary") || norm.Contains("totalearnings") || norm == "gross")
+                // 20. Other Allowance
+                else if (norm == "otherallowance" || norm == "otherallowances" || norm == "otheralw")
                 {
-                    if (!map.ContainsKey("gross")) map["gross"] = c;
+                    AddColMulti(map, "otheralw", c);
                 }
-                // Salary Advance / Loan
-                else if (norm.Contains("sladv") || norm.Contains("salaryadvance") || norm.Contains("staffloan") || norm == "loan")
+                // 21. Fixed Monthly Earnings / Total Fixed Salary (exclude Fixed Monthly Costs w/ Employer Contributions)
+                else if (norm == "fixedmonthlyearnings" || norm == "totalfixedsalary" || norm == "fixedsalary")
                 {
-                    if (!map.ContainsKey("sladv")) map["sladv"] = c;
+                    AddColOnce(map, "totalfixed", c);
                 }
-                // Loss of pay / No Pay
-                else if (norm.Contains("lossofpay") || norm.Contains("nopay") || norm == "lop")
+                // 22. Incentive
+                else if (norm == "incentive" || norm == "incentives" || norm == "incent" || norm == "incentiveamount")
                 {
-                    if (!map.ContainsKey("nopay")) map["nopay"] = c;
+                    AddColMulti(map, "incentive", c);
                 }
-                // Other Deductions
-                else if (norm.Contains("otherdeduct") || norm.Contains("otherrecovery") || norm.Contains("othrrcvry"))
+                // 23. Overtime
+                else if (norm == "overtime" || norm == "ot" || norm == "otamt" || norm == "otamount" || norm == "overtimeallowance")
                 {
-                    if (!map.ContainsKey("otherdeduct")) map["otherdeduct"] = c;
+                    AddColMulti(map, "ot", c);
                 }
-                // Total Deductions
-                else if (norm.Contains("totaldeduct") || norm.Contains("totdeduct"))
+                // 24. Bonus
+                else if (norm == "bonus" || norm == "bonusamt" || norm == "bonusamount")
                 {
-                    if (!map.ContainsKey("totaldeduct")) map["totaldeduct"] = c;
+                    AddColMulti(map, "bonus", c);
                 }
-                // Net Pay / Salary
-                else if (norm.Contains("netpay") || norm.Contains("netsalary") || norm == "net")
+                // 25. Other Payments / Adjustments / Total Reimbursements (exclude Business Expense Reimbursements outside Gross)
+                else if (norm == "otherpayments" || norm == "otherpayment" || norm == "otherpmt"
+                      || norm == "othradjstmnt" || norm == "othradjstmntqr" || norm == "totalreimbursements")
                 {
-                    if (!map.ContainsKey("net")) map["net"] = c;
+                    AddColMulti(map, "otherpmt", c);
                 }
-                // Bank Transfer
-                else if (norm.Contains("banktransfer"))
+                // 26. Gross Pay / Gross Salary (preferred over Total Earnings)
+                else if (norm == "grosspay" || norm == "grosssalary" || norm == "gross")
                 {
-                    if (!map.ContainsKey("bankamt")) map["bankamt"] = c;
+                    AddColOnce(map, "gross", c);
                 }
-                // Cash Payment
-                else if (norm.Contains("cashpayment"))
+                else if (norm == "totalearnings")
                 {
-                    if (!map.ContainsKey("cashamt")) map["cashamt"] = c;
+                    AddColOnce(map, "totalearnings", c);
                 }
-                // Remarks
-                else if (norm.Contains("remarks") || norm.Contains("remark") || norm.Contains("note"))
+                // 27. Salary Advance
+                else if (norm == "salaryadvance" || norm == "sladv" || norm == "salaryadv")
                 {
-                    if (!map.ContainsKey("remarks")) map["remarks"] = c;
+                    AddColMulti(map, "sladv", c);
                 }
-                // Absent
-                else if (norm.Contains("absent") || norm == "abfct")
+                // 28. Staff Loan
+                else if (norm == "staffloan" || norm == "staffloans" || norm == "stflnpmt" || norm == "loan" || norm == "sladvloan")
                 {
-                    if (!map.ContainsKey("absent")) map["absent"] = c;
+                    AddColMulti(map, "stfloan", c);
+                }
+                // 29. Explicit No-Pay Monetary Deduction ONLY (never Loss Of Pay days)
+                else if (norm == "nopay" || norm == "nopayamt" || norm == "nopayamount" || norm == "nopaydeduction")
+                {
+                    AddColMulti(map, "nopay", c);
+                }
+                // 30. Other Deductions / Recoveries
+                else if (norm == "otherdeductions" || norm == "otherdeduction" || norm == "otherdeduct"
+                      || norm == "othrdeductionsqr" || norm == "othrdeductions"
+                      || norm == "otherrecovery" || norm == "othrrcvry")
+                {
+                    AddColMulti(map, "otherdeduct", c);
+                }
+                // 31. Total Deductions
+                else if (norm == "totaldeductions" || norm == "totaldeduct" || norm == "totdeduct")
+                {
+                    AddColOnce(map, "totaldeduct", c);
+                }
+                // 32. Net Pay / Net Salary
+                else if (norm == "netpay" || norm == "netsalary" || norm == "totalnet" || norm == "net")
+                {
+                    AddColOnce(map, "net", c);
+                }
+                // 33. Bank Transfer / Cash Payment
+                else if (norm == "banktransfer" || norm == "bankamount")
+                {
+                    AddColOnce(map, "bankamt", c);
+                }
+                else if (norm == "cashpayment" || norm == "cashamount")
+                {
+                    AddColOnce(map, "cashamt", c);
+                }
+                // 34. Remarks
+                else if (norm == "cfremarks" || norm == "remarks" || norm == "remark" || norm == "notes" || norm == "note")
+                {
+                    AddColOnce(map, "remarks", c);
                 }
             }
 
             return map;
         }
 
-        private static string GetStringVal(DataRow row, Dictionary<string, int> colMap, string key)
+        private static string GetStringVal(DataRow row, Dictionary<string, List<int>> colMap, string key)
         {
-            if (colMap.TryGetValue(key, out int idx) && idx < row.Table.Columns.Count)
+            if (colMap.TryGetValue(key, out var list) && list != null && list.Count > 0)
             {
-                return row[idx]?.ToString()?.Trim() ?? "";
+                int idx = list[0];
+                if (idx >= 0 && idx < row.Table.Columns.Count)
+                {
+                    return row[idx]?.ToString()?.Trim() ?? "";
+                }
             }
             return "";
         }
 
-        private static decimal GetDecimalVal(DataRow row, Dictionary<string, int> colMap, string key)
+        private static decimal GetDecimalVal(DataRow row, Dictionary<string, List<int>> colMap, string key)
         {
-            if (colMap.TryGetValue(key, out int idx) && idx < row.Table.Columns.Count)
+            if (!colMap.TryGetValue(key, out var list) || list == null || list.Count == 0)
             {
-                string s = row[idx]?.ToString()?.Trim().Replace(",", "") ?? "";
-                if (decimal.TryParse(s, out decimal d)) return d;
+                return 0m;
             }
-            return 0m;
+
+            decimal total = 0m;
+            foreach (int idx in list)
+            {
+                if (idx >= 0 && idx < row.Table.Columns.Count)
+                {
+                    string s = row[idx]?.ToString()?.Trim().Replace(",", "") ?? "";
+                    if (decimal.TryParse(s, out decimal d))
+                    {
+                        total += d;
+                    }
+                }
+            }
+            return total;
         }
 
         private static void ParsePeriod(string periodVal, ref int year, ref int month)
@@ -653,9 +868,10 @@ namespace qHRM.Areas.Payroll.Controllers
             catch { }
         }
 
-        private Dictionary<string, EmpDbInfo> LoadDbEmployees()
+        private Dictionary<string, EmpDbInfo> LoadDbEmployees(out Dictionary<string, DeptDbInfo> departments)
         {
             var dict = new Dictionary<string, EmpDbInfo>(StringComparer.OrdinalIgnoreCase);
+            departments = new Dictionary<string, DeptDbInfo>(StringComparer.OrdinalIgnoreCase);
             try
             {
                 string conStr = _configuration.GetConnectionString("qhrconstring") 
@@ -667,11 +883,34 @@ namespace qHRM.Areas.Payroll.Controllers
 
                 using var conn = new SqlConnection(conStr);
                 conn.Open();
+
+                using (var deptCmd = conn.CreateCommand())
+                {
+                    deptCmd.CommandText = "SELECT Dept_Id, Name_Eng, ISNULL(Srt_Ord, 999) AS Srt_Ord FROM ORG_Department";
+                    using var dr = deptCmd.ExecuteReader();
+                    while (dr.Read())
+                    {
+                        string dName = dr["Name_Eng"]?.ToString()?.Trim() ?? "";
+                        if (!string.IsNullOrEmpty(dName) && !departments.ContainsKey(dName))
+                        {
+                            departments[dName] = new DeptDbInfo
+                            {
+                                DeptId = dr["Dept_Id"] != DBNull.Value ? Convert.ToInt32(dr["Dept_Id"]) : 0,
+                                NameEng = dName,
+                                SrtOrd = dr["Srt_Ord"] != DBNull.Value ? Convert.ToInt32(dr["Srt_Ord"]) : 999
+                            };
+                        }
+                    }
+                }
+
                 using var cmd = conn.CreateCommand();
                 cmd.CommandText = @"
-                    SELECT emp.Emp_Id, 
+                    SELECT emp.Emp_Id,
+                           ISNULL(emp.Srt_Ord, 0) AS EmpSrtOrd,
                            emp.First_Name + ' ' + ISNULL(emp.Last_Name, '') AS FullName,
                            ds.Name_Eng AS DesigName,
+                           ISNULL(dp.Dept_Id, 0) AS DeptId,
+                           ISNULL(dp.Srt_Ord, 999) AS DeptSrtOrd,
                            dp.Name_Eng AS DeptName,
                            CAST(IIF(lc.Parent_Id = 3, 0, 1) AS BIT) AS InHouse
                     FROM HR_EmpGenInfo emp
@@ -689,8 +928,11 @@ namespace qHRM.Areas.Payroll.Controllers
                         dict[empId] = new EmpDbInfo
                         {
                             EmpId = empId,
+                            EmpSrtOrd = r["EmpSrtOrd"] != DBNull.Value ? Convert.ToInt32(r["EmpSrtOrd"]) : 0,
                             FullName = r["FullName"]?.ToString()?.Trim() ?? "",
                             DesigName = r["DesigName"]?.ToString()?.Trim() ?? "",
+                            DeptId = r["DeptId"] != DBNull.Value ? Convert.ToInt32(r["DeptId"]) : 0,
+                            DeptSrtOrd = r["DeptSrtOrd"] != DBNull.Value ? Convert.ToInt32(r["DeptSrtOrd"]) : 999,
                             DeptName = r["DeptName"]?.ToString()?.Trim() ?? "",
                             InHouse = r["InHouse"] != DBNull.Value && Convert.ToBoolean(r["InHouse"])
                         };
@@ -705,10 +947,20 @@ namespace qHRM.Areas.Payroll.Controllers
         private class EmpDbInfo
         {
             public string EmpId { get; set; } = "";
+            public int EmpSrtOrd { get; set; }
             public string FullName { get; set; } = "";
             public string DesigName { get; set; } = "";
+            public int DeptId { get; set; }
+            public int DeptSrtOrd { get; set; }
             public string DeptName { get; set; } = "";
             public bool InHouse { get; set; }
+        }
+
+        private class DeptDbInfo
+        {
+            public int DeptId { get; set; }
+            public string NameEng { get; set; } = "";
+            public int SrtOrd { get; set; }
         }
 
         #endregion

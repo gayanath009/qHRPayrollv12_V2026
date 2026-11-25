@@ -1,4 +1,4 @@
-﻿@model qHRM.Areas.Employee.Models.HrEmpPreExp
+@model qHRM.Areas.Employee.Models.HrEmpPreExp
 <script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
 <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.js"></script>
 
@@ -10,7 +10,7 @@
         <div asp-validation-summary="ModelOnly" class="text-danger"></div>
         @Html.HiddenFor(model => model.ExpId)
         @Html.HiddenFor(model => model.CrtDateTime)
-        #@Html.HiddenFor(model => model.ex_SvcFileName)
+        @Html.HiddenFor(model => model.ex_SvcFileName)
         <div class="form-row">
             <div class="form-group col-md-6">
                 <label asp-for="CompName" class="control-label"></label>

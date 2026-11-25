@@ -405,7 +405,9 @@ namespace qHRM.Areas.Employee.Data
                     if (isGlobalAll) return true;
 
                     var ug = _hrmContext.AdmUserGroup.FirstOrDefault(x => x.GrpId == grpId.Value);
-                    if (ug != null && ug.ShwAlEmp && ug.GrpId != 11 && ug.GrpId != 4 && ug.GrpId != 8 && ug.GrpId != 12) // Grp 11 is BU Heads, 4/8/12 are Outsource/QCS
+                    if (ug != null && ug.ShwAlEmp
+                        && ug.GrpId != 11 && ug.GrpId != 14 && ug.DshbrdId != 2
+                        && ug.GrpId != 4 && ug.GrpId != 8 && ug.GrpId != 12) // Grp 11/14 (Dshbrd 2) are BU Heads, 4/8/12 are Outsource/QCS
                         return ug.ShwAlEmp;
                 }
 
@@ -420,7 +422,9 @@ namespace qHRM.Areas.Employee.Data
                         if (isGlobalAll) return true;
 
                         var ug = _hrmContext.AdmUserGroup.FirstOrDefault(x => x.GrpId == usr.GrpId);
-                        if (ug != null && ug.ShwAlEmp && ug.GrpId != 11 && ug.GrpId != 4 && ug.GrpId != 8 && ug.GrpId != 12)
+                        if (ug != null && ug.ShwAlEmp
+                            && ug.GrpId != 11 && ug.GrpId != 14 && ug.DshbrdId != 2
+                            && ug.GrpId != 4 && ug.GrpId != 8 && ug.GrpId != 12)
                             return ug.ShwAlEmp;
                     }
                 }
@@ -859,21 +863,32 @@ namespace qHRM.Areas.Employee.Data
         }
 
         #region Employee Sort Order
+        public int GetNextSrtOrdForNewEmployee()
+        {
+            var maxOrd = _hrmContext.HrEmpGenInfo
+                .Where(e => e.CurrStat == 0 && e.SrtOrd.HasValue)
+                .Max(e => e.SrtOrd);
+            return (maxOrd ?? 1000) + 1;
+        }
+
         private int GetMxSrtOrdByDeptId(int deptId)
         {
             try
-            { 
+            {
+                int deptBase = _hrmContext.OrgDepartment
+                    .Where(z => z.DeptId == deptId)
+                    .Select(z => z.SrtOrd)
+                    .FirstOrDefault() * 1000000;
+
                 var mxSrtOrd = _hrmContext.HrEmpGenInfo
                         .Join(_hrmContext.HrEmpJobAssign, emp => emp.EmpSysId, jb => jb.EmpSysId, (emp, jb) => new { emp, jb })
                         .Where(z => z.jb.DeptId == deptId && z.emp.CurrStat == 0 && z.jb.WkStat == 1)
                         .Max(m => m.emp.SrtOrd);
-                if (mxSrtOrd != null)
-                    return (int)mxSrtOrd;
-                else
-                {
-                    return _hrmContext.OrgDepartment.Where(z => z.DeptId == deptId).First().SrtOrd * 1000000;
-                }
-                
+
+                if (mxSrtOrd.HasValue && mxSrtOrd.Value >= deptBase)
+                    return mxSrtOrd.Value;
+
+                return deptBase;
             }
             catch (Exception ex) { throw ex; }
         }
@@ -1399,7 +1414,7 @@ namespace qHRM.Areas.Employee.Data
                 empProb.WkStat = 1;
                 empProb.CrtDateTime = DateTime.Today;
                 empProb.CrtId = usrId;
-                var prob = _hrmContext.HrEmpProbation.Where(x => x.WkStat == 1).FirstOrDefault();
+                var prob = _hrmContext.HrEmpProbation.Where(x => x.WkStat == 1 && x.EmpSysId == empProb.EmpSysId).FirstOrDefault();
                 if (prob != null)
                 {
                     prob.EndDate = empProb.StDate;

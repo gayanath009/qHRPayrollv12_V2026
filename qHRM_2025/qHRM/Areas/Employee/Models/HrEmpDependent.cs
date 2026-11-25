@@ -104,7 +104,7 @@ namespace qHRM.Areas.Employee.Models
         
         public string PmtId { get; set; }
         [Display(Name = "QID/Visa Numbers")]
-        [Remote(action: "IsExistPmtId", controller: "HrEmpDependent", ErrorMessage = "QID is already existing", AdditionalFields = "ex_PmtId")]
+        [Remote(action: "IsExistPmtId", controller: "HrEmpDependent", ErrorMessage = "QID is already existing", AdditionalFields = "exPmtId")]
         [Required(ErrorMessage = "Please specify QID/Visa")]
 
         [NotMapped]
@@ -117,7 +117,7 @@ namespace qHRM.Areas.Employee.Models
         public DateTime PmtExpDate { get; set; }
 
         [Display(Name = "Passport Number")]
-        [Remote(action: "IsExistPstNo", controller: "HrEmpDependent", ErrorMessage = "Passport Number is already existing", AdditionalFields = "ex_PstNo")]
+        [Remote(action: "IsExistPstNo", controller: "HrEmpDependent", ErrorMessage = "Passport Number is already existing", AdditionalFields = "exPstNo")]
         [StringLength(15)]
         public string PstNo { get; set; }
 

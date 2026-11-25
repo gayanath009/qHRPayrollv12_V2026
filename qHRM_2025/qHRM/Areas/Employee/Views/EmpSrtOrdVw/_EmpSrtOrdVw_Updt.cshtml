@@ -1,4 +1,4 @@
-﻿@model qHRM.Areas.Employee.Models.EmpSrtOrdVw
+@model qHRM.Areas.Employee.Models.EmpSrtOrdVw
 
 @using (Html.BeginForm("Update", "EmpSrtOrdVw", FormMethod.Post))
 {
@@ -33,7 +33,7 @@
         </div>
         <div class="form-group">
             <label asp-for="ex_EmpSrtOrd" class="control-label font-weight-bold">New Order within Department (e.g. 1, 2, 6...):</label>
-            <input asp-for="ex_EmpSrtOrd" class="form-control form-control-sm font-weight-bold" type="number" min="1" max="999999" />
+            <input asp-for="ex_EmpSrtOrd" class="form-control form-control-sm font-weight-bold" type="number" min="1" max="9999999" />
             <span asp-validation-for="ex_EmpSrtOrd" class="text-danger"></span>
         </div>
 

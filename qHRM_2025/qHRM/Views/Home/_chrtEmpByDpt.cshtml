@@ -1,4 +1,4 @@
-﻿@using Syncfusion.EJ2
+@using Syncfusion.EJ2
 <div class="form-row">
     <div class="form-group col-md-3"></div>
     <div class="form-group col-md-6">
@@ -128,4 +128,8 @@
         args.fill = highContrastColors[args.point.index % 10];
     }
 </script>
+<script type="text/x-jsrender" id="_avatar">
+    <img class="img-profile rounded-circle" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e2e8f0;" src="@Url.Content("~/attach/empImages/${PhotoName}")" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+</script>
+
 <ejs-scripts></ejs-scripts>

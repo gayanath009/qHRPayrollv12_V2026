@@ -208,20 +208,54 @@ namespace qHRM.Areas.SysAdmin.Controllers
         }
 
         // GET: User/Edit/5
-        public ActionResult EditGet(int id)
+        public async Task<IActionResult> EditGet(int id)
         {
             try
             {
                 var objUsr = _sysAdminContext.GetView("_all", 0, "", "").Where(x => x.Usr_Id == id).FirstOrDefault();
+                if (objUsr == null) return NotFound();
+
+                var lstEntity = _orgContext.GetEntities().ToList();
                 var objEnt = _sysAdminContext.Get().Where(x => x.UsrId == id).FirstOrDefault();
-                // objEnt can be null for users that were created without an entity assignment
-                objUsr.EntityId = objEnt?.EntId ?? 0;
+                int defaultEntId = HttpContext.Session.GetInt32("userEntId") ?? lstEntity.FirstOrDefault()?.EntId ?? 1;
+                if (defaultEntId <= 0) defaultEntId = lstEntity.FirstOrDefault()?.EntId ?? 1;
+                objUsr.EntityId = (objEnt != null && objEnt.EntId > 0) ? objEnt.EntId : defaultEntId;
+
+                if (string.IsNullOrWhiteSpace(objUsr.email))
+                {
+                    if (!string.IsNullOrWhiteSpace(objUsr.Usr_Name))
+                    {
+                        var aspUsr = await _userManager.FindByNameAsync(objUsr.Usr_Name);
+                        if (aspUsr != null)
+                        {
+                            objUsr.AspUser_Id = aspUsr.Id;
+                            objUsr.AspUser_Name = aspUsr.UserName;
+                            if (!string.IsNullOrWhiteSpace(aspUsr.Email))
+                                objUsr.email = aspUsr.Email;
+                        }
+                    }
+
+                    if (string.IsNullOrWhiteSpace(objUsr.email) && objUsr.Emp_Sys_Id > 0)
+                    {
+                        var empGen = _employeeContext.GetEmpGenInfoByEmpSysId(objUsr.Emp_Sys_Id);
+                        var jbAsgn = _employeeContext.GetCurrentAssignment(objUsr.Emp_Sys_Id);
+                        if (!string.IsNullOrWhiteSpace(jbAsgn?.OfcEmail))
+                            objUsr.email = jbAsgn.OfcEmail;
+                        else if (!string.IsNullOrWhiteSpace(empGen?.PsnEmail))
+                            objUsr.email = empGen.PsnEmail;
+                    }
+
+                    if (string.IsNullOrWhiteSpace(objUsr.email) && !string.IsNullOrWhiteSpace(objUsr.Usr_Name) && objUsr.Usr_Name.Contains("@"))
+                    {
+                        objUsr.email = objUsr.Usr_Name;
+                    }
+                }
 
                 ViewBag.lstUG = _sysAdminContext.GetFltrdAdmUsrGrps();//User Groups
                 // Include the user's own employee record so the dropdown always shows the current employee
-                ViewBag.lstEmp = _employeeContext.GetActvEmpNameLst(Convert.ToInt32(HttpContext.Session.GetInt32("userEntId")))
+                ViewBag.lstEmp = _employeeContext.GetActvEmpNameLst(defaultEntId)
                                      .Where(x => x.ESysId == objUsr.Emp_Sys_Id).ToList();//Employees
-                ViewBag.lstEntity = _orgContext.GetEntities().ToList(); //Entity
+                ViewBag.lstEntity = lstEntity; //Entity
                 return PartialView("_User_Edit", objUsr);
             }
             catch (Exception ex)
@@ -271,25 +305,46 @@ namespace qHRM.Areas.SysAdmin.Controllers
                         }
                     }
 
+                    qHRMUser user = null;
                     if (!string.IsNullOrEmpty(admView.AspUser_Id))
                     {
-                        var user = await _userManager.FindByIdAsync(admView.AspUser_Id);
-                        if (user != null)
+                        user = await _userManager.FindByIdAsync(admView.AspUser_Id);
+                    }
+                    if (user == null && !string.IsNullOrWhiteSpace(admView.Usr_Name))
+                    {
+                        user = await _userManager.FindByNameAsync(admView.Usr_Name);
+                    }
+
+                    if (user != null)
+                    {
+                        user.Email = admView.email;
+                        user.NormalizedEmail = admView.email?.ToUpperInvariant();
+                        user.Usr_Id = admView.Usr_Id;
+                        user.Emp_Sys_Id = admView.Emp_Sys_Id;
+                        var result = await _userManager.UpdateAsync(user);
+                        if (!result.Succeeded)
                         {
-                            user.Email = admView.email;
-                            user.NormalizedEmail = admView.email;
-                            var result = await _userManager.UpdateAsync(user);
-                            if (!result.Succeeded)
+                            string errDesc = string.Empty;
+                            foreach (var error in result.Errors)
                             {
-                                string errDesc = string.Empty;
-                                foreach (var error in result.Errors)
-                                {
-                                    ModelState.AddModelError(string.Empty, error.Description);
-                                    errDesc = error.Description;
-                                }
-                                return RedirectToAction("Index", "AdmUser").WithWarning("QCS", errDesc);
+                                ModelState.AddModelError(string.Empty, error.Description);
+                                errDesc = error.Description;
                             }
+                            return RedirectToAction("Index", "AdmUser").WithWarning("QCS", errDesc);
                         }
+                    }
+                    else if (!string.IsNullOrWhiteSpace(admView.email))
+                    {
+                        var newIdentityUser = new qHRMUser
+                        {
+                            UserName = admView.Usr_Name,
+                            Email = admView.email,
+                            NormalizedEmail = admView.email.ToUpperInvariant(),
+                            Usr_Id = admView.Usr_Id,
+                            Emp_Sys_Id = admView.Emp_Sys_Id,
+                            EmailConfirmed = true
+                        };
+                        await _userManager.CreateAsync(newIdentityUser, Guid.NewGuid().ToString("N") + "Aa1!");
                     }
 
                     return RedirectToAction("Index", "AdmUser").WithSuccess("QCS", "Record Updated Successfully");

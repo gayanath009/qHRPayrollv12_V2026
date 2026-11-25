@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -69,7 +69,7 @@ namespace qHRM.Areas.SysAdmin.Controllers
         }
 
         
-        [HttpPost]        
+        [HttpPost]
         public IActionResult Create(int drpUserGroup,
                                    IEnumerable<int> listView,
                                    IEnumerable<int> listAdd,
@@ -78,32 +78,44 @@ namespace qHRM.Areas.SysAdmin.Controllers
         {
             try
             {
-                
-                AdmUserGroupPrivilege _obj = new AdmUserGroupPrivilege();
-
-                foreach (int valuePrivil in _listPrivil)
+                if (drpUserGroup <= 0)
                 {
-                    _obj.GrpId = drpUserGroup;
-                    _obj.PrvId = valuePrivil;
-                    _obj.RecView = listView.Contains(valuePrivil);
-                    _obj.RecAdd = listAdd.Contains(valuePrivil);
-                    _obj.RecEdit = listEdit.Contains(valuePrivil);
-                    _obj.RecDelete = listDelete.Contains(valuePrivil);
-                    _obj.RecStat = 1;
-                    _obj.CrtId = 1;// Convert.ToInt32(HttpContext.Session.GetInt32("SessionUserID"));
-                    _obj.CrtDateTime = DateTime.Now;
-                    if (_obj.RecView == true || _obj.RecAdd == true || _obj.RecEdit == true || _obj.RecDelete == true)
-                    {
-                        var _msg = _usrGrpPrvContext.Create(_obj);
-                    }
+                    return RedirectToAction(nameof(Index)).WithWarning("User Group Privilege", "Please select a valid User Group.");
                 }
-               
-               return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Record Added Successfully");
-               
+
+                var viewSet = (listView ?? Enumerable.Empty<int>()).ToHashSet();
+                var addSet = (listAdd ?? Enumerable.Empty<int>()).ToHashSet();
+                var editSet = (listEdit ?? Enumerable.Empty<int>()).ToHashSet();
+                var deleteSet = (listDelete ?? Enumerable.Empty<int>()).ToHashSet();
+                var allSelectedIds = viewSet.Union(addSet).Union(editSet).Union(deleteSet).OrderBy(id => id).ToList();
+
+                int crtId = HttpContext.Session.GetInt32("userID") ?? 1;
+
+                // Remove any partial/duplicate rows for this group before inserting cleanly
+                _usrGrpPrvContext.Remove(new AdmUserGroupPrivilege { GrpId = drpUserGroup });
+
+                foreach (int prvId in allSelectedIds)
+                {
+                    var obj = new AdmUserGroupPrivilege
+                    {
+                        GrpId = drpUserGroup,
+                        PrvId = prvId,
+                        RecView = viewSet.Contains(prvId),
+                        RecAdd = addSet.Contains(prvId),
+                        RecEdit = editSet.Contains(prvId),
+                        RecDelete = deleteSet.Contains(prvId),
+                        RecStat = 1,
+                        CrtId = crtId,
+                        CrtDateTime = DateTime.Now
+                    };
+                    _usrGrpPrvContext.Create(obj);
+                }
+
+                return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Record Added Successfully");
             }
-            catch
+            catch (Exception ex)
             {
-                return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Adding Record got failed");
+                return RedirectToAction(nameof(Index)).WithWarning("User Group Privilege", "Adding Record failed: " + ex.Message);
             }
         }
 
@@ -132,7 +144,7 @@ namespace qHRM.Areas.SysAdmin.Controllers
         }
 
         // POST: UserGroupPrivilege/Edit/5
-        [HttpPost]        
+        [HttpPost]
         public IActionResult Edit(int drpUserGroup,
                                    IEnumerable<int> listView,
                                    IEnumerable<int> listAdd,
@@ -141,40 +153,44 @@ namespace qHRM.Areas.SysAdmin.Controllers
         {
             try
             {
-                try
+                if (drpUserGroup <= 0)
                 {
-                    //Removing the privileges 
-                    AdmUserGroupPrivilege _obj = new AdmUserGroupPrivilege();
-                    _obj.GrpId = drpUserGroup;
-                    _usrGrpPrvContext.Remove(_obj);
+                    return RedirectToAction(nameof(Index)).WithWarning("User Group Privilege", "Please select a valid User Group.");
+                }
 
-                    //Removin the privileges 
-                    foreach (int valuePrivil in _listPrivil)
-                    {
-                        _obj.GrpId = drpUserGroup;
-                        _obj.PrvId = valuePrivil;
-                        _obj.RecView = listView.Contains(valuePrivil);
-                        _obj.RecAdd = listAdd.Contains(valuePrivil);
-                        _obj.RecEdit = listEdit.Contains(valuePrivil);
-                        _obj.RecDelete = listDelete.Contains(valuePrivil);
-                        _obj.RecStat = 1;
-                        _obj.CrtId = 1;// Convert.ToInt32(HttpContext.Session.GetInt32("SessionUserID"));
-                        _obj.CrtDateTime = DateTime.Now;
-                        if (_obj.RecView ==true || _obj.RecAdd == true || _obj.RecEdit == true || _obj.RecDelete == true)
-                        {
-                            var _msg = _usrGrpPrvContext.Create(_obj);
-                        }
-                    }
-                    return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Record Updated Successfully");
-                }
-                catch
+                var viewSet = (listView ?? Enumerable.Empty<int>()).ToHashSet();
+                var addSet = (listAdd ?? Enumerable.Empty<int>()).ToHashSet();
+                var editSet = (listEdit ?? Enumerable.Empty<int>()).ToHashSet();
+                var deleteSet = (listDelete ?? Enumerable.Empty<int>()).ToHashSet();
+                var allSelectedIds = viewSet.Union(addSet).Union(editSet).Union(deleteSet).OrderBy(id => id).ToList();
+
+                int crtId = HttpContext.Session.GetInt32("userID") ?? 1;
+
+                // Remove existing privileges only after safely preparing new privilege set
+                _usrGrpPrvContext.Remove(new AdmUserGroupPrivilege { GrpId = drpUserGroup });
+
+                foreach (int prvId in allSelectedIds)
                 {
-                    return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Updating Record got failed");
+                    var obj = new AdmUserGroupPrivilege
+                    {
+                        GrpId = drpUserGroup,
+                        PrvId = prvId,
+                        RecView = viewSet.Contains(prvId),
+                        RecAdd = addSet.Contains(prvId),
+                        RecEdit = editSet.Contains(prvId),
+                        RecDelete = deleteSet.Contains(prvId),
+                        RecStat = 1,
+                        CrtId = crtId,
+                        CrtDateTime = DateTime.Now
+                    };
+                    _usrGrpPrvContext.Create(obj);
                 }
+
+                return RedirectToAction(nameof(Index)).WithSuccess("User Group Privilege", "Record Updated Successfully");
             }
-            catch
+            catch (Exception ex)
             {
-                return View();
+                return RedirectToAction(nameof(Index)).WithWarning("User Group Privilege", "Updating Record failed: " + ex.Message);
             }
         }
 

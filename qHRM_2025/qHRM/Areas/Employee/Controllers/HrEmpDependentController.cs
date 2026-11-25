@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -52,6 +52,11 @@ namespace qHRM.Areas.Employee.Controllers
             {
                 //No Access Granted
                 if (HttpContext.Session.GetString("EM_DEP_DTL") == null) return RedirectToPage("/Account/Login", new { area = "Identity" });
+
+                if (Id <= 0)
+                    Id = HttpContext.Session.GetInt32("EmpSysId") ?? 0;
+                else
+                    HttpContext.Session.SetInt32("EmpSysId", Id);
 
                 //Start | Usr Prv//
                 int grpId = Convert.ToInt32(HttpContext.Session.GetInt32("userGrpId"));
@@ -211,7 +216,7 @@ namespace qHRM.Areas.Employee.Controllers
             hrEmpDpnd.exPstNo = hrEmpDpndView.Pst_No;
             hrEmpDpnd.exPmtId = hrEmpDpndView.Pmt_Id;
             hrEmpDpnd.exPhotoName = hrEmpDpnd.PhotoName;
-            hrEmpDpnd.exPhotoMime = hrEmpDpnd.exPhotoMime;
+            hrEmpDpnd.exPhotoMime = hrEmpDpnd.PhotoMime;
             hrEmpDpnd.RecStat = 1;
 
 
@@ -372,13 +377,13 @@ namespace qHRM.Areas.Employee.Controllers
         }
 
 
-        public IActionResult IsExistPstNo([Bind(Prefix = "PstNo")] string value, [Bind(Prefix = "ex_PstNo")] string exvalue)
+        public IActionResult IsExistPstNo([Bind(Prefix = "PstNo")] string value, [Bind(Prefix = "exPstNo")] string exvalue)
         {
             if (exvalue != null)
             {
                 if (value != exvalue)
                 {
-                    var _itemfound = _employeeContext.GetDependantsByEmpSysId("_all", 0, 0).Where(x => x.Pmt_Id == value).FirstOrDefault();
+                    var _itemfound = _employeeContext.GetDependantsByEmpSysId("_all", 0, 0).Where(x => x.Pst_No == value).FirstOrDefault();
                     if (_itemfound != null)
                         return Json(data: false);
                     else
@@ -387,7 +392,7 @@ namespace qHRM.Areas.Employee.Controllers
             }
             else
             {
-                var _itemfound = _employeeContext.GetDependantsByEmpSysId("_all", 0, 0).Where(x => x.Pmt_Id == value).FirstOrDefault();
+                var _itemfound = _employeeContext.GetDependantsByEmpSysId("_all", 0, 0).Where(x => x.Pst_No == value).FirstOrDefault();
                 if (_itemfound != null)
                     return Json(data: false);
                 else
@@ -397,7 +402,7 @@ namespace qHRM.Areas.Employee.Controllers
             return Json(data: true);
         }
 
-        public IActionResult IsExistPmtId([Bind(Prefix = "PmtId")] string value, [Bind(Prefix = "ex_PmtId")] string exvalue)
+        public IActionResult IsExistPmtId([Bind(Prefix = "PmtId")] string value, [Bind(Prefix = "exPmtId")] string exvalue)
         {
             if (exvalue != null)
             {

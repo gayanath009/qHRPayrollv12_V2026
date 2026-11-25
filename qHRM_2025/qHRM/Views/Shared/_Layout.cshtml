@@ -225,12 +225,14 @@
                 string RPT_LVLIAB = @HttpContextAccessor.HttpContext.Session.GetString("RPT_LVLIAB");
                 string RPT_PRBANN = @HttpContextAccessor.HttpContext.Session.GetString("RPT_PRBANN");
                 string RPT_WFSLA  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_WFSLA");
+                string RPT_PRHIST = @HttpContextAccessor.HttpContext.Session.GetString("RPT_PRHIST");
+                string RPT_ENCHST = @HttpContextAccessor.HttpContext.Session.GetString("RPT_ENCHST");
                 string RPT_PRCST  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_PRCST");
                 string RPT_DPTCST = @HttpContextAccessor.HttpContext.Session.GetString("RPT_DPTCST");
                 string RPT_ENCFC  = @HttpContextAccessor.HttpContext.Session.GetString("RPT_ENCFC");
                 string RPT_DPTTUR = @HttpContextAccessor.HttpContext.Session.GetString("RPT_DPTTUR");
                 bool hasHrOpsReports = (RPT_DOCEXP != null || RPT_LVBALS != null || RPT_ATNAUD != null || RPT_LVLIAB != null || RPT_PRBANN != null || RPT_WFSLA != null);
-                bool hasPayrollOpsReports = (RPT_PRCST != null || RPT_DPTCST != null || RPT_ENCFC != null || RPT_DPTTUR != null);
+                bool hasPayrollOpsReports = (RPT_PRHIST != null || RPT_ENCHST != null || RPT_PRCST != null || RPT_DPTCST != null || RPT_ENCFC != null || RPT_DPTTUR != null);
                 bool hasReportsPrivs = (hasHrOpsReports || hasPayrollOpsReports);
 
                 // Settings Privileges
@@ -471,6 +473,8 @@
                                 @if (hasPayrollOpsReports)
                                 {
                                     <h6 class="collapse-header">Payroll Operations</h6>
+                                    @if (RPT_PRHIST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="PayrollProcessHist">Payroll Process History</a> }
+                                    @if (RPT_ENCHST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="EncashmentHistory">Leave Encashment History</a> }
                                     @if (RPT_PRCST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="MonthlyCostTrend">Monthly Cost Trend</a> }
                                     @if (RPT_DPTCST != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="DepartmentCostBreakdown">Dept. Cost Breakdown</a> }
                                     @if (RPT_ENCFC != null) { <a class="collapse-item" asp-area="Reports" asp-controller="PayrollOperations" asp-action="EncashmentForecast">Encashment Forecast</a> }

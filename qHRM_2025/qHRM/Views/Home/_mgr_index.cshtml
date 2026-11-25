@@ -871,7 +871,7 @@
                                 <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
                                 <e-grid-pagesettings pageCount="5"></e-grid-pagesettings>
                                 <e-grid-columns>
-                                    <e-grid-column field="" headerText=" " width="40" template="#_avatar"></e-grid-column>
+                                    <e-grid-column field="" headerText=" " width="55" template="#_avatar" textAlign="Center"></e-grid-column>
                                     <e-grid-column field="EmpId" headerText="Employee ID" width="75"></e-grid-column>
                                     <e-grid-column field="FullName" headerText="Full Name" width="125"></e-grid-column>
                                     <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
@@ -949,7 +949,7 @@
                             <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
                             <e-grid-pagesettings pageCount="5"></e-grid-pagesettings>
                             <e-grid-columns>
-                                <e-grid-column field="" headerText=" " width="40" template="#_avatar"></e-grid-column>
+                                <e-grid-column field="" headerText=" " width="55" template="#_avatar" textAlign="Center"></e-grid-column>
                                 <e-grid-column field="EmpId" headerText="Employee ID" width="75"></e-grid-column>
                                 <e-grid-column field="FullName" headerText="Full Name" width="125"></e-grid-column>
                                 <e-grid-column field="DeptName" headerText="Department" width="150"></e-grid-column>
@@ -1049,7 +1049,7 @@
 
 <!-- ==================== TEMPLATES ==================== -->
 <script type="text/x-jsrender" id="_avatar">
-    <img class="img-profile rounded-circle" style="width: 35px; height: 45px; object-fit: cover;" src="@Url.Content("~/attach/empImages/")${(typeof PhotoName !== 'undefined' && PhotoName) ? PhotoName : 'user.png'}" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
+    <img class="img-profile rounded-circle" style="width: 32px; height: 32px; object-fit: cover; border: 1px solid #e2e8f0;" src="@Url.Content("~/attach/empImages/${PhotoName}")" onerror="this.onerror=null;this.src='@Url.Content("~/attach/empImages/user.png")';" />
 </script>
 
 <script id="itemTemplate" type="text/x-template">

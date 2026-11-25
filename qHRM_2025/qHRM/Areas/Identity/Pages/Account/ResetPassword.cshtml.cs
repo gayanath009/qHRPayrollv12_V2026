@@ -97,6 +97,12 @@ namespace qHRM.Areas.Identity.Pages.Account
                 return Page();
             }
 
+            if (trimmedIdentifier.EndsWith("@qcs-qatar.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(string.Empty, "Password reset is not allowed for @qcs-qatar.com email accounts.");
+                return Page();
+            }
+
             // Security complexity enforcement: minimum 6 chars, mixture of letters and numbers
             if (Input.Password.Length < 6 || !Regex.IsMatch(Input.Password, @"[A-Za-z]") || !Regex.IsMatch(Input.Password, @"[0-9]"))
             {
@@ -113,9 +119,15 @@ namespace qHRM.Areas.Identity.Pages.Account
 
             if (user == null)
             {
-                // Anti-enumeration protection
                 _logger.LogWarning("Reset password attempted for non-existent account: {Identifier}", trimmedIdentifier);
-                return RedirectToPage("./ResetPasswordConfirmation");
+                ModelState.AddModelError(string.Empty, "Invalid Email");
+                return Page();
+            }
+
+            if (!string.IsNullOrWhiteSpace(user.Email) && user.Email.Trim().EndsWith("@qcs-qatar.com", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(string.Empty, "Password reset is not allowed for @qcs-qatar.com email accounts.");
+                return Page();
             }
 
             // 2. Perform ASP.NET Core Identity reset

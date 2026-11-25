@@ -99,21 +99,28 @@ namespace qHR
                                 if (lstUsr != null && lstUsr.Any())
                                 {
                                     var userObj = lstUsr.First();
-                                    var lstPrv = await prvContext.GetAsync("_user_priv_group", userObj.Grp_Id.Value);
+                                    int grpId = userObj.Grp_Id ?? 0;
+                                    var lstPrv = await prvContext.GetAsync("_user_priv_group", grpId);
+                                    if (lstPrv == null || !lstPrv.Any())
+                                    {
+                                        context.Response.Redirect($"/Identity/Account/Login?remoteError={System.Net.WebUtility.UrlEncode("User account is not assigned to an active User Group or permissions are missing.")}");
+                                        context.HandleResponse();
+                                        return;
+                                    }
 
                                     var session = context.HttpContext.Session;
                                     foreach (var itm in lstPrv)
                                     {
                                         session.SetString(itm.PrvCode, "y");
                                     }
-                                    session.SetInt32("userID", userObj.Usr_Id.Value);
+                                    session.SetInt32("userID", userObj.Usr_Id ?? 0);
                                     session.SetInt32("userEmpSysId", userObj.Emp_Sys_Id);
-                                    session.SetString("userName", userObj.Usr_Name);
-                                    session.SetString("userFullName", userObj.Full_Name);
-                                    session.SetInt32("userEntId", userObj.Ent_Id.Value);
+                                    session.SetString("userName", userObj.Usr_Name ?? "");
+                                    session.SetString("userFullName", userObj.Full_Name ?? "");
+                                    session.SetInt32("userEntId", (userObj.Ent_Id.HasValue && userObj.Ent_Id.Value > 0) ? userObj.Ent_Id.Value : 1);
                                     session.SetString("userPhoto", string.IsNullOrWhiteSpace(userObj.Photo_Name) ? "user.png" : userObj.Photo_Name);
-                                    session.SetInt32("userGrpId", userObj.Grp_Id.Value);
-                                    session.SetInt32("userDptId", userObj.Dept_Id.Value);
+                                    session.SetInt32("userGrpId", grpId);
+                                    session.SetInt32("userDptId", userObj.Dept_Id ?? 0);
                                     session.SetString("userDashboard", (userObj.Dshbrd_Indx_Txt ?? "").Trim());
                                     session.SetString("mnulUsrLog", "entra");
 

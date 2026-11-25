@@ -128,26 +128,34 @@ namespace qHRM.Areas.Payroll.Reports
                 PdfFont fontWords = new PdfStandardFont(PdfFontFamily.Helvetica, 10.5f, PdfFontStyle.Bold);
                 g.DrawString(amountInWords, fontWords, brushText, new RectangleF(40f, wordsY, pageWidth - 80f, 22f), formatCenter);
 
-                // 5. Signatures Section
+                // 5. Signatures Section (Centered across page towards bottom of document)
                 float sigY = 475f;
-                float sigLineWidth = 130f;
-                float marginSig = 60f;
-                float availableSigW = pageWidth - (marginSig * 2);
-                float sigSpacing = (availableSigW - (4 * sigLineWidth)) / 3f;
+                float sigColWidth = 180f;
+                float sigGap = 18f;
+                float sigLineWidth = 155f;
+                float totalSigWidth = (4f * sigColWidth) + (3f * sigGap);
+                float startSigX = (pageWidth - totalSigWidth) / 2f;
 
-                string[] sigTitles = new[] { "HR Officer", "Manager Accounts", "Chief Executive", "Managing Director" };
-                PdfFont fontSig = new PdfStandardFont(PdfFontFamily.Helvetica, 9.5f, PdfFontStyle.Bold | PdfFontStyle.Underline);
+                string[] sigTitles = new[]
+                {
+                    "HR Manager",
+                    "Head of Finance",
+                    "Chief Executive Officer",
+                    "Managing Director/Authorized Signatory"
+                };
+                PdfFont fontSig = new PdfStandardFont(PdfFontFamily.Helvetica, 8.5f, PdfFontStyle.Bold | PdfFontStyle.Underline);
                 PdfPen penDash = new PdfPen(new PdfColor(0, 0, 0), 1.0f) { DashStyle = PdfDashStyle.Dash };
 
                 for (int i = 0; i < sigTitles.Length; i++)
                 {
-                    float sigX = marginSig + i * (sigLineWidth + sigSpacing);
+                    float colX = startSigX + i * (sigColWidth + sigGap);
+                    float lineX = colX + (sigColWidth - sigLineWidth) / 2f;
 
-                    // Dashed line
-                    g.DrawLine(penDash, sigX, sigY, sigX + sigLineWidth, sigY);
+                    // Centered dashed signature line
+                    g.DrawLine(penDash, lineX, sigY, lineX + sigLineWidth, sigY);
 
-                    // Title below dashed line
-                    RectangleF sigTextRect = new RectangleF(sigX - 15f, sigY + 6f, sigLineWidth + 30f, 18f);
+                    // Centered title below dashed line
+                    RectangleF sigTextRect = new RectangleF(colX - 8f, sigY + 6f, sigColWidth + 16f, 20f);
                     g.DrawString(sigTitles[i], fontSig, brushText, sigTextRect, formatCenter);
                 }
 

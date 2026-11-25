@@ -295,6 +295,18 @@
         color: #fff;
     }
 
+    /* 5. Department-Wise Salary Sheet (HrSalSlip Teal) */
+    .btn-dept {
+        background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        color: #fff;
+        box-shadow: 0 2px 12px rgba(13,148,136,0.35);
+    }
+    .btn-dept:hover {
+        box-shadow: 0 4px 20px rgba(13,148,136,0.55);
+        transform: translateY(-1px);
+        color: #fff;
+    }
+
     /* ─── Grid Panel (HrSalSlip Exact Style) ─── */
     .grid-panel {
         background: var(--clr-surface);
@@ -568,6 +580,13 @@
                         <i class="far fa-file-alt"></i>
                         <span>Summary Report</span>
                     </a>
+
+                    <!-- 5. Department-Wise Salary Sheet (Teal) -->
+                    <a href="@Url.Action("PrintDepartmentBreakdown", "HrPrZohoConvert", new { area = "Payroll" })" 
+                       target="_blank" class="action-btn btn-dept">
+                        <i class="far fa-file-pdf"></i>
+                        <span>Department-wise Salary Sheet</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -588,6 +607,7 @@
                     <e-grid-aggregates>
                         <e-grid-aggregate>
                             <e-aggregate-columns>
+                                <e-aggregate-column field="AbFct" type="Sum" format="N2" footerTemplate="${Sum}"></e-aggregate-column>
                                 <e-aggregate-column field="Basic" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
                                 <e-aggregate-column field="HrAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>
                                 <e-aggregate-column field="TrnsAlwnc" type="Sum" format="N2" footerTemplate="QR. ${Sum}"></e-aggregate-column>

@@ -1,0 +1,113 @@
+@model PayrollProcessHistoryReportVm
+@{
+    ViewData["Title"] = "Payroll Process History Report";
+    string monthName = new DateTime(Model.Year, Model.Month, 1).ToString("MMMM");
+}
+
+<style>
+    .hr-ops-title { color: #550033 !important; font-weight: 700 !important; font-size: 1.4rem; margin-bottom: 2px; }
+    .hr-kpi-card { background: #fff; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); padding: 14px 18px; border: 1px solid #eef0f4; height: 100%; }
+    .hr-kpi-purple { border-top: 3px solid #6f42c1; }
+    .hr-kpi-green { border-top: 3px solid #0f9d58; }
+    .hr-kpi-red { border-top: 3px solid #dc2626; }
+    .hr-kpi-blue { border-top: 3px solid #2563eb; }
+    .hr-kpi-lbl { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; color: #5f6368 !important; margin-bottom: 4px; }
+    .hr-kpi-val { font-size: 24px; font-weight: 700; color: #111827 !important; line-height: 1.2; }
+    .hr-kpi-sub { font-size: 11px; color: #6b7280 !important; margin-top: 3px; }
+</style>
+
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-3">
+        <div>
+            <div class="hr-ops-title"><i class="fas fa-history mr-2"></i>Payroll Process History Report</div>
+            <small class="text-muted">Payroll Operations &bull; Monthly Processed Salary Details (@monthName @Model.Year &bull; Status: <strong>@Model.ProcessStatus</strong>)</small>
+        </div>
+        <form method="get" class="form-inline" style="gap:0.4rem;">
+            <select name="year" class="form-control form-control-sm">
+                @foreach (var yr in Model.AvailableYears)
+                {
+                    <option value="@yr" selected="@(yr == Model.Year)">@yr</option>
+                }
+            </select>
+            <select name="month" class="form-control form-control-sm">
+                @for (int m = 1; m <= 12; m++)
+                {
+                    string mLbl = new DateTime(2026, m, 1).ToString("MMMM");
+                    <option value="@m" selected="@(m == Model.Month)">@mLbl</option>
+                }
+            </select>
+            <select name="staffCat" class="form-control form-control-sm">
+                <option value="ALL" selected="@(Model.StaffCat == "ALL")">All Staff</option>
+                <option value="INTERNAL" selected="@(Model.StaffCat == "INTERNAL")">In-House</option>
+                <option value="OUTSOURCE" selected="@(Model.StaffCat == "OUTSOURCE")">Outsource</option>
+            </select>
+            <button type="submit" class="btn btn-sm text-white" style="background:#550033;"><i class="fas fa-filter mr-1"></i>Apply</button>
+        </form>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-blue">
+                <div class="hr-kpi-lbl">Processed Staff</div>
+                <div class="hr-kpi-val">@Model.EmployeeCount</div>
+                <div class="hr-kpi-sub">@monthName @Model.Year (@Model.ProcessStatus)</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-purple">
+                <div class="hr-kpi-lbl">Total Gross Salary</div>
+                <div class="hr-kpi-val">@Model.TotalGross.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR (Basic: @Model.TotalBasic.ToString("N0") + Alwnc: @Model.TotalAllowances.ToString("N0") + OT: @Model.TotalOvertime.ToString("N0"))</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-red">
+                <div class="hr-kpi-lbl">Total Deductions</div>
+                <div class="hr-kpi-val">@Model.TotalDeductions.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR recoveries, loans &amp; unpaid leave</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-2">
+            <div class="hr-kpi-card hr-kpi-green">
+                <div class="hr-kpi-lbl">Total Net Payout</div>
+                <div class="hr-kpi-val">@Model.TotalNetPayout.ToString("N0")</div>
+                <div class="hr-kpi-sub">QR net salary payable</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-header py-2 bg-white">
+            <h6 class="m-0 font-weight-bold" style="color:#550033 !important;">Processed Salary Details (@Model.Items.Count Records)</h6>
+        </div>
+        <div class="card-body">
+            <ejs-grid id="payrollHistGrid" dataSource="Model.Items" allowPaging="true" allowSorting="true" allowFiltering="true" allowExcelExport="true" allowPdfExport="true" toolbarClick="onPayrollHistToolbarClick" toolbar="@(new List<string>() { "ExcelExport", "PdfExport", "Search" })">
+                <e-grid-pagesettings pageSize="15"></e-grid-pagesettings>
+                <e-grid-filterSettings type="Excel"></e-grid-filterSettings>
+                <e-grid-columns>
+                    <e-grid-column field="EmpId" headerText="Emp ID" width="90"></e-grid-column>
+                    <e-grid-column field="FullName" headerText="Employee Name" width="175"></e-grid-column>
+                    <e-grid-column field="Department" headerText="Department" width="160"></e-grid-column>
+                    <e-grid-column field="StaffCategory" headerText="Category" width="100"></e-grid-column>
+                    <e-grid-column field="Basic" headerText="Basic" format="N0" textAlign="Right" width="105"></e-grid-column>
+                    <e-grid-column field="Allowances" headerText="Allowances" format="N0" textAlign="Right" width="110"></e-grid-column>
+                    <e-grid-column field="Overtime" headerText="Overtime" format="N0" textAlign="Right" width="100"></e-grid-column>
+                    <e-grid-column field="GrossSalary" headerText="Gross Salary" format="N0" textAlign="Right" width="115"></e-grid-column>
+                    <e-grid-column field="Deductions" headerText="Deductions" format="N0" textAlign="Right" width="110"></e-grid-column>
+                    <e-grid-column field="NetSalary" headerText="Net Salary (QAR)" format="N0" textAlign="Right" width="125"></e-grid-column>
+                </e-grid-columns>
+            </ejs-grid>
+        </div>
+    </div>
+</div>
+
+<script>
+    function onPayrollHistToolbarClick(args) {
+        var grid = document.getElementById("payrollHistGrid").ej2_instances[0];
+        if (args.item.id === 'payrollHistGrid_excelexport') {
+            grid.excelExport({ fileName: 'Payroll_Process_History_@(Model.Year)_@(Model.Month).xlsx' });
+        } else if (args.item.id === 'payrollHistGrid_pdfexport') {
+            exportReportGridPdf('payrollHistGrid', 'Payroll_Process_History_@(Model.Year)_@(Model.Month).pdf', 'Payroll Process History (@monthName @Model.Year)');
+        }
+    }
+</script>
